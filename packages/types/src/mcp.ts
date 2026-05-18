@@ -27,7 +27,7 @@ export interface MCPMemoryState {
 }
 
 export interface MCPInteractionEvent {
-  type: 'click' | 'type' | 'scroll' | 'navigate' | 'wait' | 'retry' | 'error';
+  type: 'click' | 'type' | 'scroll' | 'navigate' | 'wait' | 'goBack' | 'retry' | 'error';
   target: string;
   timestamp: number;
   url: string;

@@ -27,19 +27,47 @@ model Project {
 }
 
 model WorkflowSession {
-  id        String   @id @default(uuid())
-  projectId String
-  goal      String?
-  persona   String?
-  status    String   @default("PENDING")
-  startedAt DateTime?
-  endedAt   DateTime?
-  createdAt DateTime @default(now())
-  
+  id           String   @id @default(uuid())
+  projectId    String
+  goal         String?
+  persona      String?
+  status       String   @default("PENDING")
+  stepCount    Int      @default(0)
+  model        String?
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime @default(now())
+
   project      Project            @relation(fields: [projectId], references: [id])
   reports      UXReport[]
   interactions InteractionEvent[]
   screenshots  Screenshot[]
+  thoughts     AgentThought[]
+  actions      AgentAction[]
+}
+
+model AgentThought {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  thought           String
+  stepNumber        Int
+  timestamp         DateTime @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id])
+}
+
+model AgentAction {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  action            String
+  target            String
+  value             String?
+  status            String   @default("pending")
+  stepNumber        Int
+  errorMessage      String?
+  timestamp         DateTime @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id])
 }
 
 model InteractionEvent {

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fricta-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fricta
+      POSTGRES_PASSWORD: fricta_dev
+      POSTGRES_DB: fricta
+    ports:
+      - '5432:5432'
+    volumes:
+      - fricta_pgdata:/var/lib/postgresql/data
+
+volumes:
+  fricta_pgdata:

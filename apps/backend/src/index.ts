@@ -13,6 +13,8 @@ import { projectRoutes } from './routes/projects';
 import { workflowRoutes } from './routes/workflows';
 import { reportRoutes } from './routes/reports';
 import { personaRoutes } from './routes/personas';
+import { agentRoutes } from './routes/agent';
+
 
 const app = new Hono();
 
@@ -26,6 +28,8 @@ app.route('/api/projects', projectRoutes);
 app.route('/api/workflows', workflowRoutes);
 app.route('/api/reports', reportRoutes);
 app.route('/api/personas', personaRoutes);
+app.route('/api/agent', agentRoutes);
+
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 
