@@ -2,6 +2,11 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load root .env
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import { authRoutes } from './routes/auth';
 import { projectRoutes } from './routes/projects';

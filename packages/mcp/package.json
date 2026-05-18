@@ -10,5 +10,9 @@
   "devDependencies": {
     "@fricta/config": "*",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@fricta/types": "*",
+    "playwright-core": "^1.60.0"
   }
 }

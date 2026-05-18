@@ -1,1 +1,2 @@
-export const initAgent = () => {};
+export * from './browser/manager';
+export * from './session/manager';
