@@ -7,7 +7,7 @@ export const Landing = () => {
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
       <header className="h-20 border-b border-white/5 flex items-center px-8 justify-between sticky top-0 bg-background/80 backdrop-blur-md z-50">
         <div className="flex items-center">
-          <Activity className="text-primary w-6 h-6 mr-2" />
+          <img src="/logo.png" alt="Fricta Logo" className="w-8 h-8 mr-2 rounded-md object-cover" />
           <span className="font-semibold text-xl tracking-tight">Fricta</span>
         </div>
         <nav className="hidden md:flex space-x-8 text-sm font-medium text-foreground/70">

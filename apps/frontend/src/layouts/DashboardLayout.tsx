@@ -17,7 +17,7 @@ export const DashboardLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card/50 backdrop-blur-xl flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <Activity className="text-primary w-6 h-6 mr-2" />
+          <img src="/logo.png" alt="Fricta Logo" className="w-8 h-8 mr-2 rounded-md object-cover" />
           <span className="font-semibold text-lg tracking-tight">Fricta</span>
         </div>
         <nav className="flex-1 p-4 space-y-1">
