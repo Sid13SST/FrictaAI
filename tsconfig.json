@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/config" },
+    { "path": "packages/types" },
+    { "path": "packages/shared" },
+    { "path": "packages/agent" },
+    { "path": "packages/mcp" },
+    { "path": "packages/ux-engine" },
+    { "path": "packages/db" },
+    { "path": "packages/ui" },
+    { "path": "apps/backend" },
+    { "path": "apps/frontend" }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@fricta/backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@fricta/db": "*",
+    "@hono/node-server": "^1.11.1",
+    "hono": "^4.3.4",
+    "zod": "^3.23.8",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@fricta/config": "*",
+    "tsx": "^4.10.2",
+    "typescript": "^5.4.5"
+  }
+}
