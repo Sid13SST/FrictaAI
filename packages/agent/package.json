@@ -15,6 +15,8 @@
   "dependencies": {
     "@fricta/mcp": "*",
     "@fricta/types": "*",
+    "bullmq": "^5.76.10",
+    "ioredis": "^5.10.1",
     "playwright": "^1.60.0",
     "playwright-core": "^1.60.0"
   }

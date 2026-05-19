@@ -32,6 +32,15 @@ projectRoutes.post('/', async (c) => {
     return c.json({ error: 'projectName and websiteUrl are required' }, 400);
   }
 
+  let normalizedUrl = websiteUrl.trim();
+  if (!/^https?:\/\//i.test(normalizedUrl)) {
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?/i.test(normalizedUrl)) {
+      normalizedUrl = `http://${normalizedUrl}`;
+    } else {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
+  }
+
   try {
     // Find or create a default user if userId is not provided
     let actualUserId = userId;
@@ -53,7 +62,7 @@ projectRoutes.post('/', async (c) => {
     const project = await prisma.project.create({
       data: {
         projectName,
-        websiteUrl,
+        websiteUrl: normalizedUrl,
         userId: actualUserId,
       },
     });
@@ -64,7 +73,7 @@ projectRoutes.post('/', async (c) => {
     const newProject = {
       id: `project-${Date.now()}`,
       projectName,
-      websiteUrl,
+      websiteUrl: normalizedUrl,
       createdAt: new Date(),
     };
     memoryProjects.push(newProject);

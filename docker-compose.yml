@@ -14,5 +14,15 @@ services:
     volumes:
       - fricta_pgdata:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    container_name: fricta-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - fricta_redisdata:/data
+
 volumes:
   fricta_pgdata:
+  fricta_redisdata:

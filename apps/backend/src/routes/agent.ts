@@ -17,6 +17,7 @@ import {
   AgentLoop,
   createAIProvider,
   AIProvider,
+  scheduleWorkflow,
 } from '@fricta/agent';
 import { Page } from 'playwright-core';
 
@@ -262,7 +263,7 @@ agentRoutes.post('/workflow/run', async (c) => {
     projectId,
     goal,
     persona: resolvedPersona,
-    status: 'RUNNING',
+    status: 'QUEUED',
     stepCount: 0,
     model: modelName,
     startedAt: new Date(),
@@ -270,71 +271,29 @@ agentRoutes.post('/workflow/run', async (c) => {
   memThoughts.set(sessionId, []);
   memActions.set(sessionId, []);
 
-  // ── Launch Browser + Start Agent (non-blocking) ────────────────────────────
-
-  setImmediate(async () => {
-    try {
-      await browserManager.launch(true); // headless
-      const context = await browserManager.createContext(sessionId);
-      const page = await context.newPage();
-      activePages.set(sessionId, page);
-
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 15_000 });
-
-      const loop = new AgentLoop(provider, { maxSteps: 30 });
-
-      const finalState = await loop.run(
-        sessionId,
-        goal,
-        resolvedPersona,
-        page,
-        {
-          onThought: async (thought, step) => {
-            console.log(`[Agent:${sessionId.slice(0, 8)}] Step ${step} thought: ${thought.slice(0, 80)}`);
-            await saveThought(sessionId, thought, step);
-          },
-          onAction: async (executed) => {
-            await saveAction(sessionId, {
-              action: executed.action,
-              target: executed.target,
-              value: executed.value,
-              status: executed.status,
-              stepNumber: executed.stepNumber,
-              errorMessage: executed.errorMessage,
-            });
-            await updateSessionStatus(sessionId, 'RUNNING', executed.stepNumber);
-          },
-          onComplete: async (state) => {
-            const dbStatus = state.status === 'completed' ? 'COMPLETED'
-              : state.status === 'timeout' ? 'TIMEOUT'
-              : state.status === 'loop_detected' ? 'LOOP_DETECTED'
-              : 'FAILED';
-            await updateSessionStatus(sessionId, dbStatus, state.currentStep, new Date());
-          },
-          onError: async (error, state) => {
-            console.error(`[Agent:${sessionId.slice(0, 8)}] Loop error:`, error.message);
-            await updateSessionStatus(sessionId, 'FAILED', state.currentStep, new Date());
-          },
-        },
-        variables
-      );
-
-      console.log(`[Agent:${sessionId.slice(0, 8)}] Completed — status: ${finalState.status}`);
-
-    } catch (err: any) {
-      console.error(`[Agent:${sessionId.slice(0, 8)}] Fatal error:`, err.message);
-      await updateSessionStatus(sessionId, 'FAILED', undefined, new Date());
-    } finally {
-      // Cleanup browser resources
-      activePages.delete(sessionId);
-      try {
-        await browserManager.closeContext(sessionId);
-      } catch {}
+  // Normalize the URL
+  let normalizedUrl = url.trim();
+  if (!/^https?:\/\//i.test(normalizedUrl)) {
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?/i.test(normalizedUrl)) {
+      normalizedUrl = `http://${normalizedUrl}`;
+    } else {
+      normalizedUrl = `https://${normalizedUrl}`;
     }
+  }
+
+  // ── Enqueue Job to BullMQ ────────────────────────────────────────────────
+
+  await scheduleWorkflow({
+    sessionId,
+    projectId,
+    goal,
+    persona: resolvedPersona,
+    model: modelName,
+    url: normalizedUrl,
   });
 
   return c.json({
-    message: 'Autonomous workflow started',
+    message: 'Autonomous workflow queued successfully',
     workflowId: sessionId,
     sessionId,
     model: modelName,

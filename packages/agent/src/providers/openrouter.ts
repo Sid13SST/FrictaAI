@@ -12,7 +12,7 @@ import { AIMessage, AIProviderConfig, AIProviderResponse } from '../types';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const DEFAULT_MODEL = 'openai/gpt-4o-mini';
-const DEFAULT_MAX_TOKENS = 1024;
+const DEFAULT_MAX_TOKENS = 500;
 const DEFAULT_TEMPERATURE = 0.3; // Low temp = deterministic, structured outputs
 
 // Retry configuration (lightweight for Phase 2, expandable later)

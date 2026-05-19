@@ -11,6 +11,7 @@
 
 import { Page } from 'playwright-core';
 import { AgentAction, ActionStatus } from '../types';
+import { logger } from '@fricta/shared';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,59 +41,91 @@ export class Executor {
    * Dispatches a validated action to the appropriate handler.
    * Returns an ExecutionResult with status and timing.
    */
-  async execute(action: AgentAction): Promise<ExecutionResult> {
+  async execute(action: AgentAction, maxRetries: number = 2): Promise<ExecutionResult> {
     const startTime = Date.now();
+    let attempts = 0;
+    let lastError: Error | null = null;
 
-    try {
-      switch (action.action) {
-        case 'click':
-          await this.executeClick(action.target);
-          break;
+    while (attempts <= maxRetries) {
+      try {
+        switch (action.action) {
+          case 'click':
+            await this.executeClick(action.target);
+            break;
 
-        case 'type':
-          await this.executeType(action.target, action.value ?? '');
-          break;
+          case 'type':
+            await this.executeType(action.target, action.value ?? '');
+            break;
 
-        case 'scroll':
-          await this.executeScroll(action.target);
-          break;
+          case 'scroll':
+            await this.executeScroll(action.target);
+            break;
 
-        case 'wait':
-          await this.executeWait(action.target);
-          break;
+          case 'wait':
+            await this.executeWait(action.target);
+            break;
 
-        case 'navigate':
-          await this.executeNavigate(action.value || action.target);
-          break;
+          case 'navigate':
+            await this.executeNavigate(action.value || action.target);
+            break;
 
-        case 'goBack':
-          await this.executeGoBack();
-          break;
+          case 'goBack':
+            await this.executeGoBack();
+            break;
 
-        default:
-          return {
-            status: 'invalid',
-            errorMessage: `Unknown action: "${action.action}"`,
-            durationMs: Date.now() - startTime,
-          };
+          default:
+            return {
+              status: 'invalid',
+              errorMessage: `Unknown action: "${action.action}"`,
+              durationMs: Date.now() - startTime,
+            };
+        }
+
+        // Brief settle after action (let page react)
+        if (action.action !== 'wait') {
+          await this.page.waitForTimeout(WAIT_AFTER_ACTION_MS);
+        }
+
+        return {
+          status: 'success',
+          durationMs: Date.now() - startTime,
+        };
+      } catch (err: any) {
+        attempts++;
+        lastError = err;
+        
+        const errorMsg = err.message || String(err);
+        let failureCategory = 'Agent Failure';
+        if (errorMsg.includes('Could not click') || errorMsg.includes('Could not type')) {
+          failureCategory = 'Element Failure';
+        } else if (errorMsg.includes('ERR_') || errorMsg.includes('Timeout') || errorMsg.includes('navigation')) {
+          failureCategory = 'Navigation Failure';
+        } else if (errorMsg.includes('Target closed') || errorMsg.includes('Browser has been closed')) {
+          failureCategory = 'Browser Failure';
+        }
+
+        logger.warn({ action: action.action, attempt: attempts, category: failureCategory, errorMsg }, 'Execution attempt failed, recovering...');
+        
+        if (attempts <= maxRetries) {
+           if (failureCategory === 'Navigation Failure') {
+              await this.page.reload({ waitUntil: 'load' }).catch(() => {});
+           } else if (failureCategory === 'Element Failure') {
+              await this.page.evaluate(() => window.scrollBy(0, 300)).catch(() => {}); 
+              await this.page.waitForTimeout(1000);
+           } else if (failureCategory === 'Browser Failure') {
+              break; // Unrecoverable within executor without new browser
+           } else {
+              await this.page.waitForTimeout(2000);
+           }
+        }
       }
-
-      // Brief settle after action (let page react)
-      if (action.action !== 'wait') {
-        await this.page.waitForTimeout(WAIT_AFTER_ACTION_MS);
-      }
-
-      return {
-        status: 'success',
-        durationMs: Date.now() - startTime,
-      };
-    } catch (err: any) {
-      return {
-        status: 'failed',
-        errorMessage: err.message ?? String(err),
-        durationMs: Date.now() - startTime,
-      };
     }
+
+    return {
+      status: 'failed',
+      errorMessage: lastError?.message ?? 'Max retries exceeded',
+      durationMs: Date.now() - startTime,
+    };
   }
 
   // ── Action Handlers ─────────────────────────────────────────────────────────

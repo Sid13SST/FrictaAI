@@ -18,8 +18,8 @@ export default function ReportDetails() {
     try {
       setLoading(true);
       const [reportRes, timelineRes] = await Promise.all([
-        fetch(`http://localhost:3001/api/reports/${id}`),
-        fetch(`http://localhost:3001/api/reports/${id}/timeline`)
+        fetch(`http://127.0.0.1:3001/api/reports/${id}`),
+        fetch(`http://127.0.0.1:3001/api/reports/${id}/timeline`)
       ]);
       const reportData = await reportRes.json();
       const timelineData = await timelineRes.json();
@@ -48,7 +48,7 @@ export default function ReportDetails() {
   if (!data || data.error) {
     return (
       <div className="p-8">
-        <Link to="/reports" className="text-blue-500 flex items-center mb-6 hover:underline">
+        <Link to="/app/reports" className="text-blue-500 flex items-center mb-6 hover:underline">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Reports
         </Link>
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-xl">
@@ -78,7 +78,7 @@ export default function ReportDetails() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 animate-in fade-in zoom-in-95 duration-300">
-      <Link to="/reports" className="text-slate-400 hover:text-white flex items-center mb-6 transition-colors w-fit">
+      <Link to="/app/reports" className="text-slate-400 hover:text-white flex items-center mb-6 transition-colors w-fit">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Reports
       </Link>
 

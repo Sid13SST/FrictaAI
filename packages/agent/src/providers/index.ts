@@ -38,6 +38,8 @@ export type ProviderName = 'openrouter';
  */
 export function createAIProvider(provider: ProviderName = 'openrouter'): AIProvider {
   const model = process.env.AGENT_MODEL ?? 'openai/gpt-4o-mini';
+  const maxTokensEnv = process.env.AGENT_MAX_TOKENS ? parseInt(process.env.AGENT_MAX_TOKENS, 10) : undefined;
+  const maxTokens = (maxTokensEnv && !isNaN(maxTokensEnv)) ? maxTokensEnv : 500;
 
   switch (provider) {
     case 'openrouter': {
@@ -52,7 +54,7 @@ export function createAIProvider(provider: ProviderName = 'openrouter'): AIProvi
       const config: AIProviderConfig = {
         apiKey,
         model,
-        maxTokens: 1024,
+        maxTokens,
         temperature: 0.3,
       };
 

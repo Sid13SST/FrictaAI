@@ -1,8 +1,10 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Activity, LayoutDashboard, PlaySquare, FileText, Users, Settings } from 'lucide-react';
+import { UserButton, useUser } from '@clerk/clerk-react';
 
 export const DashboardLayout = () => {
   const location = useLocation();
+  const { user, isLoaded } = useUser();
   
   const navItems = [
     { name: 'Dashboard', path: '/app', icon: LayoutDashboard },
@@ -42,13 +44,13 @@ export const DashboardLayout = () => {
         </nav>
         <div className="p-4 border-t border-border">
           <div className="flex items-center px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-3 text-primary font-medium text-sm">
-              JD
-            </div>
-            <div className="text-sm">
-              <p className="font-medium">Jane Doe</p>
-              <p className="text-foreground/50 text-xs">Acme Corp</p>
-            </div>
+            <UserButton afterSignOutUrl="/" />
+            {isLoaded && user && (
+              <div className="ml-3 text-sm overflow-hidden">
+                <p className="font-medium truncate">{user.fullName || 'User'}</p>
+                <p className="text-foreground/50 text-xs truncate">{user.primaryEmailAddress?.emailAddress}</p>
+              </div>
+            )}
           </div>
         </div>
       </aside>

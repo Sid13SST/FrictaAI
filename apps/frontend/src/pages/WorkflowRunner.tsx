@@ -5,7 +5,7 @@ import {
   PlusCircle, RefreshCw, Activity
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = 'http://127.0.0.1:3001/api';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -105,9 +105,15 @@ export const WorkflowRunner = () => {
     try {
       const res = await fetch(`${API_BASE}/projects`);
       const data = await res.json();
-      setProjects(data.projects ?? []);
-      if (data.projects?.length > 0) setSelectedProjectId(data.projects[0].id);
-    } catch {}
+      const projectList = data.projects ?? [];
+      setProjects(projectList);
+      if (projectList.length > 0) {
+        setSelectedProjectId(projectList[0].id);
+        setTargetUrl(projectList[0].websiteUrl);
+      }
+    } catch (err: any) {
+      console.error("Fetch projects failed:", err);
+    }
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -118,13 +124,23 @@ export const WorkflowRunner = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectName: newProjectName, websiteUrl: newProjectUrl }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       if (data.project) {
         setProjects(prev => [...prev, data.project]);
         setSelectedProjectId(data.project.id);
+        setTargetUrl(data.project.websiteUrl);
         setNewProjectName(''); setNewProjectUrl('');
+      } else {
+        throw new Error("No project returned from server");
       }
-    } catch {}
+    } catch (err: any) {
+      console.error("Create project failed:", err);
+      alert(`Failed to create project: ${err.message}`);
+    }
   };
 
   // ── Polling ───────────────────────────────────────────────────────────────
@@ -236,7 +252,12 @@ export const WorkflowRunner = () => {
 
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-white/40 uppercase tracking-wider">Project</label>
-              <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}
+              <select value={selectedProjectId} onChange={e => {
+                const val = e.target.value;
+                setSelectedProjectId(val);
+                const proj = projects.find(p => p.id === val);
+                if (proj) setTargetUrl(proj.websiteUrl);
+              }}
                 className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/60 transition-colors">
                 {projects.map(p => <option key={p.id} value={p.id}>{p.projectName}</option>)}
               </select>

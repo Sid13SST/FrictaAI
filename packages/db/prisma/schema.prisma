@@ -13,6 +13,7 @@ model User {
   name      String?
   createdAt DateTime @default(now())
   projects  Project[]
+  platformUsage PlatformUsage?
 }
 
 model Project {
@@ -32,6 +33,7 @@ model WorkflowSession {
   goal         String?
   persona      String?
   status       String   @default("PENDING")
+  queueJobId   String?
   stepCount    Int      @default(0)
   model        String?
   startedAt    DateTime?
@@ -47,6 +49,7 @@ model WorkflowSession {
   signals      UXSignal[]
   recommendations UXRecommendation[]
   scores       UXScore[]
+  metrics      WorkflowMetrics?
 }
 
 model AgentThought {
@@ -134,4 +137,25 @@ model UXScore {
   overallScore      Float
 
   session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowMetrics {
+  id                String   @id @default(uuid())
+  workflowSessionId String   @unique
+  duration          Int?
+  retryCount        Int      @default(0)
+  tokenUsage        Int      @default(0)
+  completionStatus  String
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model PlatformUsage {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  workflowsRun  Int      @default(0)
+  totalTokens   Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
