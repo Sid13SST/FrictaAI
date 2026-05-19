@@ -44,6 +44,9 @@ model WorkflowSession {
   screenshots  Screenshot[]
   thoughts     AgentThought[]
   actions      AgentAction[]
+  signals      UXSignal[]
+  recommendations UXRecommendation[]
+  scores       UXScore[]
 }
 
 model AgentThought {
@@ -98,4 +101,37 @@ model UXReport {
   createdAt  DateTime @default(now())
   
   session    WorkflowSession @relation(fields: [sessionId], references: [id])
+}
+
+model UXSignal {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  signalType        String
+  severity          String
+  metadata          Json?
+  timestamp         DateTime @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model UXRecommendation {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  title             String
+  description       String
+  evidence          String
+  severity          String
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model UXScore {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  clarityScore      Float
+  efficiencyScore   Float
+  smoothnessScore   Float
+  overallScore      Float
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }

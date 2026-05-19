@@ -6,7 +6,7 @@ import { WorkflowRunner } from './pages/WorkflowRunner';
 import { Reports } from './pages/Reports';
 import { Personas } from './pages/Personas';
 import { Settings } from './pages/Settings';
-
+import ReportDetails from './pages/ReportDetails';
 function App() {
   return (
     <Routes>
@@ -15,6 +15,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="workflow" element={<WorkflowRunner />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="reports/:id" element={<ReportDetails />} />
         <Route path="personas" element={<Personas />} />
         <Route path="settings" element={<Settings />} />
       </Route>
