@@ -4,6 +4,8 @@ import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/cle
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_bGlrZWQtbW91c2UtOTUuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
 import { Landing } from './pages/Landing';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Dashboard } from './pages/Dashboard';
 import { WorkflowRunner } from './pages/WorkflowRunner';
@@ -11,18 +13,25 @@ import { Reports } from './pages/Reports';
 import { Personas } from './pages/Personas';
 import { Settings } from './pages/Settings';
 import ReportDetails from './pages/ReportDetails';
+
 function App() {
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <ClerkProvider 
+      publishableKey={PUBLISHABLE_KEY}
+      signInUrl="/login"
+      signUpUrl="/register"
+    >
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/login/*" element={<Login />} />
+        <Route path="/register/*" element={<Register />} />
         <Route path="/app" element={
           <>
             <SignedIn>
               <DashboardLayout />
             </SignedIn>
             <SignedOut>
-              <RedirectToSignIn />
+              <RedirectToSignIn signInForceRedirectUrl="/app" />
             </SignedOut>
           </>
         }>

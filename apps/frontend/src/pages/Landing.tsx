@@ -1,96 +1,232 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, ArrowRight, Play, Shield, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowRight, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CinematicBackground } from '../components/CinematicBackground';
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const NAV_LINKS = ['PLATFORM', 'REPORTS', 'SOLUTIONS', 'LEARNING'];
+
+// ─── Liquid Glass Intelligence Card ─────────────────────────────────────────
+
+function IntelligenceCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="liquid-glass rounded-2xl w-[200px] h-[200px] p-5 flex flex-col justify-between -translate-y-[50px] mb-0"
+    >
+      {/* Top label */}
+      <span className="text-[14px] uppercase tracking-widest text-white/40 font-inter relative z-10">
+        [ AI UX ]
+      </span>
+
+      {/* Main headline */}
+      <div className="relative z-10">
+        <h3 className="text-[18px] leading-[1.25] text-white/90 font-inter">
+          Autonomous UX{' '}
+          <span className="font-serif italic text-white/80">Intelligence</span>
+        </h3>
+      </div>
+
+      {/* Description */}
+      <p className="text-[11px] leading-[1.45] text-white/40 font-inter relative z-10">
+        AI agents that simulate real users, navigate workflows, and expose friction before launch.
+      </p>
+    </motion.div>
+  );
+}
+
+// ─── Mobile Menu ────────────────────────────────────────────────────────────
+
+function MobileMenu({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 z-50 bg-[#070b0a]/95 backdrop-blur-md flex flex-col"
+        >
+          {/* Close button */}
+          <div className="flex justify-end p-6">
+            <button
+              onClick={onClose}
+              className="text-white/70 hover:text-white transition-colors"
+              aria-label="Close menu"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Nav links */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-10">
+            {NAV_LINKS.map((link, i) => (
+              <motion.a
+                key={link}
+                href="#"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.06 }}
+                className="text-2xl font-inter font-medium tracking-wide text-white/80 hover:text-accent transition-colors"
+                onClick={onClose}
+              >
+                {link}
+              </motion.a>
+            ))}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Link
+                to="/app"
+                className="btn-primary-cta rounded-full px-8 py-3 text-sm font-bold inline-flex items-center gap-2"
+                onClick={onClose}
+              >
+                Start Testing
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Landing Page ───────────────────────────────────────────────────────────
 
 export const Landing = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-primary/30">
-      <header className="h-20 border-b border-white/5 flex items-center px-8 justify-between sticky top-0 bg-background/80 backdrop-blur-md z-50">
-        <div className="flex items-center">
-          <img src="/logo.png" alt="Fricta Logo" className="w-8 h-8 mr-2 rounded-md object-cover" />
-          <span className="font-semibold text-xl tracking-tight">Fricta</span>
-        </div>
-        <nav className="hidden md:flex space-x-8 text-sm font-medium text-foreground/70">
-          <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-          <a href="#demo" className="hover:text-foreground transition-colors">How it works</a>
-          <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+    <CinematicBackground>
+      {/* ── Header / Navbar ───────────────────────────────────────────── */}
+      <header className="w-full px-6 md:px-10 py-5 flex items-center justify-between">
+        {/* Left: Logo */}
+        <Link to="/" className="flex items-center gap-2.5">
+          <img
+            src="/logo.png"
+            alt="Fricta"
+            className="h-7 w-7 rounded-md object-cover"
+          />
+          <span className="text-white font-inter font-semibold text-lg tracking-tight hidden sm:block">
+            Fricta
+          </span>
+        </Link>
+
+        {/* Center: Desktop Nav */}
+        <nav className="hidden lg:flex items-center gap-10">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link}
+              href="#"
+              className="text-[16px] font-inter font-medium text-white/60 hover:text-accent tracking-wide transition-colors duration-200"
+            >
+              {link}
+            </a>
+          ))}
         </nav>
-        <div className="flex items-center space-x-4">
-          <Link to="/app" className="text-sm font-medium hover:text-primary transition-colors">Login</Link>
-          <Link to="/app" className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors border border-white/10">
-            Start Free
+
+        {/* Right: CTA + Hamburger */}
+        <div className="flex items-center gap-4">
+          <Link
+            to="/app"
+            className="hidden md:inline-flex btn-hero-secondary rounded-full px-5 py-2 text-sm font-medium"
+          >
+            Start Testing
           </Link>
+          <button
+            className="lg:hidden text-white/70 hover:text-white transition-colors"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
         </div>
       </header>
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="pt-32 pb-20 px-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background -z-10"></div>
-          <div className="max-w-5xl mx-auto text-center space-y-8">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary font-medium"
-            >
-              <Zap className="w-4 h-4 mr-2" /> Fricta Engine v1.0 is live
-            </motion.div>
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-5xl md:text-7xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50 leading-tight"
-            >
-              Find user friction <br /> before your users do.
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed"
-            >
-              AI-powered UX testing that simulates real users and reveals workflow confusion, navigation issues, and onboarding weaknesses before launch.
-            </motion.p>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex justify-center space-x-4 pt-4"
-            >
-              <Link to="/app" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg font-medium transition-all shadow-[0_0_30px_rgba(79,70,229,0.4)] flex items-center group">
-                Run AI UX Test <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <button className="bg-card hover:bg-card/80 border border-border text-foreground px-8 py-4 rounded-lg font-medium transition-all flex items-center">
-                <Play className="mr-2 w-4 h-4" /> Watch Demo
-              </button>
-            </motion.div>
-          </div>
-        </section>
+      {/* ── Navbar Divider ────────────────────────────────────────────── */}
+      <div className="navbar-divider" />
 
-        {/* Feature grid */}
-        <section className="py-24 px-8 bg-black/50 border-t border-white/5" id="features">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { title: 'Autonomous Agents', desc: 'Deploy AI agents that behave like real users with specific goals and technical proficiencies.', icon: Activity },
-                { title: 'Friction Analysis', desc: 'Identify exact DOM elements and flow steps that cause hesitation or rage clicks.', icon: Zap },
-                { title: 'Zero Integration', desc: 'No SDKs or code changes required. Point Fricta at any URL and let the engine run.', icon: Shield },
-              ].map((feature, i) => (
-                <div key={i} className="bg-card/50 border border-white/5 p-8 rounded-2xl backdrop-blur-sm">
-                  <feature.icon className="w-10 h-10 text-primary mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-foreground/60">{feature.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
+      {/* ── Hero Body ─────────────────────────────────────────────────── */}
+      <div className="flex-1 flex items-center px-6 md:px-10 lg:px-20">
+        <div className="w-full max-w-[720px]">
 
-      <footer className="py-12 border-t border-border text-center text-foreground/40 text-sm">
-        <p>© 2026 Fricta AI. All rights reserved.</p>
-      </footer>
-    </div>
+          {/* ── Floating Intelligence Card ─────────────────────────── */}
+          <div className="hidden md:block">
+            <IntelligenceCard />
+          </div>
+
+          {/* ── Eyebrow ────────────────────────────────────────────── */}
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="font-jakarta font-bold text-[11px] uppercase tracking-[0.2em] text-accent mb-6"
+          >
+            AUTONOMOUS UX TESTING
+          </motion.p>
+
+          {/* ── Headline ───────────────────────────────────────────── */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.65 }}
+            className="font-inter font-extrabold uppercase tracking-tight text-white text-[40px] md:text-[56px] lg:text-[72px] leading-[1.05]"
+          >
+            FIND USER FRICTION
+            <br />
+            BEFORE THEY DO
+            <span className="text-accent">.</span>
+          </motion.h1>
+
+          {/* ── Description ────────────────────────────────────────── */}
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.85 }}
+            className="font-inter text-[14px] text-white/70 max-w-[512px] leading-[1.7] mt-6"
+          >
+            Fricta autonomously simulates realistic users, navigates workflows,
+            detects usability friction, and reveals where onboarding and product
+            experiences break down before real customers encounter them.
+          </motion.p>
+
+          {/* ── CTA ────────────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.0 }}
+            className="mt-8"
+          >
+            <Link
+              to="/app"
+              className="btn-primary-cta rounded-full px-7 py-3.5 text-[13px] font-bold inline-flex items-center gap-2.5 group"
+            >
+              Run AI UX Test
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ── Mobile Menu ───────────────────────────────────────────────── */}
+      <MobileMenu
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
+    </CinematicBackground>
   );
 };
