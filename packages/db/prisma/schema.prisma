@@ -44,6 +44,8 @@ model WorkflowSession {
   reports      UXReport[]
   interactions InteractionEvent[]
   screenshots  Screenshot[]
+  workflowScreenshots WorkflowScreenshot[]
+  timelineEvents      ScreenshotTimelineEvent[]
   thoughts     AgentThought[]
   actions      AgentAction[]
   signals      UXSignal[]
@@ -94,6 +96,38 @@ model Screenshot {
   timestamp DateTime @default(now())
 
   session   WorkflowSession @relation(fields: [sessionId], references: [id])
+}
+
+model WorkflowScreenshot {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  screenshotType    String   // "step" | "error" | "full" | "viewport"
+  filePath          String
+  thumbnailPath     String
+  timestamp         DateTime @default(now())
+  stepIndex         Int
+  pageUrl           String
+  viewportWidth     Int
+  viewportHeight    Int
+  actionContext     String?
+  fileSize          Int
+  metadata          Json?
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  timelineEvents    ScreenshotTimelineEvent[]
+}
+
+model ScreenshotTimelineEvent {
+  id                String   @id @default(uuid())
+  workflowSessionId String
+  screenshotId      String
+  actionId          String?
+  thoughtId         String?
+  timestamp         DateTime @default(now())
+  eventType         String   // "action" | "thought" | "signal" | "error"
+
+  session           WorkflowSession    @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  screenshot        WorkflowScreenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
 }
 
 model UXReport {

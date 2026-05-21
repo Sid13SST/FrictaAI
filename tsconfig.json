@@ -8,6 +8,7 @@
     { "path": "packages/mcp" },
     { "path": "packages/ux-engine" },
     { "path": "packages/db" },
+    { "path": "packages/visual-engine" },
     { "path": "packages/ui" },
     { "path": "apps/backend" },
     { "path": "apps/frontend" }

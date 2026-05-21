@@ -12,8 +12,10 @@
  */
 
 import { Page } from 'playwright-core';
-import { MCPContextBuilder, InteractionTracker, MemoryEngine, ScreenshotService } from '@fricta/mcp';
+import { MCPContextBuilder, InteractionTracker, MemoryEngine } from '@fricta/mcp';
 import { MCPContext } from '@fricta/types';
+import { VisualCaptureEngine } from '@fricta/visual-engine';
+import { prisma } from '@fricta/db';
 import { AIProvider } from '../providers';
 import { AgentPlanner } from '../planner';
 import { Executor } from '../executor';
@@ -35,7 +37,7 @@ export class AgentLoop {
   private readonly contextBuilder: MCPContextBuilder;
   private readonly interactionTracker: InteractionTracker;
   private readonly mcpMemory: MemoryEngine;
-  private readonly screenshot: ScreenshotService;
+  private readonly visualEngine: VisualCaptureEngine;
   private readonly agentMemory: AgentMemory;
   private readonly config: LoopConfig;
 
@@ -47,7 +49,7 @@ export class AgentLoop {
     this.contextBuilder = new MCPContextBuilder();
     this.interactionTracker = new InteractionTracker();
     this.mcpMemory = new MemoryEngine();
-    this.screenshot = new ScreenshotService();
+    this.visualEngine = new VisualCaptureEngine(prisma);
     this.agentMemory = new AgentMemory();
     this.config = { ...DEFAULT_LOOP_CONFIG, ...config };
   }
@@ -192,6 +194,29 @@ export class AgentLoop {
         console.error(`[AgentLoop] Step ${state.currentStep} error:`, err.message);
         state.consecutiveFailures++;
 
+        // Capture error screenshot — fire-and-forget
+        if (!page.isClosed()) {
+          const stepIndex = state.currentStep;
+          const pageUrl = page.url();
+          this.visualEngine.capture(page, sessionId, {
+            screenshotType: 'error',
+            stepIndex,
+            pageUrl,
+            viewportWidth: 1280,
+            viewportHeight: 720,
+            actionContext: `Error: ${err.message}`,
+            quality: 0.8
+          }).then(async (screenshotRecord) => {
+            if (screenshotRecord) {
+              await this.visualEngine.linkToTimeline({
+                workflowSessionId: sessionId,
+                screenshotId: screenshotRecord.id,
+                eventType: 'error',
+              });
+            }
+          }).catch(() => {});
+        }
+
         if (state.consecutiveFailures >= this.config.maxRetries) {
           state.status = 'failed';
           if (events.onError) {
@@ -275,13 +300,49 @@ export class AgentLoop {
 
     // Capture screenshot after action — fire-and-forget (never blocks step timeout)
     if (!page.isClosed()) {
-      this.screenshot.captureViewport(page, sessionId, `step-${state.currentStep}`)
-        .catch((screenshotErr: any) => {
-          // Silently ignore — page may have navigated or closed
-          if (!screenshotErr.message?.includes('closed')) {
-            console.warn('[AgentLoop] Screenshot failed (non-critical):', screenshotErr.message);
-          }
-        });
+      const stepIndex = state.currentStep;
+      const pageUrl = page.url();
+      const actionContext = JSON.stringify({
+        action: decision.action,
+        target: decision.target,
+        value: decision.value,
+        thought: decision.thought
+      });
+
+      this.visualEngine.capture(page, sessionId, {
+        screenshotType: 'step',
+        stepIndex,
+        pageUrl,
+        viewportWidth: 1280,
+        viewportHeight: 720,
+        actionContext,
+        quality: 0.8
+      }).then(async (screenshotRecord) => {
+        if (screenshotRecord) {
+          // Wait a brief moment to ensure runner callbacks have inserted thoughts/actions
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const [action, thought] = await Promise.all([
+            prisma.agentAction.findFirst({
+              where: { workflowSessionId: sessionId, stepNumber: stepIndex }
+            }),
+            prisma.agentThought.findFirst({
+              where: { workflowSessionId: sessionId, stepNumber: stepIndex }
+            })
+          ]);
+
+          await this.visualEngine.linkToTimeline({
+            workflowSessionId: sessionId,
+            screenshotId: screenshotRecord.id,
+            actionId: action?.id,
+            thoughtId: thought?.id,
+            eventType: 'action',
+          });
+        }
+      }).catch((screenshotErr: any) => {
+        if (!screenshotErr.message?.includes('closed')) {
+          console.warn('[AgentLoop] Screenshot failed (non-critical):', screenshotErr.message);
+        }
+      });
     }
 
     // 4. EVALUATE: Build executed action record

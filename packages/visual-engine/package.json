@@ -1,24 +1,20 @@
 {
-  "name": "@fricta/agent",
+  "name": "@fricta/visual-engine",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "postinstall": "npx playwright install"
+    "build": "tsc"
   },
   "devDependencies": {
     "@fricta/config": "*",
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@fricta/mcp": "*",
+    "@fricta/db": "*",
     "@fricta/types": "*",
-    "@fricta/visual-engine": "*",
-    "bullmq": "^5.76.10",
-    "ioredis": "^5.10.1",
-    "playwright": "^1.60.0",
+    "@fricta/shared": "*",
     "playwright-core": "^1.60.0"
   }
 }

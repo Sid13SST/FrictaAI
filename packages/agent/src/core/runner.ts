@@ -65,9 +65,16 @@ export const runWorkflow = async (options: RunWorkflowOptions) => {
       {
         onThought: async (thought, step) => {
           logger.info(`[Agent:${sessionId.slice(0, 8)}] Step ${step} thought: ${thought.slice(0, 80)}`);
-          await prisma.agentThought.create({
-            data: { workflowSessionId: sessionId, thought, stepNumber: step }
-          }).catch(err => logger.error({ err }, 'Failed to save thought'));
+          // Update stepCount on every thought so the progress bar advances on every step
+          await Promise.all([
+            prisma.agentThought.create({
+              data: { workflowSessionId: sessionId, thought, stepNumber: step }
+            }).catch(err => logger.error({ err }, 'Failed to save thought')),
+            prisma.workflowSession.update({
+              where: { id: sessionId },
+              data: { stepCount: step }
+            }).catch(() => {}),
+          ]);
         },
         onAction: async (executed) => {
           await prisma.agentAction.create({

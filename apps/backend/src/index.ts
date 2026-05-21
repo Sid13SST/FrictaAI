@@ -33,7 +33,6 @@ app.route('/api/health', healthRoutes);
 app.route('/api/personas', personaRoutes);
 app.route('/api/agent', agentRoutes);
 
-
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;

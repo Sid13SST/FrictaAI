@@ -10,7 +10,20 @@ export interface MCPElement {
     height: number;
   } | null;
   interactionType?: string;
+  id?: string;
+  name?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  ariaDescribedBy?: string;
+  title?: string;
+  altText?: string;
+  intent?: 'primary' | 'secondary' | 'destructive' | 'neutral';
+  containerType?: 'form' | 'modal' | 'nav' | 'section' | 'none';
+  containerId?: string;
+  type?: string;
+  href?: string;
 }
+
 
 export interface MCPPageContext {
   url: string;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Play, Square, Loader2, Brain, Zap, CheckCircle, XCircle,
   Clock, ChevronRight, Eye, List, AlertTriangle, Sparkles,
@@ -322,7 +323,7 @@ export const WorkflowRunner = () => {
               <div className="space-y-2 text-xs text-white/40">
                 <div className="flex justify-between">
                   <span>Steps Taken</span>
-                  <span className="text-white font-mono">{sessionStatus.stepCount} / 30</span>
+                  <span className="text-white font-mono">{Math.max(sessionStatus.stepCount, thoughts.length, actions.length)} / 30</span>
                 </div>
                 {model && (
                   <div className="flex justify-between">
@@ -339,13 +340,28 @@ export const WorkflowRunner = () => {
               </div>
             )}
             {/* Step progress bar */}
-            {sessionStatus && sessionStatus.stepCount > 0 && (
-              <div className="w-full bg-white/[0.06] rounded-full h-1.5">
-                <div
-                  className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
-                  style={{ width: `${Math.min((sessionStatus.stepCount / 30) * 100, 100)}%` }}
-                />
-              </div>
+            {(sessionStatus || thoughts.length > 0 || actions.length > 0) && (
+              (() => {
+                const effectiveStep = Math.max(
+                  sessionStatus?.stepCount ?? 0,
+                  thoughts.length,
+                  actions.length
+                );
+                return effectiveStep > 0 ? (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-white/30">
+                      <span>Progress</span>
+                      <span className="font-mono">{effectiveStep} / 30 steps</span>
+                    </div>
+                    <div className="w-full bg-white/[0.06] rounded-full h-1.5">
+                      <div
+                        className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
+                        style={{ width: `${Math.min((effectiveStep / 30) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()
             )}
           </div>
         </div>
@@ -485,10 +501,16 @@ export const WorkflowRunner = () => {
                   Completed {sessionStatus.stepCount} steps · Model: {sessionStatus.model}
                 </p>
               </div>
-              <button onClick={() => { setUiStatus('idle'); setThoughts([]); setActions([]); setSessionStatus(null); setWorkflowId(null); }}
-                className="ml-auto flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
-                <RefreshCw className="w-3.5 h-3.5" /> New Run
-              </button>
+              <div className="ml-auto flex items-center gap-4">
+                <Link to={`/app/reports/${workflowId}`}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md transition-colors flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5" /> View Report
+                </Link>
+                <button onClick={() => { setUiStatus('idle'); setThoughts([]); setActions([]); setSessionStatus(null); setWorkflowId(null); }}
+                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> New Run
+                </button>
+              </div>
             </div>
           )}
         </div>

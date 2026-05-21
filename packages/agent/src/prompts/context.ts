@@ -11,11 +11,11 @@ import { ExecutedAction } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_BUTTONS = 15;
-const MAX_LINKS = 15;
-const MAX_INPUTS = 10;
-const MAX_HEADINGS = 8;
-const MAX_HISTORY = 10; // recent action history steps
+const MAX_BUTTONS = 10;
+const MAX_LINKS = 10;
+const MAX_INPUTS = 8;
+const MAX_HEADINGS = 5;
+const MAX_HISTORY = 4; // recent action history steps
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,19 +53,51 @@ export function buildContextPrompt(
   // ── Page Elements ───────────────────────────────────────────────────────────
 
   const buttonTexts = currentPage.buttons
-    .filter((b) => b.visible && b.text)
+    .filter((b) => b.visible)
     .slice(0, MAX_BUTTONS)
-    .map((b) => truncateText(b.text));
+    .map((b) => {
+      const label = b.text || b.ariaLabel || b.title || b.id || b.name || 'unlabeled-button';
+      const meta: string[] = [];
+      if (b.intent && b.intent !== 'neutral') meta.push(`intent: ${b.intent}`);
+      if (b.containerType && b.containerType !== 'none') {
+        meta.push(`container: ${b.containerType}${b.containerId ? ` (${b.containerId})` : ''}`);
+      }
+      if (!b.text && (b.ariaLabel || b.title)) {
+        meta.push(`icon-only${b.ariaLabel ? ` [aria-label="${b.ariaLabel}"]` : ''}`);
+      }
+      const metaStr = meta.length > 0 ? ` [${meta.join(', ')}]` : '';
+      return `${truncateText(label)}${metaStr}`;
+    });
 
   const linkTexts = currentPage.links
-    .filter((l) => l.visible && l.text)
+    .filter((l) => l.visible)
     .slice(0, MAX_LINKS)
-    .map((l) => truncateText(l.text));
+    .map((l) => {
+      const label = l.text || l.ariaLabel || l.title || l.id || l.name || l.href || 'unlabeled-link';
+      const meta: string[] = [];
+      if (l.href) meta.push(`href: ${l.href}`);
+      if (l.containerType && l.containerType !== 'none') {
+        meta.push(`container: ${l.containerType}${l.containerId ? ` (${l.containerId})` : ''}`);
+      }
+      const metaStr = meta.length > 0 ? ` [${meta.join(', ')}]` : '';
+      return `${truncateText(label)}${metaStr}`;
+    });
 
   const inputTexts = currentPage.inputs
     .filter((i) => i.visible && !i.disabled)
     .slice(0, MAX_INPUTS)
-    .map((i) => truncateText(i.text || 'unlabeled-input'));
+    .map((i) => {
+      const label = i.ariaLabel || i.placeholder || i.name || i.id || i.title || i.text || 'unlabeled-input';
+      const meta: string[] = [];
+      if (i.type) meta.push(`type: ${i.type}`);
+      if (i.name) meta.push(`name: ${i.name}`);
+      if (i.placeholder) meta.push(`placeholder: ${i.placeholder}`);
+      if (i.containerType && i.containerType !== 'none') {
+        meta.push(`container: ${i.containerType}${i.containerId ? ` (${i.containerId})` : ''}`);
+      }
+      const metaStr = meta.length > 0 ? ` [${meta.join(', ')}]` : '';
+      return `${truncateText(label)}${metaStr}`;
+    });
 
   const headingTexts = currentPage.headings
     .filter((h) => h.visible && h.text)

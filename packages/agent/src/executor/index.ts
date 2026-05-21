@@ -133,28 +133,53 @@ export class Executor {
   /**
    * click
    *
-   * Tries multiple strategies to click an element by its visible text/label.
-   * Strategy order: exact text → contains text → aria-label → placeholder
+   * Tries multiple strategies to click an element by its visible text/label,
+   * accessibility attributes, container metadata, or standard CSS selectors.
    */
   private async executeClick(target: string): Promise<void> {
+    const cleanTarget = target.trim();
+    
     const strategies = [
-      // Exact text match (button/link/role)
-      () => this.page.click(`text="${target}"`, { timeout: DEFAULT_TIMEOUT_MS }),
-      // Contains text (partial match)
-      () => this.page.click(`text=${target}`, { timeout: DEFAULT_TIMEOUT_MS }),
-      // By aria-label
-      () => this.page.click(`[aria-label="${target}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
-      // By title attribute
-      () => this.page.click(`[title="${target}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
-      // Button/link with value
-      () => this.page.click(`input[value="${target}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 1. If target is already a selector, try it directly
+      async () => {
+        if (cleanTarget.startsWith('#') || cleanTarget.startsWith('.') || cleanTarget.startsWith('[') || cleanTarget.includes('>')) {
+          await this.page.click(cleanTarget, { timeout: DEFAULT_TIMEOUT_MS });
+        } else {
+          throw new Error('Not a selector');
+        }
+      },
+      // 2. Playwright built-in text selectors (exact and partial)
+      () => this.page.click(`text="${cleanTarget}"`, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.click(`text=${cleanTarget}`, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 3. Accessibility attribute matches
+      () => this.page.click(`[aria-label="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.click(`[aria-label*="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      // By title / alt
+      () => this.page.click(`[title="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.click(`[title*="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.click(`[alt="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 4. Input value (buttons / inputs)
+      () => this.page.click(`input[value="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.click(`input[value*="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 5. Native DOM ID and Name matches
+      () => this.page.click(`#${cleanTarget}`, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.click(`[name="${cleanTarget}"]`, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 6. Sanitized class/id matches (e.g. converting "Submit Goal" to "submit-goal")
+      () => {
+        const idFriendly = cleanTarget.toLowerCase().replace(/\s+/g, '-');
+        return this.page.click(`#${idFriendly}`, { timeout: DEFAULT_TIMEOUT_MS });
+      },
+      () => {
+        const classFriendly = cleanTarget.toLowerCase().replace(/\s+/g, '-');
+        return this.page.click(`.${classFriendly}`, { timeout: DEFAULT_TIMEOUT_MS });
+      }
     ];
 
     let lastError: Error | null = null;
     for (const strategy of strategies) {
       try {
         await strategy();
-        // Wait for potential navigation after click
+        // Wait for potential navigation or changes after click
         await this.page.waitForLoadState('load', { timeout: 8_000 }).catch(() => {});
         return;
       } catch (err: any) {
@@ -171,18 +196,35 @@ export class Executor {
    * Finds the target input by label/placeholder and fills it.
    */
   private async executeType(target: string, value: string): Promise<void> {
+    const cleanTarget = target.trim();
+    
     const inputStrategies = [
-      // By placeholder
-      () => this.page.fill(`input[placeholder="${target}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
-      () => this.page.fill(`textarea[placeholder="${target}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
-      // By name attribute
-      () => this.page.fill(`input[name="${target}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
-      // By aria-label
-      () => this.page.fill(`input[aria-label="${target}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
-      // By associated label text
-      () => this.page.fill(`input:near(:text("${target}"))`, value, { timeout: DEFAULT_TIMEOUT_MS }),
-      // By id matching
-      () => this.page.fill(`#${target.toLowerCase().replace(/\s+/g, '-')}`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 1. Direct Selector Type
+      async () => {
+        if (cleanTarget.startsWith('#') || cleanTarget.startsWith('.') || cleanTarget.startsWith('[') || cleanTarget.includes('>')) {
+          await this.page.fill(cleanTarget, value, { timeout: DEFAULT_TIMEOUT_MS });
+        } else {
+          throw new Error('Not a selector');
+        }
+      },
+      // 2. Placeholder exact and contains
+      () => this.page.fill(`input[placeholder="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.fill(`textarea[placeholder="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.fill(`input[placeholder*="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 3. Name matches
+      () => this.page.fill(`input[name="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.fill(`textarea[name="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 4. Aria label matches
+      () => this.page.fill(`input[aria-label="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => this.page.fill(`input[aria-label*="${cleanTarget}"]`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 5. Associated labels or text matching
+      () => this.page.fill(`input:near(:text("${cleanTarget}"))`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      // 6. Direct DOM ID or normalized ID match
+      () => this.page.fill(`#${cleanTarget}`, value, { timeout: DEFAULT_TIMEOUT_MS }),
+      () => {
+        const idFriendly = cleanTarget.toLowerCase().replace(/\s+/g, '-');
+        return this.page.fill(`#${idFriendly}`, value, { timeout: DEFAULT_TIMEOUT_MS });
+      }
     ];
 
     let lastError: Error | null = null;

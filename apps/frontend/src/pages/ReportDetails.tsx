@@ -4,7 +4,7 @@ import { ArrowLeft, RefreshCw, FileText } from 'lucide-react';
 import { UXScoreCards } from '../components/reports/UXScoreCards';
 import { FrictionTimeline } from '../components/reports/FrictionTimeline';
 import { SessionReplayTimeline } from '../components/reports/SessionReplayTimeline';
-import { ScreenshotViewer } from '../components/reports/ScreenshotViewer';
+import { VisualReplayViewer } from '../components/reports/VisualReplayViewer';
 import { RecommendationCards } from '../components/reports/RecommendationCards';
 import { WorkflowGraph } from '../components/reports/WorkflowGraph';
 
@@ -129,9 +129,11 @@ export default function ReportDetails() {
         </div>
       </div>
 
-      <section>
-        <ScreenshotViewer screenshots={timeline?.screenshots || []} />
-      </section>
+      {session && (
+        <section className="mt-8">
+          <VisualReplayViewer sessionId={session.id} />
+        </section>
+      )}
     </div>
   );
 }
