@@ -36,3 +36,17 @@ export interface VisualScoresResult {
   navigationScore: number;
   overallScore: number;
 }
+
+export interface VisualFindingData {
+  id?: string;
+  workflowSessionId: string;
+  screenshotId: string;
+  findingType: string;
+  severity: string;
+  title: string;
+  description: string;
+  boundingBoxes: any; // Can be array of bounding boxes
+  metadata?: any;
+  timestamp?: Date;
+}
+

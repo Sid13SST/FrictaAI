@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { buildUXReport, SessionData, ActionData, InteractionData, ThoughtData } from '@fricta/ux-engine';
-
+import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, UnifiedUXReportPayload, WorkflowSessionDetails } from '@fricta/report-engine';
 
 async function generateReportForSession(sessionId: string) {
   const session = await prisma.workflowSession.findUnique({
@@ -111,9 +111,152 @@ async function generateReportForSession(sessionId: string) {
   return reportData;
 }
 
+async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportPayload | null> {
+  const session = await prisma.workflowSession.findUnique({
+    where: { id: sessionId },
+    include: {
+      scores: true,
+      visualScores: true,
+      uxFindings: true,
+      cognitiveSignals: true,
+      visualFindings: true,
+    }
+  });
+
+  if (!session) return null;
+
+  // Extract or calculate scores
+  const uxScore = session.scores[0];
+  const visualScore = session.visualScores[0];
+
+  const clarityScore = Math.round(
+    uxScore?.clarityScore ?? visualScore?.clarityScore ?? 80
+  );
+  const onboardingScore = Math.round(
+    uxScore?.smoothnessScore ?? 80
+  );
+  const iaScore = Math.round(
+    visualScore?.navigationScore ?? visualScore?.layoutBalanceScore ?? 80
+  );
+  const efficiencyScore = Math.round(
+    uxScore?.efficiencyScore ?? 80
+  );
+  const overallScore = Math.round(
+    uxScore?.overallScore ?? visualScore?.overallScore ?? 80
+  );
+
+  // Fetch persona profiles (custom or default)
+  const dbPersonaProfiles = await prisma.personaProfile.findMany();
+  const personaProfiles = dbPersonaProfiles.map(p => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    traits: p.traits as any,
+    behaviorModifiers: p.behaviorModifiers as any
+  }));
+
+  const finalPersonaProfiles = personaProfiles.length > 0 ? personaProfiles : [
+    {
+      name: "Beginner User",
+      description: "Requires high discoverability, helper tooltips, and linear navigation paths. Low patience for UI confusion.",
+      traits: {
+        guidanceDependency: 'high' as const,
+        patience: 'low' as const,
+        comfortWithIA: 'low' as const
+      },
+      behaviorModifiers: {
+        idleHesitationThresholdMs: 8000,
+        maxActionCyclesAllowed: 2,
+        excessiveStepsThreshold: 8
+      }
+    },
+    {
+      name: "Power User",
+      description: "Navigates rapidly, comfortable with advanced shortcuts and high layout density. High patience for complex tasks.",
+      traits: {
+        guidanceDependency: 'low' as const,
+        patience: 'high' as const,
+        comfortWithIA: 'high' as const
+      },
+      behaviorModifiers: {
+        idleHesitationThresholdMs: 25000,
+        maxActionCyclesAllowed: 5,
+        excessiveStepsThreshold: 20
+      }
+    },
+    {
+      name: "First-Time User",
+      description: "Exploring the system for the first time. Needs clean onboarding, progressive disclosure, and clear call-to-actions.",
+      traits: {
+        guidanceDependency: 'medium' as const,
+        patience: 'medium' as const,
+        comfortWithIA: 'medium' as const
+      },
+      behaviorModifiers: {
+        idleHesitationThresholdMs: 15000,
+        maxActionCyclesAllowed: 3,
+        excessiveStepsThreshold: 12
+      }
+    }
+  ];
+
+  // Map db data to report engine shapes
+  const sessionDetails: WorkflowSessionDetails = {
+    id: session.id,
+    goal: session.goal,
+    persona: session.persona,
+    startedAt: session.startedAt,
+    endedAt: session.endedAt,
+    stepCount: session.stepCount,
+  };
+
+  return {
+    session: sessionDetails,
+    scores: {
+      clarityScore,
+      onboardingScore,
+      iaScore,
+      efficiencyScore,
+      overallScore
+    },
+    uxFindings: session.uxFindings.map(f => ({
+      id: f.id,
+      workflowSessionId: f.workflowSessionId,
+      findingType: f.findingType,
+      severity: f.severity as any,
+      personaType: f.personaType,
+      title: f.title,
+      description: f.description,
+      evidence: f.evidence,
+      recommendation: f.recommendation,
+      timestamp: f.timestamp
+    })),
+    cognitiveSignals: session.cognitiveSignals.map(s => ({
+      id: s.id,
+      workflowSessionId: s.workflowSessionId,
+      signalType: s.signalType,
+      intensity: s.intensity,
+      metadata: s.metadata,
+      timestamp: s.timestamp
+    })),
+    visualFindings: session.visualFindings.map(vf => ({
+      id: vf.id,
+      workflowSessionId: vf.workflowSessionId,
+      screenshotId: vf.screenshotId,
+      findingType: vf.findingType,
+      severity: vf.severity,
+      title: vf.title,
+      description: vf.description,
+      boundingBoxes: vf.boundingBoxes as any,
+      metadata: vf.metadata,
+      timestamp: vf.timestamp
+    })),
+    personaProfiles: finalPersonaProfiles
+  };
+}
+
 export const reportRoutes = new Hono()
   .get('/', async (c) => {
-    // List reports
     const reports = await prisma.uXReport.findMany();
     return c.json({ reports });
   })
@@ -125,42 +268,47 @@ export const reportRoutes = new Hono()
   })
   .get('/:id', async (c) => {
     const id = c.req.param('id');
-    // Auto-generate if not exists
-    let report = await prisma.uXReport.findFirst({ where: { sessionId: id } });
-    if (!report) {
-      const generated = await generateReportForSession(id);
-      if (!generated) return c.json({ error: 'Report not found' }, 404);
-      report = await prisma.uXReport.findFirst({ where: { sessionId: id } });
+    
+    // Auto-generate legacy report if it doesn't exist
+    const legacyReport = await prisma.uXReport.findFirst({ where: { sessionId: id } });
+    if (!legacyReport) {
+      await generateReportForSession(id);
     }
-    if (!report) return c.json({ error: 'Report not found' }, 404);
 
-    const scores = await prisma.uXScore.findFirst({ where: { workflowSessionId: id } });
-    const signals = await prisma.uXSignal.findMany({ where: { workflowSessionId: id } });
-    const recommendations = await prisma.uXRecommendation.findMany({ where: { workflowSessionId: id } });
-    const session = await prisma.workflowSession.findUnique({ where: { id } });
+    const payload = await compileUnifiedReport(id);
+    if (!payload) return c.json({ error: 'Report not found' }, 404);
 
+    return c.json(payload);
+  })
+  .get('/:id/executive', async (c) => {
+    const id = c.req.param('id');
+    const payload = await compileUnifiedReport(id);
+    if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+    const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+    return c.json(executiveSummary);
+  })
+  .get('/:id/export', async (c) => {
+    const id = c.req.param('id');
+    const payload = await compileUnifiedReport(id);
+    if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+    const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
     return c.json({
-      report,
-      scores,
-      signals,
-      recommendations,
-      session
+      markdown: ExportEngine.toMarkdown(payload, executiveSummary),
+      textSheet: ExportEngine.toTextSheet(payload, executiveSummary),
+      developerJson: ExportEngine.toDeveloperJson(payload, executiveSummary)
     });
   })
-  .get('/:id/signals', async (c) => {
+  .get('/:id/personas', async (c) => {
     const id = c.req.param('id');
-    const signals = await prisma.uXSignal.findMany({ where: { workflowSessionId: id } });
-    return c.json({ signals });
-  })
-  .get('/:id/recommendations', async (c) => {
-    const id = c.req.param('id');
-    const recommendations = await prisma.uXRecommendation.findMany({ where: { workflowSessionId: id } });
-    return c.json({ recommendations });
-  })
-  .get('/:id/scores', async (c) => {
-    const id = c.req.param('id');
-    const scores = await prisma.uXScore.findFirst({ where: { workflowSessionId: id } });
-    return c.json({ scores });
+    const payload = await compileUnifiedReport(id);
+    if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+    return c.json({
+      personaProfiles: payload.personaProfiles,
+      uxFindings: payload.uxFindings
+    });
   })
   .get('/:id/timeline', async (c) => {
     const id = c.req.param('id');
@@ -172,11 +320,43 @@ export const reportRoutes = new Hono()
       where: { workflowSessionId: id },
       orderBy: { timestamp: 'asc' }
     });
-    const screenshots = await prisma.screenshot.findMany({
-      where: { sessionId: id },
+    const uxFindings = await prisma.uXFinding.findMany({
+      where: { workflowSessionId: id },
       orderBy: { timestamp: 'asc' }
     });
+    const cognitiveSignals = await prisma.cognitiveSignal.findMany({
+      where: { workflowSessionId: id },
+      orderBy: { timestamp: 'asc' }
+    });
+    const visualFindings = await prisma.visualFinding.findMany({
+      where: { workflowSessionId: id },
+      orderBy: { timestamp: 'asc' }
+    });
+    const screenshots = await prisma.workflowScreenshot.findMany({
+      where: { workflowSessionId: id },
+      orderBy: { stepIndex: 'asc' }
+    });
 
-    return c.json({ timeline: { actions, thoughts, screenshots } });
+    const compiledTimeline = TimelineCompiler.compile(
+      actions,
+      thoughts,
+      uxFindings,
+      cognitiveSignals,
+      visualFindings
+    );
+
+    return c.json({
+      timeline: compiledTimeline,
+      screenshots: screenshots.map(s => ({
+        id: s.id,
+        stepIndex: s.stepIndex,
+        filePath: s.filePath,
+        thumbnailPath: s.thumbnailPath,
+        pageUrl: s.pageUrl,
+        viewportWidth: s.viewportWidth,
+        viewportHeight: s.viewportHeight,
+        actionContext: s.actionContext,
+        metadata: s.metadata
+      }))
+    });
   });
-
