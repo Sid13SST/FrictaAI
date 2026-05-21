@@ -42,7 +42,7 @@ export const Reports = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reports.map((report) => (
-            <div key={report.id} className="bg-card/50 backdrop-blur-xl border border-border p-6 rounded-xl space-y-4 hover:border-primary/50 transition-all hover:shadow-[0_0_20px_rgba(79,70,229,0.1)]">
+            <div key={report.id} className="bg-card/50 backdrop-blur-xl border border-border p-6 rounded-xl space-y-4 hover:border-primary/50 transition-all hover:shadow-mint-glow">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-primary/10 rounded-lg text-primary">

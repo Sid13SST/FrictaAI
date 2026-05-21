@@ -18,6 +18,11 @@ import {
   WorkflowAgentWrapper
 } from '../agents';
 import { OrchestrationTask, AgentType } from '../types';
+import { 
+  SharedMemoryCorrelationEngine, 
+  SharedMemorySynthesisEngine 
+} from '@fricta/shared-memory';
+
 
 export class OrchestratorCoordinator {
   public static activeWorkflowSessions = new Set<string>();
@@ -58,6 +63,8 @@ export class OrchestratorCoordinator {
 
       // 2. Initialize layers
       this.context = new SharedContext(this.prisma, sessionId);
+      await this.context.clearMemory();
+      await this.context.createMilestoneSnapshot('INITIALIZATION');
       this.broker = new MessageBroker(this.prisma, sessionId);
       this.timeline = new TimelineRecorder(this.prisma, sessionId);
       this.recovery = new RecoveryManager(this.timeline);
@@ -113,6 +120,12 @@ export class OrchestratorCoordinator {
               }
             });
 
+            await this.context.appendMemoryEvent({
+              eventType: 'AGENT_TASK_START',
+              sourceAgent: task.agentType,
+              payload: { description: `Agent ${task.agentType} started task: ${task.description}` }
+            });
+
             // Spawn isolated worker
             const agent = this.createAgent(task.agentType, workflowSessionId);
 
@@ -136,6 +149,12 @@ export class OrchestratorCoordinator {
                 await this.persistAgentOutput(task.id, task.agentType, result);
               }
 
+              await this.context.appendMemoryEvent({
+                eventType: 'AGENT_TASK_SUCCESS',
+                sourceAgent: task.agentType,
+                payload: { description: `Agent ${task.agentType} successfully completed task: ${task.description}` }
+              });
+
               // Send task completion message to broker
               await this.broker.sendMessage({
                 fromAgent: task.agentType,
@@ -147,6 +166,12 @@ export class OrchestratorCoordinator {
             } catch (err: any) {
               const errorMsg = err.message || 'Execution failed';
               
+              await this.context.appendMemoryEvent({
+                eventType: 'AGENT_TASK_FAILURE',
+                sourceAgent: task.agentType,
+                payload: { description: `Agent ${task.agentType} failed executing task. Error: ${errorMsg}` }
+              });
+
               // Invoke failure recovery mechanics
               const { shouldRetry, updatedRetryCount } = await this.recovery.handleFailedTask(task, errorMsg);
               task.retryCount = updatedRetryCount;
@@ -194,6 +219,17 @@ export class OrchestratorCoordinator {
       const finalQueue = this.scheduler.getQueue();
       const hasFailures = finalQueue.some(t => t.status === 'FAILED');
       const finalStatus = hasFailures ? 'FAILED' : 'COMPLETED';
+
+      // Save final milestone snapshot
+      await this.context.createMilestoneSnapshot('EXECUTION_COMPLETE');
+
+      // Run correlation engine
+      const correlationEngine = new SharedMemoryCorrelationEngine(this.prisma, sessionId);
+      await correlationEngine.runCorrelation();
+
+      // Run synthesis engine
+      const synthesisEngine = new SharedMemorySynthesisEngine(this.prisma, sessionId);
+      await synthesisEngine.runSynthesis();
 
       await this.prisma.orchestrationSession.update({
         where: { id: sessionId },

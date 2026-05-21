@@ -2,16 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design System Variables ──────────────────────────────────────────────── */
+/* ─── Fricta Design System Variables ─────────────────────────────────────────── */
 
 :root {
+  /* Core palette */
+  --fricta-mint:          #5ed29c;
+  --fricta-mint-dim:      rgba(94, 210, 156, 0.12);
+  --fricta-mint-border:   rgba(94, 210, 156, 0.22);
+  --fricta-obsidian:      #09090b;
+  --fricta-obsidian-deep: #050507;
+  --fricta-obsidian-mid:  #0d0d11;
+  --fricta-bg:            #070b0a;
+  --fricta-slate:         #141418;
+
+  /* Legacy CSS variable hooks */
   --background: 150 25% 3%;
   --foreground: 0 0% 98%;
-  --hero-sub: 40 6% 82%;
-  --accent: #5ed29c;
+  --hero-sub:   40 6% 82%;
+  --accent:     #5ed29c;
+
+  /* Semantic agent role accents */
+  --agent-visual:       #10b981;
+  --agent-nav:          #ec4899;
+  --agent-cognitive:    #eab308;
+  --agent-onboarding:   #06b6d4;
+  --agent-discover:     #8b5cf6;
+  --agent-workflow:     #84cc16;
+  --agent-orchestrator: #5ed29c;
 }
 
-/* ─── Base Layer ───────────────────────────────────────────────────────────── */
+/* ─── Base Layer ──────────────────────────────────────────────────────────────── */
 
 @layer base {
   html {
@@ -20,7 +40,7 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: #070b0a;
+    background: var(--fricta-bg);
     color: #fafafa;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -28,10 +48,110 @@
 
   ::selection {
     background: rgba(94, 210, 156, 0.25);
+    color: #fafafa;
+  }
+
+  /* Scrollbar — obsidian + mint */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #09090b;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(94, 210, 156, 0.25);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(94, 210, 156, 0.45);
   }
 }
 
-/* ─── Liquid Glass Utility ─────────────────────────────────────────────────── */
+/* ─── Fricta Intelligence Panel Utilities ─────────────────────────────────────── */
+
+@layer utilities {
+  /* Thin top-edge gradient accent line for panels */
+  .fricta-panel-edge::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(94, 210, 156, 0.35),
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  /* Mint glow ambient on interactive elements */
+  .fricta-glow-mint {
+    filter: drop-shadow(0 0 8px rgba(94, 210, 156, 0.4));
+  }
+
+  /* Obsidian glass surface */
+  .fricta-surface {
+    background: rgba(9, 9, 11, 0.80);
+    border: 1px solid #27272a;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Active mint outline ring */
+  .fricta-ring-mint {
+    outline: 1.5px solid rgba(94, 210, 156, 0.45);
+    outline-offset: 2px;
+  }
+}
+
+/* ─── Flow Line Animation (Agent Topology SVG) ────────────────────────────────── */
+
+@keyframes flow-line-dash {
+  to { stroke-dashoffset: -20; }
+}
+
+.flow-line-active {
+  stroke-dasharray: 6, 4;
+  animation: flow-line-dash 1.2s linear infinite;
+}
+
+/* ─── Slow Spin ───────────────────────────────────────────────────────────────── */
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* ─── Marquee Animation ───────────────────────────────────────────────────────── */
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 20s linear infinite;
+}
+
+/* ─── Pulse Indicator ─────────────────────────────────────────────────────────── */
+
+@keyframes fricta-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.fricta-pulse {
+  animation: fricta-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Liquid Glass Utility ────────────────────────────────────────────────────── */
 
 .liquid-glass {
   background: rgba(255, 255, 255, 0.01);
@@ -53,8 +173,8 @@
     180deg,
     rgba(255, 255, 255, 0.45) 0%,
     rgba(255, 255, 255, 0.15) 20%,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0)    40%,
+    rgba(255, 255, 255, 0)    60%,
     rgba(255, 255, 255, 0.15) 80%,
     rgba(255, 255, 255, 0.45) 100%
   );
@@ -66,22 +186,7 @@
   pointer-events: none;
 }
 
-/* ─── Marquee Animation ────────────────────────────────────────────────────── */
-
-@keyframes marquee-scroll {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-marquee {
-  animation: marquee-scroll 20s linear infinite;
-}
-
-/* ─── Hero Secondary Button ────────────────────────────────────────────────── */
+/* ─── Button Utilities ────────────────────────────────────────────────────────── */
 
 .btn-hero-secondary {
   background: rgba(255, 255, 255, 0.06);
@@ -91,12 +196,10 @@
 }
 
 .btn-hero-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.18);
   box-shadow: 0 0 24px rgba(94, 210, 156, 0.08);
 }
-
-/* ─── Primary CTA Button ──────────────────────────────────────────────────── */
 
 .btn-primary-cta {
   background: #5ed29c;
@@ -109,11 +212,11 @@
 
 .btn-primary-cta:hover {
   background: #6edba8;
-  box-shadow: 0 0 32px rgba(94, 210, 156, 0.2);
+  box-shadow: 0 0 32px rgba(94, 210, 156, 0.25);
   transform: translateY(-1px);
 }
 
-/* ─── Navbar Divider ───────────────────────────────────────────────────────── */
+/* ─── Navbar Divider ──────────────────────────────────────────────────────────── */
 
 .navbar-divider {
   height: 1px;

@@ -11,10 +11,10 @@ export const Dashboard = () => {
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Total Runs', value: '1,248', icon: Activity, color: 'text-blue-500' },
-          { label: 'Avg UX Score', value: '84/100', icon: CheckCircle2, color: 'text-green-500' },
-          { label: 'Critical Issues', value: '12', icon: AlertCircle, color: 'text-red-500' },
-          { label: 'Testing Hours', value: '340h', icon: Clock, color: 'text-purple-500' },
+          { label: 'Total Runs', value: '1,248', icon: Activity, color: 'text-[#5ed29c]' },
+          { label: 'Avg UX Score', value: '84/100', icon: CheckCircle2, color: 'text-emerald-400' },
+          { label: 'Critical Issues', value: '12', icon: AlertCircle, color: 'text-rose-400' },
+          { label: 'Testing Hours', value: '340h', icon: Clock, color: 'text-amber-400' },
         ].map((stat, i) => (
           <div key={i} className="bg-card border border-border p-6 rounded-xl flex items-start justify-between">
             <div>
@@ -64,7 +64,7 @@ export const Dashboard = () => {
               <h3 className="font-medium">Run New Test</h3>
               <p className="text-sm text-foreground/60 mt-1">Deploy an AI agent to test a specific user flow.</p>
             </div>
-            <button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-md font-medium transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]">
+            <button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2 rounded-md font-medium transition-all shadow-mint-glow">
               Configure Run
             </button>
           </div>

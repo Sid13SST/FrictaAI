@@ -1,72 +1,213 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Activity, LayoutDashboard, PlaySquare, FileText, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 
 export const DashboardLayout = () => {
   const location = useLocation();
   const { user, isLoaded } = useUser();
-  
+
   const navItems = [
-    { name: 'Dashboard', path: '/app', icon: LayoutDashboard },
-    { name: 'Run Test', path: '/app/workflow', icon: PlaySquare },
-    { name: 'Reports', path: '/app/reports', icon: FileText },
-    { name: 'Personas', path: '/app/personas', icon: Users },
-    { name: 'Settings', path: '/app/settings', icon: Settings },
+    { name: 'Dashboard',  path: '/app',             icon: LayoutDashboard, desc: 'Overview' },
+    { name: 'Run Test',   path: '/app/workflow',     icon: PlaySquare,      desc: 'UX Audit' },
+    { name: 'Reports',    path: '/app/reports',      icon: FileText,        desc: 'Analysis' },
+    { name: 'Personas',   path: '/app/personas',     icon: Users,           desc: 'Profiles' },
+    { name: 'Settings',   path: '/app/settings',     icon: Settings,        desc: 'Config' },
   ];
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card/50 backdrop-blur-xl flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-border">
-          <img src="/logo.png" alt="Fricta Logo" className="w-8 h-8 mr-2 rounded-md object-cover" />
-          <span className="font-semibold text-lg tracking-tight">Fricta</span>
+    <div className="flex h-screen" style={{ background: 'var(--fricta-bg)' }}>
+
+      {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
+      <aside
+        className="w-60 flex flex-col relative"
+        style={{
+          background: 'var(--fricta-obsidian)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        {/* Subtle right-edge glow */}
+        <div
+          className="absolute inset-y-0 right-0 w-[1px] pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(94,210,156,0.12), transparent)' }}
+        />
+
+        {/* Logo */}
+        <div
+          className="h-16 flex items-center px-5 gap-3 flex-shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              background: 'rgba(94,210,156,0.1)',
+              border: '1px solid rgba(94,210,156,0.25)',
+            }}
+          >
+            <Brain className="w-4 h-4" style={{ color: '#5ed29c' }} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-sm tracking-tight leading-none">Fricta</span>
+            <span
+              className="text-[9px] font-mono uppercase tracking-widest leading-none mt-0.5"
+              style={{ color: 'rgba(94,210,156,0.6)' }}
+            >
+              Intelligence
+            </span>
+          </div>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+
+        {/* Nav */}
+        <nav className="flex-1 p-3 flex flex-col gap-0.5 mt-1">
+          <div
+            className="text-[9px] font-black uppercase tracking-widest px-3 py-2 mb-1 font-mono"
+            style={{ color: 'rgba(255,255,255,0.25)' }}
+          >
+            Platform
+          </div>
+
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path
+              || (item.path !== '/app' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
+
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-foreground/70 hover:bg-white/5 hover:text-foreground'
-                }`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative"
+                style={{
+                  background: isActive ? 'rgba(94,210,156,0.08)' : 'transparent',
+                  border: isActive ? '1px solid rgba(94,210,156,0.18)' : '1px solid transparent',
+                }}
               >
-                <Icon className="w-4 h-4 mr-3" />
-                {item.name}
+                {/* Active left indicator bar */}
+                {isActive && (
+                  <div
+                    className="absolute left-0 top-1/4 bottom-1/4 w-[2.5px] rounded-full"
+                    style={{ background: '#5ed29c' }}
+                  />
+                )}
+
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                  style={{
+                    background: isActive ? 'rgba(94,210,156,0.12)' : 'rgba(255,255,255,0.04)',
+                    border: isActive
+                      ? '1px solid rgba(94,210,156,0.25)'
+                      : '1px solid rgba(255,255,255,0.06)',
+                    color: isActive ? '#5ed29c' : 'rgba(255,255,255,0.45)',
+                  }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+
+                <div className="flex flex-col leading-none">
+                  <span
+                    className="text-xs font-semibold transition-colors duration-200"
+                    style={{ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)' }}
+                  >
+                    {item.name}
+                  </span>
+                  <span
+                    className="text-[9px] font-mono mt-0.5"
+                    style={{ color: 'rgba(255,255,255,0.25)' }}
+                  >
+                    {item.desc}
+                  </span>
+                </div>
+
+                {isActive && (
+                  <ChevronRight
+                    className="w-3 h-3 ml-auto"
+                    style={{ color: 'rgba(94,210,156,0.5)' }}
+                  />
+                )}
               </Link>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center px-3 py-2">
+
+        {/* User profile footer */}
+        <div
+          className="p-3 flex-shrink-0"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <div
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.03)' }}
+          >
             <UserButton afterSignOutUrl="/" />
             {isLoaded && user && (
-              <div className="ml-3 text-sm overflow-hidden">
-                <p className="font-medium truncate">{user.fullName || 'User'}</p>
-                <p className="text-foreground/50 text-xs truncate">{user.primaryEmailAddress?.emailAddress}</p>
+              <div className="flex flex-col overflow-hidden flex-1">
+                <p className="text-xs font-semibold text-white truncate leading-tight">
+                  {user.fullName || 'User'}
+                </p>
+                <p
+                  className="text-[9px] font-mono truncate mt-0.5"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                >
+                  {user.primaryEmailAddress?.emailAddress}
+                </p>
               </div>
             )}
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main Content ──────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm flex items-center px-8 justify-between">
-          <h2 className="text-lg font-medium">Project Alpha</h2>
-          <div className="flex items-center space-x-4">
-            <button className="text-sm text-foreground/70 hover:text-foreground transition-colors">Documentation</button>
-            <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]">
-              Upgrade
-            </button>
+
+        {/* Top header bar */}
+        <header
+          className="h-14 flex items-center px-8 justify-between flex-shrink-0"
+          style={{
+            background: 'rgba(7,11,10,0.85)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          {/* Active route breadcrumb */}
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-mono uppercase tracking-widest font-bold"
+              style={{ color: 'rgba(94,210,156,0.6)' }}
+            >
+              Fricta
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
+            <span className="text-xs font-semibold text-white">
+              {navItems.find(n =>
+                n.path !== '/app'
+                  ? location.pathname.startsWith(n.path)
+                  : location.pathname === n.path
+              )?.name ?? 'Dashboard'}
+            </span>
+          </div>
+
+          {/* Right-side actions */}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold"
+              style={{
+                background: 'rgba(94,210,156,0.06)',
+                border: '1px solid rgba(94,210,156,0.15)',
+                color: 'rgba(94,210,156,0.8)',
+              }}
+            >
+              <div
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ background: '#5ed29c', boxShadow: '0 0 6px rgba(94,210,156,0.6)' }}
+              />
+              SYSTEM ACTIVE
+            </div>
           </div>
         </header>
-        <div className="flex-1 overflow-auto p-8">
+
+        {/* Page content */}
+        <div
+          className="flex-1 overflow-auto p-8"
+          style={{ background: 'var(--fricta-bg)' }}
+        >
           <Outlet />
         </div>
       </main>

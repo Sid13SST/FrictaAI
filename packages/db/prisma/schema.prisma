@@ -276,6 +276,10 @@ model OrchestrationSession {
   agentExecutions     AgentExecution[]
   delegationEvents    DelegationEvent[]
   sharedContextEvents SharedContextEvent[]
+  sharedMemoryEvents  SharedMemoryEvent[]
+  correlatedFindings  CorrelatedFinding[]
+  collaborativeInsights CollaborativeInsight[]
+  memorySnapshots     MemorySnapshot[]
 }
 
 model AgentExecution {
@@ -354,3 +358,51 @@ model AgentReasoningTrace {
 
   agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
 }
+
+model SharedMemoryEvent {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  eventType              String
+  sourceAgent            String
+  payload                Json
+  timestamp              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model CorrelatedFinding {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  findingIds             Json
+  correlationType        String
+  summary                String
+  confidence             Float
+  metadata               Json?
+  timestamp              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model CollaborativeInsight {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  title                  String
+  summary                String
+  supportingEvidence     String
+  severity               String
+  confidence             Float
+  timestamp              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model MemorySnapshot {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  snapshotType           String
+  payload                Json
+  createdAt              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+

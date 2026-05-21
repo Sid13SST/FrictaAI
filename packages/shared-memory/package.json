@@ -1,5 +1,5 @@
 {
-  "name": "@fricta/orchestrator",
+  "name": "@fricta/shared-memory",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -13,12 +13,6 @@
   },
   "dependencies": {
     "@fricta/db": "*",
-    "@fricta/types": "*",
-    "@fricta/ux-intelligence": "*",
-    "@fricta/visual-intelligence": "*",
-    "@fricta/report-engine": "*",
-    "@fricta/ux-engine": "*",
-    "@fricta/agents": "*",
-    "@fricta/shared-memory": "*"
+    "@fricta/types": "*"
   }
 }
