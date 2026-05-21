@@ -5,3 +5,7 @@ dist
 .turbo
 Coverage
 *.log
+
+# Storage & screenshots
+storage/
+

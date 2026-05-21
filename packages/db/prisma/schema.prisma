@@ -52,6 +52,8 @@ model WorkflowSession {
   recommendations UXRecommendation[]
   scores       UXScore[]
   metrics      WorkflowMetrics?
+  visualFindings VisualFinding[]
+  visualScores   VisualScore[]
 }
 
 model AgentThought {
@@ -115,6 +117,7 @@ model WorkflowScreenshot {
 
   session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
   timelineEvents    ScreenshotTimelineEvent[]
+  visualFindings    VisualFinding[]
 }
 
 model ScreenshotTimelineEvent {
@@ -192,4 +195,33 @@ model PlatformUsage {
   createdAt     DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VisualFinding {
+  id                String             @id @default(uuid())
+  workflowSessionId String
+  screenshotId      String
+  findingType       String
+  severity          String
+  title             String
+  description       String
+  boundingBoxes     Json               // list of { x, y, width, height, label }
+  metadata          Json
+  timestamp         DateTime           @default(now())
+
+  session           WorkflowSession    @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  screenshot        WorkflowScreenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+}
+
+model VisualScore {
+  id                    String          @id @default(uuid())
+  workflowSessionId     String
+  clarityScore          Float
+  discoverabilityScore  Float
+  layoutBalanceScore    Float
+  navigationScore       Float
+  overallScore          Float
+  createdAt             DateTime        @default(now())
+
+  session               WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
