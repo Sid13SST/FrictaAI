@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, FileText } from 'lucide-react';
+import { ArrowLeft, RefreshCw, FileText, Brain } from 'lucide-react';
 import { UXScoreCards } from '../components/reports/UXScoreCards';
 import { FrictionTimeline } from '../components/reports/FrictionTimeline';
 import { SessionReplayTimeline } from '../components/reports/SessionReplayTimeline';
 import { VisualReplayViewer } from '../components/reports/VisualReplayViewer';
 import { RecommendationCards } from '../components/reports/RecommendationCards';
 import { WorkflowGraph } from '../components/reports/WorkflowGraph';
+import { UXIntelligenceTab } from '../components/reports/UXIntelligenceTab';
 
 export default function ReportDetails() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<any>(null);
   const [timeline, setTimeline] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'REPLAY' | 'UX_HEURISTICS'>('REPLAY');
 
   const fetchReport = async () => {
     try {
@@ -111,28 +113,54 @@ export default function ReportDetails() {
 
       <UXScoreCards scores={scores || { overallScore: 0, clarityScore: 0, efficiencyScore: 0, smoothnessScore: 0 }} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="lg:col-span-2 space-y-8">
-          <section>
-            <h2 className="text-xl font-semibold mb-4 text-slate-200">Actionable UX Recommendations</h2>
-            <RecommendationCards recommendations={recommendations || []} />
-          </section>
-
-          <section>
-            <FrictionTimeline signals={signals || []} />
-          </section>
-        </div>
-
-        <div className="space-y-8">
-          <WorkflowGraph actions={timeline?.actions || []} />
-          <SessionReplayTimeline events={combinedEvents} />
-        </div>
+      {/* Tab Switcher */}
+      <div className="flex border-b border-slate-800 mb-8 space-x-8">
+        <button 
+          onClick={() => setActiveTab('REPLAY')}
+          className={`pb-4 text-sm font-semibold border-b-2 transition-all ${
+            activeTab === 'REPLAY' ? 'border-blue-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Session Replay
+        </button>
+        <button 
+          onClick={() => setActiveTab('UX_HEURISTICS')}
+          className={`pb-4 text-sm font-semibold border-b-2 transition-all flex items-center ${
+            activeTab === 'UX_HEURISTICS' ? 'border-indigo-500 text-white animate-pulse' : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Brain className="w-4 h-4 mr-2" /> UX Heuristics Engine
+        </button>
       </div>
 
-      {session && (
-        <section className="mt-8">
-          <VisualReplayViewer sessionId={session.id} />
-        </section>
+      {activeTab === 'REPLAY' ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="lg:col-span-2 space-y-8">
+              <section>
+                <h2 className="text-xl font-semibold mb-4 text-slate-200">Actionable UX Recommendations</h2>
+                <RecommendationCards recommendations={recommendations || []} />
+              </section>
+
+              <section>
+                <FrictionTimeline signals={signals || []} />
+              </section>
+            </div>
+
+            <div className="space-y-8">
+              <WorkflowGraph actions={timeline?.actions || []} />
+              <SessionReplayTimeline events={combinedEvents} />
+            </div>
+          </div>
+
+          {session && (
+            <section className="mt-8">
+              <VisualReplayViewer sessionId={session.id} />
+            </section>
+          )}
+        </>
+      ) : (
+        session && <UXIntelligenceTab sessionId={session.id} />
       )}
     </div>
   );

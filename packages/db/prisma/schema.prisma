@@ -54,6 +54,8 @@ model WorkflowSession {
   metrics      WorkflowMetrics?
   visualFindings VisualFinding[]
   visualScores   VisualScore[]
+  uxFindings     UXFinding[]
+  cognitiveSignals CognitiveSignal[]
 }
 
 model AgentThought {
@@ -224,4 +226,38 @@ model VisualScore {
   createdAt             DateTime        @default(now())
 
   session               WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model UXFinding {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  findingType       String          // e.g., "HESITATION", "NAVIGATION_LOOP", "CTA_AMBIGUITY", "ONBOARDING_FRICTION", "FORM_FRICTION", "COMPLEXITY", "IA_CONFUSION"
+  severity          String          // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  personaType       String          // "BEGINNER" | "POWER_USER" | "FIRST_TIME_USER" | "DISTRACTED_USER" | "STANDARD"
+  title             String
+  description       String
+  evidence          String          // Evidence details/steps where it occurred
+  recommendation    String          // Actionable UX improvement
+  timestamp         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model CognitiveSignal {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  signalType        String          // "COGNITIVE_OVERLOAD" | "DECISION_FATIGUE" | "WORKFLOW_DENSITY" | "DISCOVERABILITY_FRICTION" | "BRANCHING_DEPTH"
+  intensity         Float           // Value from 0.0 to 1.0 representing signal intensity
+  metadata          Json?
+  timestamp         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model PersonaProfile {
+  id                String   @id @default(uuid())
+  name              String   // e.g., "Beginner Teacher", "Power User", "First-Time User"
+  description       String
+  traits            Json     // List of traits
+  behaviorModifiers Json     // Numerical thresholds/weights
 }

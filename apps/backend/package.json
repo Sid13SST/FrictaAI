@@ -12,6 +12,7 @@
     "@fricta/mcp": "*",
     "@fricta/types": "*",
     "@fricta/ux-engine": "*",
+    "@fricta/ux-intelligence": "*",
     "@fricta/visual-engine": "*",
     "@fricta/visual-intelligence": "*",
     "@hono/node-server": "^1.11.1",
