@@ -134,51 +134,91 @@ export class VisualIntelligenceCoordinator {
     const triggerAI = options.forceAIVision || (hasAmbiguity && options.absoluteImagePath && process.env.OPENROUTER_API_KEY);
 
     if (triggerAI && options.absoluteImagePath) {
-      console.info(`[VisualIntelligenceCoordinator] Ambiguity or force flag detected. Invoking AI Vision on screenshot: ${screenshotId}`);
-      
-      const contextPrompt = `
+      // Check if we already have cached vision findings in the database for this screenshot
+      let cachedFindings: any[] = [];
+      if (this.prisma) {
+        cachedFindings = await this.prisma.visualFinding.findMany({
+          where: {
+            screenshotId,
+            findingType: { in: ['vision_finding', 'vision_summary'] }
+          }
+        });
+      }
+
+      if (cachedFindings.length > 0 && !options.forceAIVision) {
+        console.info(`[VisualIntelligenceCoordinator] Found cached AI Vision findings for screenshot: ${screenshotId}. Skipping slow API call.`);
+        aiUsed = true;
+        cachedFindings.forEach((cf: any) => {
+          findings.push({
+            screenshotId,
+            findingType: cf.findingType,
+            severity: cf.severity,
+            title: cf.title,
+            description: cf.description,
+            boundingBoxes: cf.boundingBoxes as any,
+            metadata: cf.metadata as any
+          });
+        });
+      } else {
+        console.info(`[VisualIntelligenceCoordinator] Ambiguity or force flag detected. Invoking AI Vision on screenshot: ${screenshotId}`);
+        
+        const contextPrompt = `
 Deterministic heuristics found the following layout issues:
 ${findings.map(f => `- [${f.severity}] ${f.title}: ${f.description}`).join('\n')}
 
 Please review the visual presentation and provide deep structural insights on overlapping elements, discoverability hurdles, clarity friction, and cognitive density.
 `;
-      
-      visionResult = await this.aiAnalyzer.analyzeScreenshot(options.absoluteImagePath, contextPrompt);
-      
-      if (visionResult && visionResult.rawResponse) {
-        aiUsed = true;
+        
+        visionResult = await this.aiAnalyzer.analyzeScreenshot(options.absoluteImagePath, contextPrompt);
+        
+        if (visionResult) {
+          aiUsed = true;
 
-        // Map AI annotated boxes into visual observations
-        if (visionResult.annotatedBoxes && visionResult.annotatedBoxes.length > 0) {
-          visionResult.annotatedBoxes.forEach((box: any, index: number) => {
+          if (visionResult.rawResponse) {
+            // Map AI annotated boxes into visual observations
+            if (visionResult.annotatedBoxes && visionResult.annotatedBoxes.length > 0) {
+              visionResult.annotatedBoxes.forEach((box: any, index: number) => {
+                findings.push({
+                  screenshotId,
+                  findingType: 'vision_finding',
+                  severity: 'medium',
+                  title: box.label || `Visual Issue ${index + 1}`,
+                  description: visionResult?.explanation || 'Detected via visual intelligence model.',
+                  boundingBoxes: [{
+                    x: box.x,
+                    y: box.y,
+                    w: box.w,
+                    h: box.h,
+                    label: box.label || 'Issue area'
+                  }],
+                  metadata: { source: 'openrouter-vision', explanation: visionResult?.explanation }
+                });
+              });
+            }
+
+            // Add a general observation for the feedback
             findings.push({
               screenshotId,
-              findingType: 'vision_finding',
-              severity: 'medium',
-              title: box.label || `Visual Issue ${index + 1}`,
-              description: visionResult?.explanation || 'Detected via visual intelligence model.',
-              boundingBoxes: [{
-                x: box.x,
-                y: box.y,
-                w: box.w,
-                h: box.h,
-                label: box.label || 'Issue area'
-              }],
-              metadata: { source: 'openrouter-vision', explanation: visionResult?.explanation }
+              findingType: 'vision_summary',
+              severity: 'low',
+              title: 'AI Visual Feedback',
+              description: visionResult.clarityFeedback,
+              boundingBoxes: [],
+              metadata: { explanation: visionResult.explanation }
             });
-          });
+          } else {
+            // Cache the fallback/skipped analysis to avoid repeatedly hitting failing API calls
+            findings.push({
+              screenshotId,
+              findingType: 'vision_summary',
+              severity: 'low',
+              title: 'AI Visual Analysis Fallback',
+              description: visionResult.clarityFeedback,
+              boundingBoxes: [],
+              metadata: { explanation: visionResult.explanation, failed: true }
+            });
+          }
         }
-
-        // Add a general observation for the feedback
-        findings.push({
-          screenshotId,
-          findingType: 'vision_summary',
-          severity: 'low',
-          title: 'AI Visual Feedback',
-          description: visionResult.clarityFeedback,
-          boundingBoxes: [],
-          metadata: { explanation: visionResult.explanation }
-        });
       }
     }
 
@@ -232,23 +272,29 @@ Please review the visual presentation and provide deep structural insights on ov
       storageDir = path.join(root, 'storage');
     }
 
-    // Analyze each screenshot
-    for (const screenshot of screenshots) {
-      const absoluteImagePath = path.join(storageDir, screenshot.filePath);
-      
-      try {
-        const { findings, aiUsed } = await this.analyzeScreenshot(screenshot.id, {
-          absoluteImagePath,
-          forceAIVision: options.forceAIVision
-        });
+    // Analyze screenshots concurrently
+    const analysisResults = await Promise.all(
+      screenshots.map(async (screenshot) => {
+        const absoluteImagePath = path.join(storageDir!, screenshot.filePath);
+        try {
+          const res = await this.analyzeScreenshot(screenshot.id, {
+            absoluteImagePath,
+            forceAIVision: options.forceAIVision
+          });
+          return res;
+        } catch (err: any) {
+          console.error(`[VisualIntelligenceCoordinator] Failed to analyze screenshot ${screenshot.id}:`, err.message);
+          return null;
+        }
+      })
+    );
 
-        if (aiUsed) {
+    for (const res of analysisResults) {
+      if (res) {
+        if (res.aiUsed) {
           sessionAiUsed = true;
         }
-
-        allFindings.push(...findings);
-      } catch (err: any) {
-        console.error(`[VisualIntelligenceCoordinator] Failed to analyze screenshot ${screenshot.id}:`, err.message);
+        allFindings.push(...res.findings);
       }
     }
 

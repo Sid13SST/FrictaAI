@@ -22,7 +22,7 @@ export interface VisionAnalysisResult {
   clarityFeedback: string;
 }
 
-const DEFAULT_MODEL = 'google/gemini-flash-1.5';
+const DEFAULT_MODEL = 'google/gemini-2.5-flash';
 const DEFAULT_MAX_TOKENS = 500;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -89,39 +89,53 @@ Provide your response in raw JSON format inside a JSON code block:
 Note: All coordinates in "annotatedBoxes" must represent bounding box percentages or pixels relative to the screenshot's dimensions (assume standard viewport 1280x720 if unsure). If there are no issues or specific elements to point out, return an empty array for "annotatedBoxes".
 `;
 
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://fricta.ai',
-          'X-Title': 'Fricta AI UX Visual Intelligence',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: prompt,
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${mimeType};base64,${base64Image}`,
-                    detail: 'low' // Optimize token usage & cost
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      let response: Response;
+      try {
+        response = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://fricta.ai',
+            'X-Title': 'Fricta AI UX Visual Intelligence',
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: prompt,
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Image}`,
+                      detail: 'low' // Optimize token usage & cost
+                    }
                   }
-                }
-              ]
-            }
-          ],
-          max_tokens: this.maxTokens,
-          temperature: this.temperature,
-          response_format: { type: 'json_object' }
-        })
-      });
+                ]
+              }
+            ],
+            max_tokens: this.maxTokens,
+            temperature: this.temperature,
+            response_format: { type: 'json_object' }
+          }),
+          signal: controller.signal
+        });
+      } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError') {
+          throw new Error('OpenRouter request timed out after 8 seconds');
+        }
+        throw fetchError;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();

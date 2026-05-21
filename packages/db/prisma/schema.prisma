@@ -56,6 +56,7 @@ model WorkflowSession {
   visualScores   VisualScore[]
   uxFindings     UXFinding[]
   cognitiveSignals CognitiveSignal[]
+  orchestrationSessions OrchestrationSession[]
 }
 
 model AgentThought {
@@ -260,4 +261,56 @@ model PersonaProfile {
   description       String
   traits            Json     // List of traits
   behaviorModifiers Json     // Numerical thresholds/weights
+}
+
+model OrchestrationSession {
+  id                  String               @id @default(uuid())
+  workflowSessionId   String
+  status              String               @default("PENDING")
+  startedAt           DateTime?
+  completedAt         DateTime?
+  metadata            Json?
+  createdAt           DateTime             @default(now())
+
+  workflowSession     WorkflowSession      @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  agentExecutions     AgentExecution[]
+  delegationEvents    DelegationEvent[]
+  sharedContextEvents SharedContextEvent[]
+}
+
+model AgentExecution {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  agentType              String
+  status                 String               @default("IDLE") // IDLE, QUEUED, RUNNING, WAITING, COMPLETED, FAILED, CANCELLED
+  task                   String
+  result                 Json?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  metadata               Json?
+  createdAt              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model DelegationEvent {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  fromAgent              String
+  toAgent                String
+  eventType              String
+  payload                Json?
+  timestamp              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model SharedContextEvent {
+  id                     String               @id @default(uuid())
+  orchestrationSessionId String
+  eventType              String
+  payload                Json?
+  timestamp              DateTime             @default(now())
+
+  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }

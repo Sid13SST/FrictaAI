@@ -5,13 +5,14 @@ import { PersonaComparisonPanel } from '../personas/PersonaComparisonPanel';
 import { GlobalInsightEngine } from '../insights/GlobalInsightEngine';
 import { CorrelatedTimeline } from '../timeline/CorrelatedTimeline';
 import { FrictionProgressionGraph } from '../visuals/FrictionProgressionGraph';
+import { AgentOrchestrationConsole } from '../orchestrator/AgentOrchestrationConsole';
 
 interface UnifiedReportViewerProps {
   sessionId: string;
 }
 
 export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessionId }) => {
-  const [activeTab, setActiveTab] = useState<'replay' | 'timeline' | 'personas' | 'insights'>('replay');
+  const [activeTab, setActiveTab] = useState<'replay' | 'timeline' | 'personas' | 'insights' | 'orchestrator'>('replay');
   const [activeStep, setActiveStep] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -69,28 +70,21 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     try {
       const backendBase = 'http://127.0.0.1:3001';
       
-      // 1. Run visual analysis
-      const visualRes = await fetch(`${backendBase}/api/visual/analyze/${sessionId}`, {
+      // Trigger multi-agent orchestration
+      const res = await fetch(`${backendBase}/api/orchestrator/start/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      if (!visualRes.ok) throw new Error('Visual analysis run failed');
-
-      // 2. Run cognitive & heuristics analysis
-      const uxRes = await fetch(`${backendBase}/api/ux/analyze/${sessionId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!uxRes.ok) throw new Error('UX heuristics analysis run failed');
-
-      // 3. Generate combined report scores and summary
-      const repGenRes = await fetch(`${backendBase}/api/reports/${sessionId}/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!repGenRes.ok) throw new Error('Report regeneration failed');
       
-      // Refresh report data without showing global spinner
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || 'Failed to start orchestration session');
+      }
+
+      // Switch to orchestration tab so the user can see execution live
+      setActiveTab('orchestrator');
+      
+      // Refresh report data silently in background to show status changes
       await fetchReportData(false);
     } catch (err: any) {
       console.error(err);
@@ -266,6 +260,20 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             >
               UX Insights & Analytics
             </button>
+
+            <button
+              onClick={() => setActiveTab('orchestrator')}
+              className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
+                activeTab === 'orchestrator' 
+                  ? 'border-[#f43f5e] text-white' 
+                  : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Brain className="w-3.5 h-3.5 text-purple-400" />
+                Agent Orchestration
+              </span>
+            </button>
           </div>
 
           <button
@@ -367,6 +375,13 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
               )}
             </div>
           </div>
+        )}
+
+        {activeTab === 'orchestrator' && (
+          <AgentOrchestrationConsole 
+            sessionId={sessionId}
+            onOrchestrationComplete={() => fetchReportData(false)}
+          />
         )}
       </div>
     </div>
