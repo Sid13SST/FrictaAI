@@ -11,7 +11,7 @@ interface UnifiedReportViewerProps {
 }
 
 export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessionId }) => {
-  const [activeTab, setActiveTab] = useState<'replay' | 'personas' | 'insights'>('replay');
+  const [activeTab, setActiveTab] = useState<'replay' | 'timeline' | 'personas' | 'insights'>('replay');
   const [activeStep, setActiveStep] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -68,11 +68,27 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     setAnalyzing(true);
     try {
       const backendBase = 'http://127.0.0.1:3001';
-      const analyzeRes = await fetch(`${backendBase}/api/ux/analyze/${sessionId}`, {
+      
+      // 1. Run visual analysis
+      const visualRes = await fetch(`${backendBase}/api/visual/analyze/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      if (!analyzeRes.ok) throw new Error('Analysis run failed');
+      if (!visualRes.ok) throw new Error('Visual analysis run failed');
+
+      // 2. Run cognitive & heuristics analysis
+      const uxRes = await fetch(`${backendBase}/api/ux/analyze/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!uxRes.ok) throw new Error('UX heuristics analysis run failed');
+
+      // 3. Generate combined report scores and summary
+      const repGenRes = await fetch(`${backendBase}/api/reports/${sessionId}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!repGenRes.ok) throw new Error('Report regeneration failed');
       
       // Refresh report data without showing global spinner
       await fetchReportData(false);
@@ -219,6 +235,17 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             </button>
 
             <button
+              onClick={() => setActiveTab('timeline')}
+              className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
+                activeTab === 'timeline' 
+                  ? 'border-[#f43f5e] text-white' 
+                  : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
+              }`}
+            >
+              Correlated Event Stream
+            </button>
+
+            <button
               onClick={() => setActiveTab('personas')}
               className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
                 activeTab === 'personas' 
@@ -278,7 +305,11 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 onStepSelect={setActiveStep}
               />
             )}
+          </div>
+        )}
 
+        {activeTab === 'timeline' && (
+          <div className="flex flex-col gap-6">
             {timeline.length > 0 && (
               <CorrelatedTimeline 
                 timeline={timeline}
