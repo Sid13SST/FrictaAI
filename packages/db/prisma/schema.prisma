@@ -291,6 +291,9 @@ model AgentExecution {
   createdAt              DateTime             @default(now())
 
   orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  findings               AgentFinding[]
+  signals                AgentSignal[]
+  reasoningTraces        AgentReasoningTrace[]
 }
 
 model DelegationEvent {
@@ -313,4 +316,41 @@ model SharedContextEvent {
   timestamp              DateTime             @default(now())
 
   orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model AgentFinding {
+  id                 String          @id @default(uuid())
+  agentExecutionId   String
+  agentType          String
+  findingType        String
+  severity           String
+  title              String
+  description        String
+  evidence           String
+  correlatedFindings Json?
+  timestamp          DateTime        @default(now())
+
+  agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
+}
+
+model AgentSignal {
+  id                 String          @id @default(uuid())
+  agentExecutionId   String
+  signalType         String
+  intensity          Float
+  metadata           Json?
+  timestamp          DateTime        @default(now())
+
+  agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
+}
+
+model AgentReasoningTrace {
+  id                 String          @id @default(uuid())
+  agentExecutionId   String
+  stepType           String
+  summary            String
+  evidence           String?
+  timestamp          DateTime        @default(now())
+
+  agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
 }

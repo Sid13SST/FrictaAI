@@ -6,6 +6,14 @@ import { SharedContext } from '../memory';
 import { MessageBroker } from '../communication';
 import { TimelineRecorder } from '../timeline';
 import { OrchestrationTask, AgentType } from '../types';
+import { 
+  NavigationAgent as NavigationSpecialist,
+  OnboardingAgent as OnboardingSpecialist,
+  DiscoverabilityAgent as DiscoverabilitySpecialist,
+  CognitiveAgent as CognitiveSpecialist,
+  VisualAgent as VisualSpecialist,
+  WorkflowAgent as WorkflowSpecialist 
+} from '@fricta/agents';
 
 export abstract class BaseOrchestratedAgent {
   constructor(
@@ -18,6 +26,29 @@ export abstract class BaseOrchestratedAgent {
   ) {}
 
   abstract execute(task: OrchestrationTask): Promise<any>;
+
+  protected async fetchSessionData(): Promise<any> {
+    const session = await this.prisma.workflowSession.findUnique({
+      where: { id: this.sessionId },
+      include: {
+        actions: true,
+        interactions: true,
+        thoughts: true,
+        workflowScreenshots: true,
+        metrics: true
+      }
+    });
+    if (!session) {
+      throw new Error(`WorkflowSession ${this.sessionId} not found`);
+    }
+    return {
+      actions: session.actions,
+      interactions: session.interactions,
+      thoughts: session.thoughts,
+      screenshots: session.workflowScreenshots,
+      metrics: session.metrics || {}
+    };
+  }
 }
 
 export class VisualAuditorAgent extends BaseOrchestratedAgent {
@@ -256,3 +287,196 @@ export class UXOrchestratorAgent extends BaseOrchestratedAgent {
     };
   }
 }
+
+export class NavigationAgentWrapper extends BaseOrchestratedAgent {
+  constructor(prisma: PrismaClient, sessionId: string, context: SharedContext, broker: MessageBroker, timeline: TimelineRecorder) {
+    super(prisma, sessionId, context, broker, timeline, 'NAVIGATION_AGENT');
+  }
+
+  async execute(task: OrchestrationTask): Promise<any> {
+    await this.timeline.logEvent('ANALYSIS_STARTED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Navigation Agent specialist started analysis for session ${this.sessionId}.`
+    });
+
+    const sessionData = await this.fetchSessionData();
+    const specialist = new NavigationSpecialist();
+    const result = await specialist.execute(sessionData);
+
+    await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
+      agentType: this.agentType,
+      findingsCount: result.findings.length,
+      signalsCount: result.signals.length
+    });
+
+    await this.timeline.logEvent('FINDING_GENERATED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Navigation Agent compiled ${result.findings.length} findings and ${result.signals.length} signals.`
+    });
+
+    return result;
+  }
+}
+
+export class OnboardingAgentWrapper extends BaseOrchestratedAgent {
+  constructor(prisma: PrismaClient, sessionId: string, context: SharedContext, broker: MessageBroker, timeline: TimelineRecorder) {
+    super(prisma, sessionId, context, broker, timeline, 'ONBOARDING_AGENT');
+  }
+
+  async execute(task: OrchestrationTask): Promise<any> {
+    await this.timeline.logEvent('ANALYSIS_STARTED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Onboarding Agent specialist started analysis for session ${this.sessionId}.`
+    });
+
+    const sessionData = await this.fetchSessionData();
+    const specialist = new OnboardingSpecialist();
+    const result = await specialist.execute(sessionData);
+
+    await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
+      agentType: this.agentType,
+      findingsCount: result.findings.length,
+      signalsCount: result.signals.length
+    });
+
+    await this.timeline.logEvent('FINDING_GENERATED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Onboarding Agent compiled ${result.findings.length} findings and ${result.signals.length} signals.`
+    });
+
+    return result;
+  }
+}
+
+export class DiscoverabilityAgentWrapper extends BaseOrchestratedAgent {
+  constructor(prisma: PrismaClient, sessionId: string, context: SharedContext, broker: MessageBroker, timeline: TimelineRecorder) {
+    super(prisma, sessionId, context, broker, timeline, 'DISCOVERABILITY_AGENT');
+  }
+
+  async execute(task: OrchestrationTask): Promise<any> {
+    await this.timeline.logEvent('ANALYSIS_STARTED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Discoverability Agent specialist started analysis for session ${this.sessionId}.`
+    });
+
+    const sessionData = await this.fetchSessionData();
+    const specialist = new DiscoverabilitySpecialist();
+    const result = await specialist.execute(sessionData);
+
+    await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
+      agentType: this.agentType,
+      findingsCount: result.findings.length,
+      signalsCount: result.signals.length
+    });
+
+    await this.timeline.logEvent('FINDING_GENERATED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Discoverability Agent compiled ${result.findings.length} findings and ${result.signals.length} signals.`
+    });
+
+    return result;
+  }
+}
+
+export class CognitiveAgentWrapper extends BaseOrchestratedAgent {
+  constructor(prisma: PrismaClient, sessionId: string, context: SharedContext, broker: MessageBroker, timeline: TimelineRecorder) {
+    super(prisma, sessionId, context, broker, timeline, 'COGNITIVE_AGENT');
+  }
+
+  async execute(task: OrchestrationTask): Promise<any> {
+    await this.timeline.logEvent('ANALYSIS_STARTED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Cognitive Agent specialist started analysis for session ${this.sessionId}.`
+    });
+
+    const sessionData = await this.fetchSessionData();
+    const specialist = new CognitiveSpecialist();
+    const result = await specialist.execute(sessionData);
+
+    await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
+      agentType: this.agentType,
+      findingsCount: result.findings.length,
+      signalsCount: result.signals.length
+    });
+
+    await this.timeline.logEvent('FINDING_GENERATED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Cognitive Agent compiled ${result.findings.length} findings and ${result.signals.length} signals.`
+    });
+
+    return result;
+  }
+}
+
+export class VisualAgentWrapper extends BaseOrchestratedAgent {
+  constructor(prisma: PrismaClient, sessionId: string, context: SharedContext, broker: MessageBroker, timeline: TimelineRecorder) {
+    super(prisma, sessionId, context, broker, timeline, 'VISUAL_AGENT');
+  }
+
+  async execute(task: OrchestrationTask): Promise<any> {
+    await this.timeline.logEvent('ANALYSIS_STARTED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Visual Agent specialist started analysis for session ${this.sessionId}.`
+    });
+
+    const sessionData = await this.fetchSessionData();
+    const specialist = new VisualSpecialist();
+    const result = await specialist.execute(sessionData);
+
+    await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
+      agentType: this.agentType,
+      findingsCount: result.findings.length,
+      signalsCount: result.signals.length
+    });
+
+    await this.timeline.logEvent('FINDING_GENERATED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Visual Agent compiled ${result.findings.length} findings and ${result.signals.length} signals.`
+    });
+
+    return result;
+  }
+}
+
+export class WorkflowAgentWrapper extends BaseOrchestratedAgent {
+  constructor(prisma: PrismaClient, sessionId: string, context: SharedContext, broker: MessageBroker, timeline: TimelineRecorder) {
+    super(prisma, sessionId, context, broker, timeline, 'WORKFLOW_AGENT');
+  }
+
+  async execute(task: OrchestrationTask): Promise<any> {
+    await this.timeline.logEvent('ANALYSIS_STARTED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Workflow Agent specialist started analysis for session ${this.sessionId}.`
+    });
+
+    const sessionData = await this.fetchSessionData();
+    const specialist = new WorkflowSpecialist();
+    const result = await specialist.execute(sessionData);
+
+    await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
+      agentType: this.agentType,
+      findingsCount: result.findings.length,
+      signalsCount: result.signals.length
+    });
+
+    await this.timeline.logEvent('FINDING_GENERATED', {
+      agentType: this.agentType,
+      taskId: task.id,
+      description: `Workflow Agent compiled ${result.findings.length} findings and ${result.signals.length} signals.`
+    });
+
+    return result;
+  }
+}
+

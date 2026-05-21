@@ -10,7 +10,13 @@ export type AgentLifecycleState =
 export type AgentType = 
   | 'VISUAL_AUDITOR' 
   | 'COGNITIVE_SIMULATOR' 
-  | 'UX_ORCHESTRATOR';
+  | 'UX_ORCHESTRATOR'
+  | 'NAVIGATION_AGENT'
+  | 'ONBOARDING_AGENT'
+  | 'DISCOVERABILITY_AGENT'
+  | 'COGNITIVE_AGENT'
+  | 'VISUAL_AGENT'
+  | 'WORKFLOW_AGENT';
 
 export interface OrchestrationTask {
   id: string;

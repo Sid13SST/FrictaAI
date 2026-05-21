@@ -18,6 +18,7 @@ import { healthRoutes } from './routes/health';
 import { visualRoutes } from './routes/visual';
 import { uxRoutes } from './routes/ux';
 import { orchestratorRoutes } from './routes/orchestrator';
+import { agentsRoutes } from './routes/agents';
 import { startWorker } from '@fricta/agent';
 
 // Trigger reload for EADDRINUSE resolution
@@ -39,6 +40,8 @@ app.route('/api/visual', visualRoutes);
 app.route('/api/ux', uxRoutes);
 app.route('/api/orchestrator', orchestratorRoutes);
 app.route('/orchestrator', orchestratorRoutes);
+app.route('/api/agents', agentsRoutes);
+app.route('/agents', agentsRoutes);
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 

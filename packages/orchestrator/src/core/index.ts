@@ -5,7 +5,18 @@ import { TimelineRecorder } from '../timeline';
 import { RecoveryManager } from '../recovery';
 import { DelegationEngine } from '../delegation';
 import { TaskScheduler } from '../scheduler';
-import { BaseOrchestratedAgent, VisualAuditorAgent, CognitiveSimulatorAgent, UXOrchestratorAgent } from '../agents';
+import { 
+  BaseOrchestratedAgent, 
+  VisualAuditorAgent, 
+  CognitiveSimulatorAgent, 
+  UXOrchestratorAgent,
+  NavigationAgentWrapper,
+  OnboardingAgentWrapper,
+  DiscoverabilityAgentWrapper,
+  CognitiveAgentWrapper,
+  VisualAgentWrapper,
+  WorkflowAgentWrapper
+} from '../agents';
 import { OrchestrationTask, AgentType } from '../types';
 
 export class OrchestratorCoordinator {
@@ -120,6 +131,11 @@ export class OrchestratorCoordinator {
                 }
               });
 
+              // Persist findings, signals, and reasoning traces if they exist
+              if (result && (result.findings || result.signals || result.reasoningTraces)) {
+                await this.persistAgentOutput(task.id, task.agentType, result);
+              }
+
               // Send task completion message to broker
               await this.broker.sendMessage({
                 fromAgent: task.agentType,
@@ -226,7 +242,69 @@ export class OrchestratorCoordinator {
         return new CognitiveSimulatorAgent(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
       case 'UX_ORCHESTRATOR':
         return new UXOrchestratorAgent(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
+      case 'NAVIGATION_AGENT':
+        return new NavigationAgentWrapper(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
+      case 'ONBOARDING_AGENT':
+        return new OnboardingAgentWrapper(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
+      case 'DISCOVERABILITY_AGENT':
+        return new DiscoverabilityAgentWrapper(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
+      case 'COGNITIVE_AGENT':
+        return new CognitiveAgentWrapper(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
+      case 'VISUAL_AGENT':
+        return new VisualAgentWrapper(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
+      case 'WORKFLOW_AGENT':
+        return new WorkflowAgentWrapper(this.prisma, workflowSessionId, this.context, this.broker, this.timeline);
     }
+  }
+
+  private async persistAgentOutput(agentExecutionId: string, agentType: string, result: any): Promise<void> {
+    if (!result) return;
+    
+    const { findings, signals, reasoningTraces } = result;
+
+    await this.prisma.$transaction(async (tx) => {
+      // Clean old records for this execution to support rerun capability
+      await tx.agentFinding.deleteMany({ where: { agentExecutionId } });
+      await tx.agentSignal.deleteMany({ where: { agentExecutionId } });
+      await tx.agentReasoningTrace.deleteMany({ where: { agentExecutionId } });
+
+      if (Array.isArray(findings) && findings.length > 0) {
+        await tx.agentFinding.createMany({
+          data: findings.map((f: any) => ({
+            agentExecutionId,
+            agentType,
+            findingType: f.findingType,
+            severity: f.severity,
+            title: f.title,
+            description: f.description,
+            evidence: f.evidence || '',
+            correlatedFindings: f.correlatedFindings ? f.correlatedFindings : undefined
+          }))
+        });
+      }
+
+      if (Array.isArray(signals) && signals.length > 0) {
+        await tx.agentSignal.createMany({
+          data: signals.map((s: any) => ({
+            agentExecutionId,
+            signalType: s.signalType,
+            intensity: s.intensity,
+            metadata: s.metadata ? s.metadata : undefined
+          }))
+        });
+      }
+
+      if (Array.isArray(reasoningTraces) && reasoningTraces.length > 0) {
+        await tx.agentReasoningTrace.createMany({
+          data: reasoningTraces.map((r: any) => ({
+            agentExecutionId,
+            stepType: r.stepType,
+            summary: r.summary,
+            evidence: r.evidence || null
+          }))
+        });
+      }
+    });
   }
 
   private async executeTaskWithTimeout(agent: BaseOrchestratedAgent, task: OrchestrationTask): Promise<any> {
