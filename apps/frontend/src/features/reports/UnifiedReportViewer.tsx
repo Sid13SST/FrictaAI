@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Clipboard, PlayCircle, ShieldAlert, Sparkles, Code, FileText, Check } from 'lucide-react';
+import { Download, Clipboard, PlayCircle, ShieldAlert, Sparkles, Code, FileText, Check, Brain } from 'lucide-react';
 import { CinematicReplayViewer } from '../replay/CinematicReplayViewer';
 import { PersonaComparisonPanel } from '../personas/PersonaComparisonPanel';
 import { GlobalInsightEngine } from '../insights/GlobalInsightEngine';
@@ -22,42 +22,67 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const [executiveSummary, setExecutiveSummary] = useState<any>(null);
   const [exportData, setExportData] = useState<any>(null);
   const [timelineData, setTimelineData] = useState<any>(null);
+  const [recommendationsData, setRecommendationsData] = useState<any>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const fetchReportData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    setError(null);
+    try {
+      const backendBase = 'http://127.0.0.1:3001';
+      
+      // Fetch concurrently
+      const [repRes, execRes, expRes, timeRes, recRes] = await Promise.all([
+        fetch(`${backendBase}/api/reports/${sessionId}`),
+        fetch(`${backendBase}/api/reports/${sessionId}/executive`),
+        fetch(`${backendBase}/api/reports/${sessionId}/export`),
+        fetch(`${backendBase}/api/reports/${sessionId}/timeline`),
+        fetch(`${backendBase}/api/ux/recommendations/${sessionId}`)
+      ]);
+
+      if (!repRes.ok) throw new Error('Report dataset not found');
+
+      const rep = await repRes.json();
+      const exec = await execRes.json();
+      const exp = await expRes.json();
+      const time = await timeRes.json();
+      const rec = await recRes.json();
+
+      setReportData(rep);
+      setExecutiveSummary(exec);
+      setExportData(exp);
+      setTimelineData(time);
+      setRecommendationsData(rec);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch workflow report analytics.');
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchReport = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const backendBase = 'http://127.0.0.1:3001';
-        
-        // Fetch concurrently
-        const [repRes, execRes, expRes, timeRes] = await Promise.all([
-          fetch(`${backendBase}/api/reports/${sessionId}`),
-          fetch(`${backendBase}/api/reports/${sessionId}/executive`),
-          fetch(`${backendBase}/api/reports/${sessionId}/export`),
-          fetch(`${backendBase}/api/reports/${sessionId}/timeline`)
-        ]);
-
-        if (!repRes.ok) throw new Error('Report dataset not found');
-
-        const rep = await repRes.json();
-        const exec = await execRes.json();
-        const exp = await expRes.json();
-        const time = await timeRes.json();
-
-        setReportData(rep);
-        setExecutiveSummary(exec);
-        setExportData(exp);
-        setTimelineData(time);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch workflow report analytics.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReport();
+    fetchReportData(true);
   }, [sessionId]);
+
+  const handleRunDiagnostics = async () => {
+    setAnalyzing(true);
+    try {
+      const backendBase = 'http://127.0.0.1:3001';
+      const analyzeRes = await fetch(`${backendBase}/api/ux/analyze/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!analyzeRes.ok) throw new Error('Analysis run failed');
+      
+      // Refresh report data without showing global spinner
+      await fetchReportData(false);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to trigger UX diagnostics: ' + err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const handleCopyText = () => {
     if (exportData?.textSheet) {
@@ -179,39 +204,59 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
 
       {/* Main Panel Content & Tab Switcher */}
       <div className="xl:col-span-3 flex flex-col gap-6">
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 border-b border-[#222226] pb-px">
-          <button
-            onClick={() => setActiveTab('replay')}
-            className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
-              activeTab === 'replay' 
-                ? 'border-[#f43f5e] text-white' 
-                : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
-            }`}
-          >
-            Timeline Replay
-          </button>
+        {/* Navigation Tabs Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#222226] pb-2">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('replay')}
+              className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
+                activeTab === 'replay' 
+                  ? 'border-[#f43f5e] text-white' 
+                  : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
+              }`}
+            >
+              Timeline Replay
+            </button>
+
+            <button
+              onClick={() => setActiveTab('personas')}
+              className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
+                activeTab === 'personas' 
+                  ? 'border-[#f43f5e] text-white' 
+                  : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
+              }`}
+            >
+              Persona Simulations
+            </button>
+
+            <button
+              onClick={() => setActiveTab('insights')}
+              className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
+                activeTab === 'insights' 
+                  ? 'border-[#f43f5e] text-white' 
+                  : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
+              }`}
+            >
+              UX Insights & Analytics
+            </button>
+          </div>
 
           <button
-            onClick={() => setActiveTab('personas')}
-            className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
-              activeTab === 'personas' 
-                ? 'border-[#f43f5e] text-white' 
-                : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
-            }`}
+            onClick={handleRunDiagnostics}
+            disabled={analyzing}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#f43f5e] to-[#e11d48] hover:from-[#e11d48] hover:to-[#be123c] text-white text-xs font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 sm:mb-0"
           >
-            Persona Simulations
-          </button>
-
-          <button
-            onClick={() => setActiveTab('insights')}
-            className={`pb-3 px-4 text-xs font-medium border-b-2 transition-all relative ${
-              activeTab === 'insights' 
-                ? 'border-[#f43f5e] text-white' 
-                : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
-            }`}
-          >
-            UX Insights & Analytics
+            {analyzing ? (
+              <>
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin" />
+                <span>Running Diagnostics...</span>
+              </>
+            ) : (
+              <>
+                <Brain className="w-3.5 h-3.5" />
+                <span>Run UX Diagnostics</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -249,6 +294,9 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           <PersonaComparisonPanel 
             personaProfiles={reportData.personaProfiles}
             uxFindings={reportData.uxFindings}
+            cognitiveSignals={reportData.cognitiveSignals}
+            recommendations={recommendationsData?.recommendations || []}
+            scores={scores}
           />
         )}
 
