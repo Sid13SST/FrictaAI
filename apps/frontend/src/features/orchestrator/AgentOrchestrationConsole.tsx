@@ -408,11 +408,12 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     }
   }, [orchestrationSession]);
 
-  useEffect(() => {
-    if (terminalEndRef.current) {
-      terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [timeline, reasoning, memoryTimeline, activeConsoleTab]);
+  // Disable auto-scroll to allow free scrolling as per user request
+  // useEffect(() => {
+  //   if (terminalEndRef.current) {
+  //     terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  //   }
+  // }, [timeline, reasoning, memoryTimeline, activeConsoleTab]);
 
   const toggleFinding = (id: string) => {
     setExpandedFindings(prev => ({ ...prev, [id]: !prev[id] }));

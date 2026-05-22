@@ -157,6 +157,25 @@ const ActionChip = ({ action }: { action: Action }) => {
   );
 };
 
+// ── Panel component ────────────────────────────────────────────────────────
+const Panel = ({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
+  <div
+    className={`rounded-2xl relative overflow-hidden ${className}`}
+    style={{
+      background: 'rgba(9,9,11,0.80)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      ...style,
+    }}
+  >
+    {/* Top mint edge line */}
+    <div
+      className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+      style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.22), transparent)' }}
+    />
+    {children}
+  </div>
+);
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export const WorkflowRunner = () => {
@@ -183,8 +202,8 @@ export const WorkflowRunner = () => {
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-scroll thoughts
-  useEffect(() => { thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [thoughts]);
+  // Auto-scroll thoughts (disabled to allow free scrolling as per user request)
+  // useEffect(() => { thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [thoughts]);
 
   // Fetch projects on mount
   useEffect(() => { fetchProjects(); }, []);
@@ -280,25 +299,6 @@ export const WorkflowRunner = () => {
 
   const currentStatus = sessionStatus?.status ?? (uiStatus === 'running' ? 'RUNNING' : 'idle');
   const statusCfg = STATUS_CONFIG[currentStatus] ?? STATUS_CONFIG['idle'];
-
-  // ── Panel component ────────────────────────────────────────────────────────
-  const Panel = ({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
-    <div
-      className={`rounded-2xl relative overflow-hidden ${className}`}
-      style={{
-        background: 'rgba(9,9,11,0.80)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        ...style,
-      }}
-    >
-      {/* Top mint edge line */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-        style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.22), transparent)' }}
-      />
-      {children}
-    </div>
-  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
