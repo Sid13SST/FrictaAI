@@ -421,20 +421,20 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
   const getAgentStatusBadge = (status: AgentExecution['status']) => {
     switch (status) {
       case 'COMPLETED':
-        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20">COMPLETED</span>;
+        return <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20">COMPLETED</span>;
       case 'RUNNING':
         return (
-          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 animate-pulse">
-            <span className="w-1 h-1 rounded-full bg-emerald-400" />
+          <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             RUNNING
           </span>
         );
       case 'QUEUED':
-        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">QUEUED</span>;
+        return <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">QUEUED</span>;
       case 'FAILED':
-        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">FAILED</span>;
+        return <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">FAILED</span>;
       default:
-        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-zinc-800/80 text-zinc-400 border border-zinc-700/60">IDLE</span>;
+        return <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-zinc-800/80 text-zinc-400 border border-zinc-700/60">IDLE</span>;
     }
   };
 
@@ -471,7 +471,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     VISUAL_AGENT: {
       name: 'Visual Agent',
       description: 'Audits layout structures, visual density, overlaps, grid alignment, and visual hierarchy friction.',
-      icon: <Eye className="w-4 h-4" />,
+      icon: <Eye className="w-5 h-5" />,
       heuristics: [
         'Grid Alignment Consistency',
         'Element Overlap Detection',
@@ -487,7 +487,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     DISCOVERABILITY_AGENT: {
       name: 'Discoverability Agent',
       description: 'Measures Call-To-Action exposure, button contrast prominence, features search, and affordance ambiguity.',
-      icon: <Sparkles className="w-4 h-4" />,
+      icon: <Sparkles className="w-5 h-5" />,
       heuristics: [
         'CTA Area Prominence Heuristics',
         'Interactive Affordance Verification',
@@ -502,7 +502,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     NAVIGATION_AGENT: {
       name: 'Navigation Agent',
       description: 'Evaluates navigation loops, route switches without action progress, dead-ends, and sidebar IA.',
-      icon: <Network className="w-4 h-4" />,
+      icon: <Network className="w-5 h-5" />,
       heuristics: [
         'Sequential Route Loop Detector',
         'Dead-end Action Inspector',
@@ -517,7 +517,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     ONBOARDING_AGENT: {
       name: 'Onboarding Agent',
       description: 'Audits form setup progression, guidance banner presence, progressive disclosure, and first step hesitation.',
-      icon: <Sliders className="w-4 h-4" />,
+      icon: <Sliders className="w-5 h-5" />,
       heuristics: [
         'Guidance Banner Presence index',
         'Empty State Progression audit',
@@ -532,7 +532,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     COGNITIVE_AGENT: {
       name: 'Cognitive Agent',
       description: 'Simulates user mental models, decision counts, and form element input density overload.',
-      icon: <Cpu className="w-4 h-4" />,
+      icon: <Cpu className="w-5 h-5" />,
       heuristics: [
         'Mental Model Simulation',
         'Decision Fatigue Tracker',
@@ -547,7 +547,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     WORKFLOW_AGENT: {
       name: 'Workflow Agent',
       description: 'Audits redundant steps, progressive bottlenecks, and schedules process flow optimizations.',
-      icon: <Activity className="w-4 h-4" />,
+      icon: <Activity className="w-5 h-5" />,
       heuristics: [
         'Step Redundancy auditor',
         'Progression Bottleneck tracer',
@@ -562,7 +562,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     UX_ORCHESTRATOR: {
       name: 'UX Orchestrator',
       description: 'Runs final synthesis, aggregates specialized findings, and generates unified scorecards.',
-      icon: <Brain className="w-4 h-4" />,
+      icon: <Brain className="w-5 h-5" />,
       heuristics: [
         'Consolidated Grade Sheet Generator',
         'Executive Summary Synthesizer'
@@ -678,28 +678,31 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
   // Topology node coords
   const nodeCoords: Record<string, { x: number; y: number }> = {
-    VISUAL_AGENT: { x: 120, y: 65 },
-    DISCOVERABILITY_AGENT: { x: 280, y: 65 },
-    NAVIGATION_AGENT: { x: 440, y: 65 },
-    ONBOARDING_AGENT: { x: 120, y: 195 },
-    COGNITIVE_AGENT: { x: 280, y: 195 },
-    WORKFLOW_AGENT: { x: 440, y: 195 },
-    UX_ORCHESTRATOR: { x: 670, y: 130 }
+    VISUAL_AGENT: { x: 190, y: 110 },
+    DISCOVERABILITY_AGENT: { x: 190, y: 310 },
+    NAVIGATION_AGENT: { x: 190, y: 510 },
+    ONBOARDING_AGENT: { x: 1010, y: 110 },
+    COGNITIVE_AGENT: { x: 1010, y: 310 },
+    WORKFLOW_AGENT: { x: 1010, y: 510 },
+    UX_ORCHESTRATOR: { x: 600, y: 700 }
   };
 
   const getBezierPath = (x1: number, y1: number, x2: number, y2: number) => {
+    if (x1 === x2) {
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    }
     const dx = Math.abs(x2 - x1);
     const dy = Math.abs(y2 - y1);
     if (x2 < x1) {
-      const cx1 = x1 - dx * 0.45;
-      const cy1 = y1 + dy * 0.15;
-      const cx2 = x2 + dx * 0.45;
-      const cy2 = y2 - dy * 0.15;
+      const cx1 = x1 - dx * 0.5;
+      const cy1 = y1;
+      const cx2 = x2 + dx * 0.5;
+      const cy2 = y2;
       return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
     }
-    const cx1 = x1 + dx * 0.45;
+    const cx1 = x1 + dx * 0.5;
     const cy1 = y1;
-    const cx2 = x2 - dx * 0.45;
+    const cx2 = x2 - dx * 0.5;
     const cy2 = y2;
     return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
   };
@@ -949,236 +952,246 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       {/* Topology Map & Graph Links */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Column (2/3): SVG Topology Map */}
-        <div className="lg:col-span-2 relative w-full overflow-hidden bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col">
+        <div className="lg:col-span-3 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/10 to-transparent" />
-          <div className="mb-4 flex justify-between items-center">
-            <span className="text-[9px] text-zinc-500 font-black uppercase tracking-wider font-mono">Agent Mesh Topology & Coordination Flow</span>
-            <span className="text-[8px] text-zinc-600 font-mono">Click any agent node to inspect its execution metrics</span>
-          </div>
+          
+          <div className="flex flex-col lg:flex-row gap-8">
+            
+            {/* Left: SVG Topology Map */}
+            <div className="flex-1 min-w-0 flex flex-col">
+              <div className="mb-4 flex justify-between items-center">
+                <span className="text-[9px] text-zinc-500 font-black uppercase tracking-wider font-mono">Agent Mesh Topology & Coordination Flow</span>
+                <span className="text-[8px] text-zinc-650 font-mono">Click any agent node to inspect its execution metrics</span>
+              </div>
 
-          <div className="overflow-x-auto w-full">
-            <svg viewBox="0 0 800 260" className="w-full h-auto overflow-visible select-none">
-              <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.01)" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" rx="8" />
+              <div className="overflow-x-auto w-full flex justify-center py-2">
+                <svg viewBox="0 0 1200 820" className="w-full max-w-[1200px] h-auto overflow-visible select-none">
+                  <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.01)" strokeWidth="1" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#grid)" rx="8" />
 
-              {/* Orchestrator Control Lines (Background) */}
-              <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.VISUAL_AGENT.x, nodeCoords.VISUAL_AGENT.y)} fill="none" className={getOrchestratorPathClass('VISUAL_AGENT')} />
-              <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.DISCOVERABILITY_AGENT.x, nodeCoords.DISCOVERABILITY_AGENT.y)} fill="none" className={getOrchestratorPathClass('DISCOVERABILITY_AGENT')} />
-              <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.NAVIGATION_AGENT.x, nodeCoords.NAVIGATION_AGENT.y)} fill="none" className={getOrchestratorPathClass('NAVIGATION_AGENT')} />
-              <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.ONBOARDING_AGENT.x, nodeCoords.ONBOARDING_AGENT.y)} fill="none" className={getOrchestratorPathClass('ONBOARDING_AGENT')} />
-              <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.COGNITIVE_AGENT.x, nodeCoords.COGNITIVE_AGENT.y)} fill="none" className={getOrchestratorPathClass('COGNITIVE_AGENT')} />
-              <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.WORKFLOW_AGENT.x, nodeCoords.WORKFLOW_AGENT.y)} fill="none" className={getOrchestratorPathClass('WORKFLOW_AGENT')} />
+                  {/* Orchestrator Control Lines (Background) */}
+                  <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.VISUAL_AGENT.x, nodeCoords.VISUAL_AGENT.y)} fill="none" className={getOrchestratorPathClass('VISUAL_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.DISCOVERABILITY_AGENT.x, nodeCoords.DISCOVERABILITY_AGENT.y)} fill="none" className={getOrchestratorPathClass('DISCOVERABILITY_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.NAVIGATION_AGENT.x, nodeCoords.NAVIGATION_AGENT.y)} fill="none" className={getOrchestratorPathClass('NAVIGATION_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.ONBOARDING_AGENT.x, nodeCoords.ONBOARDING_AGENT.y)} fill="none" className={getOrchestratorPathClass('ONBOARDING_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.COGNITIVE_AGENT.x, nodeCoords.COGNITIVE_AGENT.y)} fill="none" className={getOrchestratorPathClass('COGNITIVE_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y, nodeCoords.WORKFLOW_AGENT.x, nodeCoords.WORKFLOW_AGENT.y)} fill="none" className={getOrchestratorPathClass('WORKFLOW_AGENT')} />
 
-              {/* Sequential Flow Lines */}
-              <path d={getBezierPath(nodeCoords.VISUAL_AGENT.x, nodeCoords.VISUAL_AGENT.y, nodeCoords.DISCOVERABILITY_AGENT.x, nodeCoords.DISCOVERABILITY_AGENT.y)} fill="none" className={getPathClass('VISUAL_AGENT', 'DISCOVERABILITY_AGENT')} />
-              <path d={getBezierPath(nodeCoords.DISCOVERABILITY_AGENT.x, nodeCoords.DISCOVERABILITY_AGENT.y, nodeCoords.NAVIGATION_AGENT.x, nodeCoords.NAVIGATION_AGENT.y)} fill="none" className={getPathClass('DISCOVERABILITY_AGENT', 'NAVIGATION_AGENT')} />
-              <path d={getBezierPath(nodeCoords.NAVIGATION_AGENT.x, nodeCoords.NAVIGATION_AGENT.y, nodeCoords.ONBOARDING_AGENT.x, nodeCoords.ONBOARDING_AGENT.y)} fill="none" className={getPathClass('NAVIGATION_AGENT', 'ONBOARDING_AGENT')} />
-              <path d={getBezierPath(nodeCoords.ONBOARDING_AGENT.x, nodeCoords.ONBOARDING_AGENT.y, nodeCoords.COGNITIVE_AGENT.x, nodeCoords.COGNITIVE_AGENT.y)} fill="none" className={getPathClass('ONBOARDING_AGENT', 'COGNITIVE_AGENT')} />
-              <path d={getBezierPath(nodeCoords.COGNITIVE_AGENT.x, nodeCoords.COGNITIVE_AGENT.y, nodeCoords.WORKFLOW_AGENT.x, nodeCoords.WORKFLOW_AGENT.y)} fill="none" className={getPathClass('COGNITIVE_AGENT', 'WORKFLOW_AGENT')} />
-              <path d={getBezierPath(nodeCoords.WORKFLOW_AGENT.x, nodeCoords.WORKFLOW_AGENT.y, nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y)} fill="none" className={getPathClass('WORKFLOW_AGENT', 'UX_ORCHESTRATOR')} />
+                  {/* Sequential Flow Lines */}
+                  <path d={getBezierPath(nodeCoords.VISUAL_AGENT.x, nodeCoords.VISUAL_AGENT.y, nodeCoords.DISCOVERABILITY_AGENT.x, nodeCoords.DISCOVERABILITY_AGENT.y)} fill="none" className={getPathClass('VISUAL_AGENT', 'DISCOVERABILITY_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.DISCOVERABILITY_AGENT.x, nodeCoords.DISCOVERABILITY_AGENT.y, nodeCoords.NAVIGATION_AGENT.x, nodeCoords.NAVIGATION_AGENT.y)} fill="none" className={getPathClass('DISCOVERABILITY_AGENT', 'NAVIGATION_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.NAVIGATION_AGENT.x, nodeCoords.NAVIGATION_AGENT.y, nodeCoords.ONBOARDING_AGENT.x, nodeCoords.ONBOARDING_AGENT.y)} fill="none" className={getPathClass('NAVIGATION_AGENT', 'ONBOARDING_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.ONBOARDING_AGENT.x, nodeCoords.ONBOARDING_AGENT.y, nodeCoords.COGNITIVE_AGENT.x, nodeCoords.COGNITIVE_AGENT.y)} fill="none" className={getPathClass('ONBOARDING_AGENT', 'COGNITIVE_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.COGNITIVE_AGENT.x, nodeCoords.COGNITIVE_AGENT.y, nodeCoords.WORKFLOW_AGENT.x, nodeCoords.WORKFLOW_AGENT.y)} fill="none" className={getPathClass('COGNITIVE_AGENT', 'WORKFLOW_AGENT')} />
+                  <path d={getBezierPath(nodeCoords.WORKFLOW_AGENT.x, nodeCoords.WORKFLOW_AGENT.y, nodeCoords.UX_ORCHESTRATOR.x, nodeCoords.UX_ORCHESTRATOR.y)} fill="none" className={getPathClass('WORKFLOW_AGENT', 'UX_ORCHESTRATOR')} />
 
-              {/* Render Nodes */}
-              {orderedAgents.map((ag) => {
-                const hasExec = ag.execution;
-                const status = hasExec ? hasExec.status : 'IDLE';
-                const isSelected = selectedAgentType === ag.type;
-                const def = agentDefinitions[ag.type];
-                const coord = nodeCoords[ag.type];
-                const accent = getAgentAccentColor(ag.type);
+                  {/* Render Nodes */}
+                  {orderedAgents.map((ag) => {
+                    const hasExec = ag.execution;
+                    const status = hasExec ? hasExec.status : 'IDLE';
+                    const isSelected = selectedAgentType === ag.type;
+                    const def = agentDefinitions[ag.type];
+                    const coord = nodeCoords[ag.type];
+                    const accent = getAgentAccentColor(ag.type);
 
-                if (ag.type === 'UX_ORCHESTRATOR') {
-                  return (
-                    <foreignObject 
-                      key={ag.type}
-                      x={coord.x - 80} 
-                      y={coord.y - 45} 
-                      width={160} 
-                      height={95}
-                      className="overflow-visible"
-                    >
-                      <motion.div 
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setSelectedAgentType('UX_ORCHESTRATOR')}
-                        className={`w-[160px] h-[90px] cursor-pointer rounded-2xl border flex flex-col justify-between p-3.5 transition-all duration-300 relative select-none ${
-                          selectedAgentType === 'UX_ORCHESTRATOR'
-                            ? 'border-[#6366f1] bg-[#6366f1]/10 text-white shadow-[0_0_20px_rgba(99, 102, 241,0.25)] glow-indigo-strong' 
-                            : status === 'RUNNING'
-                            ? 'border-emerald-500 bg-emerald-950/20 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-pulse'
-                            : status === 'COMPLETED'
-                            ? 'border-zinc-800 bg-[#0d0d10] text-[#6366f1]/80 hover:border-[#6366f1]/40'
-                            : 'border-zinc-900 bg-zinc-950 text-zinc-650'
-                        }`}
+                    if (ag.type === 'UX_ORCHESTRATOR') {
+                      return (
+                        <foreignObject 
+                          key={ag.type}
+                          x={coord.x - 200} 
+                          y={coord.y - 90} 
+                          width={400} 
+                          height={185}
+                          className="overflow-visible"
+                        >
+                          <motion.div 
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setSelectedAgentType('UX_ORCHESTRATOR')}
+                            className={`w-[400px] h-[180px] cursor-pointer rounded-2xl border flex flex-col justify-between p-6 transition-all duration-300 relative select-none ${
+                              selectedAgentType === 'UX_ORCHESTRATOR'
+                                ? 'border-[#6366f1] bg-[#6366f1]/15 text-white shadow-[0_0_25px_rgba(99, 102, 241,0.3)] glow-indigo-strong' 
+                                : status === 'RUNNING'
+                                ? 'border-emerald-500 bg-emerald-950/20 text-emerald-100 shadow-[0_0_25px_rgba(16,185,129,0.3)] animate-pulse'
+                                : status === 'COMPLETED'
+                                ? 'border-zinc-800 bg-[#0d0d10] text-[#6366f1]/80 hover:border-[#6366f1]/40'
+                                : 'border-zinc-900 bg-zinc-950 text-zinc-650'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className={`p-3.5 rounded-xl border ${
+                                selectedAgentType === 'UX_ORCHESTRATOR' 
+                                  ? 'bg-[#6366f1]/20 border-[#6366f1]/30 text-[#6366f1]' 
+                                  : 'bg-zinc-950 border-zinc-900 text-zinc-500'
+                              } [&_svg]:!w-9 [&_svg]:!h-9`}>
+                                <Brain className="w-9 h-9" />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`w-3 h-3 rounded-full ${status === 'RUNNING' ? 'bg-emerald-400 animate-ping' : status === 'COMPLETED' ? 'bg-[#6366f1]' : 'bg-zinc-700'}`} />
+                                {getAgentStatusBadge(status)}
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="text-[19px] font-black uppercase tracking-wider">UX ORCHESTRATOR</div>
+                              <div className="text-[14px] font-mono text-zinc-400 mt-1">SYNTHESIS CORE</div>
+                            </div>
+                          </motion.div>
+                        </foreignObject>
+                      );
+                    }
+
+                    return (
+                      <foreignObject 
+                        key={ag.type} 
+                        x={coord.x - 170} 
+                        y={coord.y - 80} 
+                        width={340} 
+                        height={165}
+                        className="overflow-visible"
                       >
-                        <div className="flex justify-between items-start">
-                          <div className={`p-2 rounded-xl border ${
-                            selectedAgentType === 'UX_ORCHESTRATOR' 
-                              ? 'bg-[#6366f1]/20 border-[#6366f1]/30 text-[#6366f1]' 
-                              : 'bg-zinc-950 border-zinc-900 text-zinc-500'
-                          }`}>
-                            <Brain className="w-4 h-4" />
-                          </div>
-                          <span className={`w-2 h-2 rounded-full ${status === 'RUNNING' ? 'bg-emerald-400 animate-ping' : status === 'COMPLETED' ? 'bg-[#6366f1]' : 'bg-zinc-700'}`} />
-                        </div>
-
-                        <div>
-                          <div className="text-[10px] font-black uppercase tracking-wider">UX ORCHESTRATOR</div>
-                          <div className="text-[8px] font-mono text-zinc-500 mt-0.5">SYNTHESIS CORE</div>
-                        </div>
-                      </motion.div>
-                    </foreignObject>
-                  );
-                }
-
-                return (
-                  <foreignObject 
-                    key={ag.type} 
-                    x={coord.x - 70} 
-                    y={coord.y - 40} 
-                    width={140} 
-                    height={85}
-                    className="overflow-visible"
-                  >
-                    <motion.div 
-                      whileHover={{ scale: 1.04, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedAgentType(ag.type)}
-                      className={`w-[140px] h-[80px] cursor-pointer rounded-xl border flex flex-col justify-between p-2.5 transition-all duration-300 relative select-none ${
-                        isSelected 
-                          ? `bg-[#0d0d10] text-white border-zinc-700 shadow-[0_0_15px_rgba(255,255,255,0.05)]` 
-                          : status === 'RUNNING'
-                          ? 'border-[#6366f1] bg-emerald-950/10 text-emerald-100 shadow-[0_0_15px_rgba(99, 102, 241,0.15)] animate-pulse'
-                          : status === 'COMPLETED'
-                          ? 'border-zinc-900 bg-[#070709] hover:border-zinc-800 hover:bg-[#0c0c0e] text-zinc-300'
-                          : status === 'FAILED'
-                          ? 'border-rose-500/50 bg-rose-950/10 text-rose-200'
-                          : 'border-zinc-950 bg-[#08080a] opacity-50 text-zinc-600 hover:opacity-85'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        {/* Role icon colored with role specific accent */}
-                        <div className={`p-1.5 rounded-lg border text-[10px] bg-zinc-950 ${accent.border} ${accent.text}`}>
-                          {def?.icon || <Cpu className="w-3.5 h-3.5" />}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full" style={{
-                            backgroundColor: status === 'COMPLETED' ? accent.hex : status === 'RUNNING' ? '#10b981' : status === 'FAILED' ? '#ef4444' : '#52525b'
-                          }} />
-                        </div>
-                      </div>
-
-                      <div className="mt-1">
-                        <div className="text-[10px] font-extrabold truncate tracking-tight">{def?.name || formatAgentName(ag.type)}</div>
-                        <div className="text-[8px] font-bold font-mono uppercase tracking-wider text-zinc-550 mt-0.5">{status}</div>
-                      </div>
-                    </motion.div>
-                  </foreignObject>
-                );
-              })}
-            </svg>
-          </div>
-        </div>
-
-        {/* Right Column (1/3): Scope Inspector Panel */}
-        <div className="lg:col-span-1 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden h-fit">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/10 to-transparent" />
-          <div className="flex justify-between items-center mb-5">
-            <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">Agent Scope Inspector</span>
-            <span className="text-[8px] text-[#6366f1] font-mono bg-[#6366f1]/10 px-2.5 py-0.5 rounded border border-[#6366f1]/20 font-bold uppercase tracking-widest animate-pulse">Telemetry</span>
-          </div>
-
-          <div className="flex flex-col gap-5">
-            <div className="p-3.5 bg-zinc-950 rounded-xl border border-zinc-900 flex items-center gap-3.5">
-              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center bg-zinc-900/60 ${getAgentAccentColor(selectedAgentType).border} ${getAgentAccentColor(selectedAgentType).text}`}>
-                {selectedAgentDef?.icon || <Cpu className="w-5 h-5" />}
-              </div>
-              <div className="flex flex-col">
-                <h3 className="text-xs font-black text-white leading-snug uppercase tracking-tight">{selectedAgentDef?.name || formatAgentName(selectedAgentType)}</h3>
-                <span className="text-[8px] font-bold font-mono text-zinc-500 uppercase tracking-widest mt-0.5">
-                  STATUS: {selectedAgentExec ? selectedAgentExec.status : 'IDLE'}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-zinc-400 leading-relaxed font-sans bg-black/40 p-3.5 rounded-xl border border-zinc-900/60 shadow-inner">
-              {selectedAgentDef?.description || 'Scoped heuristics worker analyzing telemetries.'}
-            </p>
-
-            {/* Scope Heuristics */}
-            <div className="flex flex-col gap-2.5">
-              <span className="text-[8px] uppercase font-black text-zinc-500 font-mono tracking-wider">Scoped Heuristics Applied</span>
-              <div className="flex flex-col gap-2">
-                {(selectedAgentDef?.heuristics || []).map((h, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[10px] text-zinc-300 font-mono bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/60 hover:border-zinc-800 transition-colors">
-                    <div className={`w-1.5 h-1.5 rounded-full ${getAgentAccentColor(selectedAgentType).text} bg-current opacity-70`} />
-                    <span>{h}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Emitted Signals */}
-            <div className="flex flex-col gap-2.5 mt-1">
-              <span className="text-[8px] uppercase font-black text-zinc-500 font-mono tracking-wider">Emitted Friction Signals</span>
-              {selectedAgentSignals.length === 0 ? (
-                <div className="text-[10px] text-zinc-650 italic bg-zinc-950 p-4 rounded-xl border border-zinc-900 text-center font-mono">
-                  No signals emitted.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {selectedAgentSignals.map((sig) => (
-                    <div key={sig.id} className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-900 flex flex-col gap-2 font-mono text-[9px]">
-                      <div className="flex justify-between items-center">
-                        <span className="text-zinc-300 font-bold truncate pr-2 tracking-tight">{sig.signalType}</span>
-                        <span className={`font-bold bg-[#09090b] px-2 py-0.5 rounded border ${
-                          sig.intensity > 0.7 ? 'text-rose-400 border-rose-500/20' :
-                          sig.intensity > 0.4 ? 'text-orange-400 border-orange-500/20' :
-                          'text-[#6366f1] border-[#6366f1]/20'
-                        }`}>
-                          {sig.intensity.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-[#09090b] rounded-full overflow-hidden border border-zinc-900">
                         <motion.div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-[#6366f1] rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${sig.intensity * 100}%` }}
-                          transition={{ duration: 0.8 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                          whileHover={{ scale: 1.04, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedAgentType(ag.type)}
+                          className={`w-[340px] h-[160px] cursor-pointer rounded-2xl border flex flex-col justify-between p-6 transition-all duration-300 relative select-none ${
+                            isSelected 
+                              ? `bg-[#0d0d10] text-white border-zinc-700 shadow-[0_0_20px_rgba(255,255,255,0.08)]` 
+                              : status === 'RUNNING'
+                              ? 'border-[#6366f1] bg-emerald-950/10 text-emerald-100 shadow-[0_0_20px_rgba(99, 102, 241,0.2)] animate-pulse'
+                              : status === 'COMPLETED'
+                              ? 'border-zinc-900 bg-[#070709] hover:border-zinc-800 hover:bg-[#0c0c0e] text-zinc-300'
+                              : status === 'FAILED'
+                              ? 'border-rose-500/50 bg-rose-950/10 text-rose-200'
+                              : 'border-zinc-950 bg-[#08080a] opacity-50 text-zinc-550 hover:opacity-85'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            {/* Role icon colored with role specific accent */}
+                            <div className={`p-3 rounded-xl border bg-zinc-950 ${accent.border} ${accent.text} [&_svg]:!w-8 [&_svg]:!h-8`}>
+                              {def?.icon || <Cpu className="w-8 h-8" />}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full" style={{
+                                backgroundColor: status === 'COMPLETED' ? accent.hex : status === 'RUNNING' ? '#10b981' : status === 'FAILED' ? '#ef4444' : '#52525b'
+                              }} />
+                              {getAgentStatusBadge(status)}
+                            </div>
+                          </div>
+
+                          <div className="mt-2">
+                            <div className="text-[17px] font-extrabold truncate tracking-tight">{def?.name || formatAgentName(ag.type)}</div>
+                            <div className="text-[13px] font-bold font-mono uppercase tracking-wider text-zinc-400 mt-1">{status}</div>
+                          </div>
+                        </motion.div>
+                      </foreignObject>
+                    );
+                  })}
+                </svg>
+              </div>
             </div>
 
-            {/* Scope reasoning traces */}
-            <div className="flex flex-col gap-2.5 mt-1">
-              <span className="text-[8px] uppercase font-black text-zinc-500 font-mono tracking-wider">Scoped Reasoning Timeline</span>
-              {selectedAgentTraces.length === 0 ? (
-                <div className="text-[10px] text-zinc-650 italic bg-zinc-950 p-4 rounded-xl border border-zinc-900 text-center font-mono">
-                  No trace events computed.
+            {/* Right: Scope Inspector Panel */}
+            <div className="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0 lg:border-l lg:border-zinc-900 lg:pl-8 pt-6 lg:pt-0 flex flex-col">
+              <div className="flex justify-between items-center mb-5">
+                <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">Agent Scope Inspector</span>
+                <span className="text-[8px] text-[#6366f1] font-mono bg-[#6366f1]/10 px-2.5 py-0.5 rounded border border-[#6366f1]/20 font-bold uppercase tracking-widest animate-pulse">Telemetry</span>
+              </div>
+
+              <div className="flex flex-col gap-5">
+                <div className="p-3.5 bg-zinc-950 rounded-xl border border-zinc-900 flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center bg-zinc-900/60 ${getAgentAccentColor(selectedAgentType).border} ${getAgentAccentColor(selectedAgentType).text}`}>
+                    {selectedAgentDef?.icon || <Cpu className="w-5 h-5" />}
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="text-xs font-black text-white leading-snug uppercase tracking-tight">{selectedAgentDef?.name || formatAgentName(selectedAgentType)}</h3>
+                    <span className="text-[8px] font-bold font-mono text-zinc-500 uppercase tracking-widest mt-0.5">
+                      STATUS: {selectedAgentExec ? selectedAgentExec.status : 'IDLE'}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-3.5 border-l border-zinc-900 pl-4 ml-1.5">
-                  {selectedAgentTraces.map((trace) => (
-                    <div key={trace.id} className="relative py-0.5 flex flex-col gap-1">
-                      <div className="absolute left-[-20px] top-1.5 w-2 h-2 rounded-full border-2 border-zinc-950 shadow-sm" style={{
-                        backgroundColor: getAgentAccentColor(selectedAgentType).hex
-                      }} />
-                      <span className="text-[8px] font-black font-mono uppercase tracking-widest" style={{
-                        color: getAgentAccentColor(selectedAgentType).hex
-                      }}>{trace.stepType}</span>
-                      <p className="text-[10px] text-zinc-300 leading-relaxed font-sans">{trace.summary}</p>
+
+                <p className="text-[11px] text-zinc-400 leading-relaxed font-sans bg-black/40 p-3.5 rounded-xl border border-zinc-900/60 shadow-inner">
+                  {selectedAgentDef?.description || 'Scoped heuristics worker analyzing telemetries.'}
+                </p>
+
+                {/* Scope Heuristics */}
+                <div className="flex flex-col gap-2.5">
+                  <span className="text-[8px] uppercase font-black text-zinc-500 font-mono tracking-wider">Scoped Heuristics Applied</span>
+                  <div className="flex flex-col gap-2">
+                    {(selectedAgentDef?.heuristics || []).map((h, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[10px] text-zinc-300 font-mono bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/60 hover:border-zinc-800 transition-colors">
+                        <div className={`w-1.5 h-1.5 rounded-full ${getAgentAccentColor(selectedAgentType).text} bg-current opacity-70`} />
+                        <span>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Emitted Signals */}
+                <div className="flex flex-col gap-2.5 mt-1">
+                  <span className="text-[8px] uppercase font-black text-zinc-550 font-mono tracking-wider">Emitted Friction Signals</span>
+                  {selectedAgentSignals.length === 0 ? (
+                    <div className="text-[10px] text-zinc-650 italic bg-zinc-950 p-4 rounded-xl border border-zinc-900 text-center font-mono">
+                      No signals emitted.
                     </div>
-                  ))}
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {selectedAgentSignals.map((sig) => (
+                        <div key={sig.id} className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-900 flex flex-col gap-2 font-mono text-[9px]">
+                          <div className="flex justify-between items-center">
+                            <span className="text-zinc-300 font-bold truncate pr-2 tracking-tight">{sig.signalType}</span>
+                            <span className={`font-bold bg-[#09090b] px-2 py-0.5 rounded border ${
+                              sig.intensity > 0.7 ? 'text-rose-400 border-rose-500/20' :
+                              sig.intensity > 0.4 ? 'text-orange-400 border-orange-500/20' :
+                              'text-[#6366f1] border-[#6366f1]/20'
+                            }`}>
+                              {sig.intensity.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-[#09090b] rounded-full overflow-hidden border border-zinc-900">
+                            <motion.div 
+                              className="h-full bg-gradient-to-r from-emerald-500 to-[#6366f1] rounded-full"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${sig.intensity * 100}%` }}
+                              transition={{ duration: 0.8 }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Scope reasoning traces */}
+                <div className="flex flex-col gap-2.5 mt-1">
+                  <span className="text-[8px] uppercase font-black text-zinc-550 font-mono tracking-wider">Scoped Reasoning Timeline</span>
+                  {selectedAgentTraces.length === 0 ? (
+                    <div className="text-[10px] text-zinc-650 italic bg-zinc-950 p-4 rounded-xl border border-zinc-900 text-center font-mono">
+                      No trace events computed.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3.5 border-l border-zinc-900 pl-4 ml-1.5">
+                      {selectedAgentTraces.map((trace) => (
+                        <div key={trace.id} className="relative py-0.5 flex flex-col gap-1">
+                          <div className="absolute left-[-20px] top-1.5 w-2 h-2 rounded-full border-2 border-zinc-950 shadow-sm" style={{
+                            backgroundColor: getAgentAccentColor(selectedAgentType).hex
+                          }} />
+                          <span className="text-[8px] font-black font-mono uppercase tracking-widest" style={{
+                            color: getAgentAccentColor(selectedAgentType).hex
+                          }}>{trace.stepType}</span>
+                          <p className="text-[10px] text-zinc-300 leading-relaxed font-sans">{trace.summary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
             </div>
 
           </div>
