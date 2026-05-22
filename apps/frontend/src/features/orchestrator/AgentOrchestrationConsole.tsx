@@ -192,7 +192,7 @@ const RenderPayload: React.FC<{ payload: any }> = ({ payload }) => {
           <div className="flex justify-end">
             <button
               onClick={() => setShowRaw(!showRaw)}
-              className="text-[9px] text-[#5ed29c] hover:text-[#6edba8] transition-colors font-mono uppercase tracking-wider px-2 py-0.5 rounded border border-[#5ed29c]/10 hover:border-[#5ed29c]/20 bg-[#5ed29c]/5 mt-0.5"
+              className="text-[9px] text-[#6366f1] hover:text-[#4f46e5] transition-colors font-mono uppercase tracking-wider px-2 py-0.5 rounded border border-[#6366f1]/10 hover:border-[#6366f1]/20 bg-[#6366f1]/5 mt-0.5"
             >
               {showRaw ? 'Simple View' : 'Raw JSON'}
             </button>
@@ -255,7 +255,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
         return { text: 'text-lime-400', border: 'border-lime-500/20', bg: 'bg-lime-500/10', hex: '#84cc16' };
       case 'UX_ORCHESTRATOR':
       default:
-        return { text: 'text-[#5ed29c]', border: 'border-[#5ed29c]/20', bg: 'bg-[#5ed29c]/10', hex: '#5ed29c' };
+        return { text: 'text-purple-400', border: 'border-purple-500/20', bg: 'bg-purple-500/10', hex: '#a855f7' };
     }
   };
 
@@ -421,7 +421,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
   const getAgentStatusBadge = (status: AgentExecution['status']) => {
     switch (status) {
       case 'COMPLETED':
-        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20">COMPLETED</span>;
+        return <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20">COMPLETED</span>;
       case 'RUNNING':
         return (
           <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 animate-pulse">
@@ -444,7 +444,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
   const getEventIcon = (type: string) => {
     if (type.includes('FAIL') || type.includes('ERROR')) return <AlertCircle className="w-3.5 h-3.5 text-rose-400" />;
-    if (type.includes('COMPLETED') || type.includes('SUCCESS') || type.includes('SYNC_COMPLETED')) return <CheckCircle2 className="w-3.5 h-3.5 text-[#5ed29c]" />;
+    if (type.includes('COMPLETED') || type.includes('SUCCESS') || type.includes('SYNC_COMPLETED')) return <CheckCircle2 className="w-3.5 h-3.5 text-[#6366f1]" />;
     if (type.includes('SPAWNED')) return <Cpu className="w-3.5 h-3.5 text-sky-400" />;
     if (type.includes('DELEGATED') || type.includes('ASSIGN')) return <Layers className="w-3.5 h-3.5 text-violet-400" />;
     if (type.includes('RECOVERY') || type.includes('RETRY')) return <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />;
@@ -576,9 +576,9 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
   if (loading) {
     return (
       <div className="bg-[#09090b] border border-zinc-900 rounded-2xl p-16 flex flex-col items-center justify-center min-h-[400px] text-zinc-400 shadow-2xl relative">
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#5ed29c]/40 to-transparent" />
-        <RefreshCw className="w-8 h-8 text-[#5ed29c] animate-spin mb-4" />
-        <span className="text-xs font-mono tracking-wider text-[#5ed29c]/80 uppercase animate-pulse">LOADING COOPERATIVE INTEL CONSOLE...</span>
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366f1]/40 to-transparent" />
+        <RefreshCw className="w-8 h-8 text-[#6366f1] animate-spin mb-4" />
+        <span className="text-xs font-mono tracking-wider text-[#6366f1]/80 uppercase animate-pulse">LOADING COOPERATIVE INTEL CONSOLE...</span>
       </div>
     );
   }
@@ -586,9 +586,9 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
   if (!orchestrationSession) {
     return (
       <div className="bg-[#09090b] border border-zinc-900 rounded-2xl p-10 flex flex-col items-center justify-center text-center min-h-[450px] relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#5ed29c]/30 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366f1]/30 to-transparent" />
         
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#5ed29c]/5 to-[#5ed29c]/20 border border-[#5ed29c]/20 flex items-center justify-center text-[#5ed29c] mb-6 shadow-[0_0_24px_rgba(94,210,156,0.1)] animate-pulse">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#6366f1]/5 to-[#6366f1]/20 border border-[#6366f1]/20 flex items-center justify-center text-[#6366f1] mb-6 shadow-[0_0_24px_rgba(99, 102, 241,0.1)] animate-pulse">
           <Brain className="w-8 h-8" />
         </div>
 
@@ -600,7 +600,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
         <button
           onClick={handleStartOrchestration}
           disabled={starting}
-          className="flex items-center gap-2.5 px-6 py-3 bg-[#5ed29c] hover:bg-[#6edba8] disabled:opacity-50 text-[#070b0a] text-xs font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed uppercase tracking-wider font-mono"
+          className="flex items-center gap-2.5 px-6 py-3 bg-[#6366f1] hover:bg-[#4f46e5] disabled:opacity-50 text-[#070b0a] text-xs font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed uppercase tracking-wider font-mono"
         >
           {starting ? (
             <>
@@ -711,7 +711,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     const toStatus = toExec ? toExec.status : 'IDLE';
 
     if (toStatus === 'RUNNING' || fromStatus === 'RUNNING') {
-      return 'stroke-[#5ed29c] stroke-[2px] flow-line-active opacity-100 filter drop-shadow-[0_0_5px_rgba(94,210,156,0.6)]';
+      return 'stroke-[#6366f1] stroke-[2px] flow-line-active opacity-100 filter drop-shadow-[0_0_5px_rgba(99, 102, 241,0.6)]';
     }
     if (fromStatus === 'COMPLETED' && toStatus === 'COMPLETED') {
       return 'stroke-zinc-700/80 stroke-[1.5px] opacity-70';
@@ -727,7 +727,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     const status = exec ? exec.status : 'IDLE';
 
     if (status === 'RUNNING') {
-      return 'stroke-[#5ed29c] stroke-[1.5px] flow-line-active opacity-100 filter drop-shadow-[0_0_5px_rgba(94,210,156,0.5)]';
+      return 'stroke-[#6366f1] stroke-[1.5px] flow-line-active opacity-100 filter drop-shadow-[0_0_5px_rgba(99, 102, 241,0.5)]';
     }
     if (status === 'COMPLETED') {
       return 'stroke-zinc-800 stroke-[1px] opacity-35';
@@ -754,26 +754,26 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        .glow-mint-strong {
-          filter: drop-shadow(0 0 8px rgba(94, 210, 156, 0.4));
+        .glow-indigo-strong {
+          filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
         }
       `}} />
 
       {/* Background decoration */}
-      <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-[#5ed29c]/3 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-[#6366f1]/3 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[10%] right-[5%] w-[350px] h-[350px] rounded-full bg-emerald-500/3 blur-[100px] pointer-events-none" />
       
       {/* Header and Quick Stats */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-[#0d0d11]/80 border border-zinc-900/80 rounded-2xl p-6 relative overflow-hidden shadow-2xl backdrop-blur-md">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/40 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/40 to-transparent" />
         
         <div className="flex flex-col gap-1 pl-2">
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold text-[#5ed29c] bg-[#5ed29c]/10 px-2.5 py-0.5 rounded-full border border-[#5ed29c]/20 uppercase tracking-widest font-mono">
+            <span className="text-[9px] font-bold text-[#6366f1] bg-[#6366f1]/10 px-2.5 py-0.5 rounded-full border border-[#6366f1]/20 uppercase tracking-widest font-mono">
               Intelligence Operations Console
             </span>
             <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold font-mono uppercase tracking-wider ${
-              orchestrationSession.status === 'COMPLETED' ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20' :
+              orchestrationSession.status === 'COMPLETED' ? 'bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20' :
               orchestrationSession.status === 'RUNNING' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse' :
               orchestrationSession.status === 'FAILED' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
               'bg-zinc-800 text-zinc-400 border border-zinc-700'
@@ -810,7 +810,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
             <button
               onClick={handleStartOrchestration}
               disabled={starting || orchestrationSession.status === 'RUNNING'}
-              className="px-4 py-2 rounded-lg bg-[#5ed29c] hover:bg-[#6edba8] disabled:opacity-50 text-[10px] font-bold text-[#070b0a] uppercase tracking-wider font-mono flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(94,210,156,0.15)]"
+              className="px-4 py-2 rounded-lg bg-[#6366f1] hover:bg-[#4f46e5] disabled:opacity-50 text-[10px] font-bold text-[#070b0a] uppercase tracking-wider font-mono flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(99, 102, 241,0.15)]"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${starting || orchestrationSession.status === 'RUNNING' ? 'animate-spin' : ''}`} />
               <span>RE-RUN AUDIT</span>
@@ -854,12 +854,12 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Synthesis Insights */}
         <div className="lg:col-span-2 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#5ed29c]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#6366f1]/20 to-transparent" />
           <div className="flex justify-between items-center mb-5">
             <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Brain className="w-3.5 h-3.5 text-[#5ed29c]" /> Multi-Agent Investigation Synthesis
+              <Brain className="w-3.5 h-3.5 text-[#6366f1]" /> Multi-Agent Investigation Synthesis
             </span>
-            <span className="text-[8px] text-[#5ed29c] font-mono bg-[#5ed29c]/10 px-2 py-0.5 rounded border border-[#5ed29c]/20 font-bold uppercase tracking-widest">
+            <span className="text-[8px] text-[#6366f1] font-mono bg-[#6366f1]/10 px-2 py-0.5 rounded border border-[#6366f1]/20 font-bold uppercase tracking-widest">
               Synthesized Summary
             </span>
           </div>
@@ -874,7 +874,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                 <div key={insight.id} className="bg-zinc-950/60 rounded-xl p-4.5 border border-zinc-900 hover:border-zinc-800/80 transition-colors shadow-sm">
                   <div className="flex justify-between items-start flex-wrap gap-2 mb-2">
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#5ed29c]" />
+                      <Sparkles className="w-4 h-4 text-[#6366f1]" />
                       {insight.title}
                     </h3>
                     <div className="flex gap-2">
@@ -898,7 +898,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
         {/* Cooperative Recommendations */}
         <div className="lg:col-span-1 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#5ed29c]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#6366f1]/20 to-transparent" />
           <div className="flex justify-between items-center mb-5">
             <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">Cooperative Recommendations</span>
             <span className="text-[8px] text-zinc-500 font-mono">Remediation Steps</span>
@@ -934,7 +934,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                   <div className="border-t border-zinc-900/60 pt-2.5 mt-1 flex flex-col gap-1.5">
                     {rec.remediationSteps.map((step, idx) => (
                       <div key={idx} className="flex gap-2 items-start text-[10px]">
-                        <input type="checkbox" readOnly checked className="mt-0.5 h-3 w-3 accent-[#5ed29c] rounded border-zinc-800 bg-[#09090b] text-[#5ed29c]" />
+                        <input type="checkbox" readOnly checked className="mt-0.5 h-3 w-3 accent-[#6366f1] rounded border-zinc-800 bg-[#09090b] text-[#6366f1]" />
                         <span className="text-zinc-300 leading-normal">{step}</span>
                       </div>
                     ))}
@@ -951,14 +951,14 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
         
         {/* Left Column (2/3): SVG Topology Map */}
         <div className="lg:col-span-2 relative w-full overflow-hidden bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/10 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/10 to-transparent" />
           <div className="mb-4 flex justify-between items-center">
             <span className="text-[9px] text-zinc-500 font-black uppercase tracking-wider font-mono">Agent Mesh Topology & Coordination Flow</span>
             <span className="text-[8px] text-zinc-600 font-mono">Click any agent node to inspect its execution metrics</span>
           </div>
 
           <div className="overflow-x-auto w-full">
-            <svg viewBox="0 0 800 260" className="w-full min-w-[760px] h-auto overflow-visible select-none">
+            <svg viewBox="0 0 800 260" className="w-full h-auto overflow-visible select-none">
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                   <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.01)" strokeWidth="1" />
@@ -1007,23 +1007,23 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                         onClick={() => setSelectedAgentType('UX_ORCHESTRATOR')}
                         className={`w-[160px] h-[90px] cursor-pointer rounded-2xl border flex flex-col justify-between p-3.5 transition-all duration-300 relative select-none ${
                           selectedAgentType === 'UX_ORCHESTRATOR'
-                            ? 'border-[#5ed29c] bg-[#5ed29c]/10 text-white shadow-[0_0_20px_rgba(94,210,156,0.25)] glow-mint-strong' 
+                            ? 'border-[#6366f1] bg-[#6366f1]/10 text-white shadow-[0_0_20px_rgba(99, 102, 241,0.25)] glow-indigo-strong' 
                             : status === 'RUNNING'
                             ? 'border-emerald-500 bg-emerald-950/20 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.25)] animate-pulse'
                             : status === 'COMPLETED'
-                            ? 'border-zinc-800 bg-[#0d0d10] text-[#5ed29c]/80 hover:border-[#5ed29c]/40'
+                            ? 'border-zinc-800 bg-[#0d0d10] text-[#6366f1]/80 hover:border-[#6366f1]/40'
                             : 'border-zinc-900 bg-zinc-950 text-zinc-650'
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div className={`p-2 rounded-xl border ${
                             selectedAgentType === 'UX_ORCHESTRATOR' 
-                              ? 'bg-[#5ed29c]/20 border-[#5ed29c]/30 text-[#5ed29c]' 
+                              ? 'bg-[#6366f1]/20 border-[#6366f1]/30 text-[#6366f1]' 
                               : 'bg-zinc-950 border-zinc-900 text-zinc-500'
                           }`}>
                             <Brain className="w-4 h-4" />
                           </div>
-                          <span className={`w-2 h-2 rounded-full ${status === 'RUNNING' ? 'bg-emerald-400 animate-ping' : status === 'COMPLETED' ? 'bg-[#5ed29c]' : 'bg-zinc-700'}`} />
+                          <span className={`w-2 h-2 rounded-full ${status === 'RUNNING' ? 'bg-emerald-400 animate-ping' : status === 'COMPLETED' ? 'bg-[#6366f1]' : 'bg-zinc-700'}`} />
                         </div>
 
                         <div>
@@ -1052,7 +1052,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                         isSelected 
                           ? `bg-[#0d0d10] text-white border-zinc-700 shadow-[0_0_15px_rgba(255,255,255,0.05)]` 
                           : status === 'RUNNING'
-                          ? 'border-[#5ed29c] bg-emerald-950/10 text-emerald-100 shadow-[0_0_15px_rgba(94,210,156,0.15)] animate-pulse'
+                          ? 'border-[#6366f1] bg-emerald-950/10 text-emerald-100 shadow-[0_0_15px_rgba(99, 102, 241,0.15)] animate-pulse'
                           : status === 'COMPLETED'
                           ? 'border-zinc-900 bg-[#070709] hover:border-zinc-800 hover:bg-[#0c0c0e] text-zinc-300'
                           : status === 'FAILED'
@@ -1086,10 +1086,10 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
         {/* Right Column (1/3): Scope Inspector Panel */}
         <div className="lg:col-span-1 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden h-fit">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/10 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/10 to-transparent" />
           <div className="flex justify-between items-center mb-5">
             <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">Agent Scope Inspector</span>
-            <span className="text-[8px] text-[#5ed29c] font-mono bg-[#5ed29c]/10 px-2.5 py-0.5 rounded border border-[#5ed29c]/20 font-bold uppercase tracking-widest animate-pulse">Telemetry</span>
+            <span className="text-[8px] text-[#6366f1] font-mono bg-[#6366f1]/10 px-2.5 py-0.5 rounded border border-[#6366f1]/20 font-bold uppercase tracking-widest animate-pulse">Telemetry</span>
           </div>
 
           <div className="flex flex-col gap-5">
@@ -1138,14 +1138,14 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                         <span className={`font-bold bg-[#09090b] px-2 py-0.5 rounded border ${
                           sig.intensity > 0.7 ? 'text-rose-400 border-rose-500/20' :
                           sig.intensity > 0.4 ? 'text-orange-400 border-orange-500/20' :
-                          'text-[#5ed29c] border-[#5ed29c]/20'
+                          'text-[#6366f1] border-[#6366f1]/20'
                         }`}>
                           {sig.intensity.toFixed(2)}
                         </span>
                       </div>
                       <div className="w-full h-1.5 bg-[#09090b] rounded-full overflow-hidden border border-zinc-900">
                         <motion.div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-[#5ed29c] rounded-full"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-[#6366f1] rounded-full"
                           initial={{ width: 0 }}
                           animate={{ width: `${sig.intensity * 100}%` }}
                           transition={{ duration: 0.8 }}
@@ -1190,11 +1190,11 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Findings Viewer (2/3 Column) */}
         <div className="lg:col-span-2 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#5ed29c]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#6366f1]/20 to-transparent" />
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-[#5ed29c]" /> Local Usability Finding Filters
+              <Filter className="w-3.5 h-3.5 text-[#6366f1]" /> Local Usability Finding Filters
             </span>
             
             {/* Severity Filters */}
@@ -1209,13 +1209,13 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                     onClick={() => setFindingSeverityFilter(sev)}
                     className={`px-3 py-1 rounded text-[8px] font-mono font-bold transition-all flex items-center gap-1.5 ${
                       active 
-                        ? 'bg-[#5ed29c]/15 text-[#5ed29c] border border-[#5ed29c]/20' 
+                        ? 'bg-[#6366f1]/15 text-[#6366f1] border border-[#6366f1]/20' 
                         : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
                     }`}
                   >
                     <span>{sev}</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[7px] font-bold ${
-                      active ? 'bg-[#5ed29c]/20 text-[#5ed29c]' : 'bg-zinc-900 text-zinc-500'
+                      active ? 'bg-[#6366f1]/20 text-[#6366f1]' : 'bg-zinc-900 text-zinc-500'
                     }`}>{count}</span>
                   </button>
                 );
@@ -1268,7 +1268,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                           <div className="p-4 flex flex-col gap-3 font-mono text-[9px] text-zinc-400">
                             <div>
                               <span className="text-zinc-500 font-bold font-sans">Observation Scope:</span>{' '}
-                              <span className="bg-[#09090b] px-2 py-0.5 rounded border border-zinc-800/60 text-[#5ed29c]">{finding.findingType}</span>
+                              <span className="bg-[#09090b] px-2 py-0.5 rounded border border-zinc-800/60 text-[#6366f1]">{finding.findingType}</span>
                             </div>
                             <div className="leading-relaxed">
                               <span className="text-zinc-500 font-bold font-sans block mb-1">Evidence Context Summary:</span>
@@ -1289,12 +1289,12 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
         {/* Cross-Agent Finding Correlation Graph Links (1/3 Column) */}
         <div className="lg:col-span-1 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/10 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/10 to-transparent" />
           
           <div>
             <div className="flex justify-between items-center mb-5">
               <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono">Cross-Agent Findings Correlations</span>
-              <span className="text-[8px] text-[#5ed29c] font-mono bg-[#5ed29c]/10 px-2 py-0.5 rounded border border-[#5ed29c]/20 font-bold">{memoryCorrelations.length} LINKS</span>
+              <span className="text-[8px] text-[#6366f1] font-mono bg-[#6366f1]/10 px-2 py-0.5 rounded border border-[#6366f1]/20 font-bold">{memoryCorrelations.length} LINKS</span>
             </div>
 
             {memoryCorrelations.length === 0 ? (
@@ -1305,9 +1305,9 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
               <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1">
                 {memoryCorrelations.map((corr) => (
                   <div key={corr.id} className="bg-zinc-950 p-3.5 rounded-xl border border-zinc-900 flex flex-col gap-2.5 relative">
-                    <div className="absolute top-0 left-0 bottom-0 w-[2px] bg-[#5ed29c]" />
+                    <div className="absolute top-0 left-0 bottom-0 w-[2px] bg-[#6366f1]" />
                     <div className="flex justify-between items-start font-mono text-[8px] text-zinc-500">
-                      <span className="font-bold text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/10 px-1.5 py-0.2 rounded uppercase">
+                      <span className="font-bold text-[#6366f1] bg-[#6366f1]/5 border border-[#6366f1]/10 px-1.5 py-0.2 rounded uppercase">
                         {corr.correlationType.replace(/_/g, ' ')}
                       </span>
                       <span className="text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
@@ -1332,11 +1332,11 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
         
         {/* Shared Memory Snapshots (1/3 Column) */}
         <div className="lg:col-span-1 bg-[#09090b]/80 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col">
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#5ed29c]/15 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#6366f1]/15 to-transparent" />
           
           <div className="flex justify-between items-center mb-5 border-b border-zinc-900/80 pb-3">
             <span className="text-[9px] text-zinc-400 font-black uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-[#5ed29c]" /> Memory Snapshots Feed
+              <Database className="w-3.5 h-3.5 text-[#6366f1]" /> Memory Snapshots Feed
             </span>
             <span className="text-[8px] text-zinc-500 font-mono">{memorySnapshots.length} Milestones</span>
           </div>
@@ -1353,8 +1353,8 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                 return (
                   <div key={snap.id} className="bg-zinc-950/60 border border-zinc-900/60 p-3.5 rounded-xl flex flex-col gap-2 hover:border-zinc-800 transition-colors shadow-sm">
                     <div className="flex justify-between items-center font-mono text-[9px] border-b border-zinc-900/40 pb-2">
-                      <span className="font-extrabold text-[#5ed29c] flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-[#5ed29c]" /> {snap.snapshotType}
+                      <span className="font-extrabold text-[#6366f1] flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-[#6366f1]" /> {snap.snapshotType}
                       </span>
                       <span className="text-zinc-600 font-mono">{dateStr}</span>
                     </div>
@@ -1387,12 +1387,12 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
         {/* Telemetry and Trace Streams with Filters (2/3 Column) */}
         <div className="lg:col-span-2 bg-[#050507]/90 border border-zinc-900 rounded-2xl overflow-hidden flex flex-col min-h-[360px] shadow-2xl relative">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/15 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1]/15 to-transparent" />
           
           {/* Header */}
           <div className="bg-zinc-950/80 border-b border-zinc-900 px-5 py-3.5 flex flex-col sm:flex-row gap-3 justify-between items-center">
             <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-[#5ed29c] animate-pulse" />
+              <Terminal className="w-4 h-4 text-[#6366f1] animate-pulse" />
               <span className="text-xs font-black text-white tracking-wider font-mono uppercase">Telemetry & Trace Streams</span>
             </div>
 
@@ -1406,7 +1406,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                     onClick={() => setTerminalFilter(level)}
                     className={`px-3 py-1 text-[8px] font-mono font-bold rounded transition-all uppercase tracking-wider ${
                       active 
-                        ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20' 
+                        ? 'bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20' 
                         : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
                     }`}
                   >
@@ -1470,7 +1470,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                   <div className="flex flex-col gap-1 w-full font-sans">
                     <div>
                       {event.source === 'shared_context' ? (
-                        <span className="text-[#5ed29c] font-black font-mono text-[9px] tracking-wider bg-[#5ed29c]/5 px-2 py-0.5 rounded border border-[#5ed29c]/10">SHARED_CONTEXT</span>
+                        <span className="text-[#6366f1] font-black font-mono text-[9px] tracking-wider bg-[#6366f1]/5 px-2 py-0.5 rounded border border-[#6366f1]/10">SHARED_CONTEXT</span>
                       ) : (
                         <span className={`font-black font-mono text-[9px] tracking-wider px-2 py-0.5 rounded border ${colors.border} ${colors.text} ${colors.bg}`}>
                           {event.fromAgent} ➜ {event.toAgent}
@@ -1495,13 +1495,13 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
                 <div key={item.id} className="flex gap-3 items-start border-l border-zinc-900 pl-4 py-1 hover:bg-white/[0.01] transition-colors rounded-r-lg">
                   <span className="text-zinc-600 flex-shrink-0 font-mono text-[8px] mt-0.5">{dateStr}</span>
                   <span className="flex-shrink-0 mt-0.5 bg-zinc-950 p-1 rounded border border-zinc-900">
-                    {isSnapshot ? <Database className="w-3.5 h-3.5 text-[#5ed29c]" /> : getEventIcon(item.title)}
+                    {isSnapshot ? <Database className="w-3.5 h-3.5 text-[#6366f1]" /> : getEventIcon(item.title)}
                   </span>
                   
                   <div className="flex flex-col gap-1 w-full font-sans">
                     <div>
                       <span className={`font-black font-mono text-[9px] tracking-wider px-2 py-0.5 rounded border ${
-                        isSnapshot ? 'bg-[#5ed29c]/10 border-[#5ed29c]/20 text-[#5ed29c]' : `${colors.border} ${colors.text} ${colors.bg}`
+                        isSnapshot ? 'bg-[#6366f1]/10 border-[#6366f1]/20 text-[#6366f1]' : `${colors.border} ${colors.text} ${colors.bg}`
                       }`}>
                         {isSnapshot ? 'SYSTEM SNAPSHOT' : item.source}
                       </span>

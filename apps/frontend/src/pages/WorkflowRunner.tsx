@@ -18,7 +18,7 @@ interface SessionStatus { id: string; status: string; stepCount: number; model: 
 // ─── Action color map (Fricta palette) ──────────────────────────────────────
 
 const ACTION_COLORS: Record<string, string> = {
-  click:    'text-[#5ed29c] bg-[#5ed29c]/8 border-[#5ed29c]/20',
+  click:    'text-[#6366f1] bg-[#6366f1]/8 border-[#6366f1]/20',
   type:     'text-sky-400 bg-sky-500/8 border-sky-500/20',
   scroll:   'text-amber-400 bg-amber-500/8 border-amber-500/20',
   navigate: 'text-violet-400 bg-violet-500/8 border-violet-500/20',
@@ -28,8 +28,8 @@ const ACTION_COLORS: Record<string, string> = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   idle:          { label: 'Idle',          color: 'text-zinc-400',    icon: <Clock className="w-4 h-4" /> },
-  RUNNING:       { label: 'Running',       color: 'text-[#5ed29c]',   icon: <Activity className="w-4 h-4 animate-pulse" /> },
-  COMPLETED:     { label: 'Completed',     color: 'text-[#5ed29c]',   icon: <CheckCircle className="w-4 h-4" /> },
+  RUNNING:       { label: 'Running',       color: 'text-[#6366f1]',   icon: <Activity className="w-4 h-4 animate-pulse" /> },
+  COMPLETED:     { label: 'Completed',     color: 'text-[#6366f1]',   icon: <CheckCircle className="w-4 h-4" /> },
   FAILED:        { label: 'Failed',        color: 'text-rose-400',    icon: <XCircle className="w-4 h-4" /> },
   TIMEOUT:       { label: 'Timeout',       color: 'text-orange-400',  icon: <AlertTriangle className="w-4 h-4" /> },
   LOOP_DETECTED: { label: 'Loop Detected', color: 'text-yellow-400',  icon: <AlertTriangle className="w-4 h-4" /> },
@@ -61,7 +61,7 @@ const FieldInput = ({
           background: 'rgba(9,9,11,0.8)',
           border: '1px solid rgba(255,255,255,0.08)',
         }}
-        onFocus={e => (e.target.style.borderColor = 'rgba(94,210,156,0.4)')}
+        onFocus={e => (e.target.style.borderColor = 'rgba(99, 102, 241,0.4)')}
         onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
       />
     ) : (
@@ -75,7 +75,7 @@ const FieldInput = ({
           background: 'rgba(9,9,11,0.8)',
           border: '1px solid rgba(255,255,255,0.08)',
         }}
-        onFocus={e => (e.target.style.borderColor = 'rgba(94,210,156,0.4)')}
+        onFocus={e => (e.target.style.borderColor = 'rgba(99, 102, 241,0.4)')}
         onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
       />
     )}
@@ -117,17 +117,17 @@ const ThoughtBubble = ({ thought, step }: { thought: Thought; step: number }) =>
     <div
       className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
       style={{
-        background: 'rgba(94,210,156,0.1)',
-        border: '1px solid rgba(94,210,156,0.25)',
+        background: 'rgba(99, 102, 241,0.1)',
+        border: '1px solid rgba(99, 102, 241,0.25)',
       }}
     >
-      <Brain className="w-3.5 h-3.5" style={{ color: '#5ed29c' }} />
+      <Brain className="w-3.5 h-3.5" style={{ color: '#6366f1' }} />
     </div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1">
         <span
           className="text-[10px] font-bold uppercase tracking-wider font-mono"
-          style={{ color: '#5ed29c' }}
+          style={{ color: '#6366f1' }}
         >
           Step {step}
         </span>
@@ -141,7 +141,7 @@ const ThoughtBubble = ({ thought, step }: { thought: Thought; step: number }) =>
 const ActionChip = ({ action }: { action: Action }) => {
   const colors = ACTION_COLORS[action.action] ?? 'text-white/60 bg-white/5 border-white/10';
   const statusIcon = action.status === 'success'
-    ? <CheckCircle className="w-3 h-3 text-[#5ed29c]" />
+    ? <CheckCircle className="w-3 h-3 text-[#6366f1]" />
     : action.status === 'failed'
     ? <XCircle className="w-3 h-3 text-rose-400" />
     : <Clock className="w-3 h-3 text-yellow-400" />;
@@ -294,7 +294,7 @@ export const WorkflowRunner = () => {
       {/* Top mint edge line */}
       <div
         className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-        style={{ background: 'linear-gradient(to right, transparent, rgba(94,210,156,0.22), transparent)' }}
+        style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.22), transparent)' }}
       />
       {children}
     </div>
@@ -309,9 +309,9 @@ export const WorkflowRunner = () => {
           <span
             className="text-[9px] font-black uppercase tracking-widest font-mono px-2.5 py-0.5 rounded-full"
             style={{
-              color: '#5ed29c',
-              background: 'rgba(94,210,156,0.1)',
-              border: '1px solid rgba(94,210,156,0.2)',
+              color: '#6366f1',
+              background: 'rgba(99, 102, 241,0.1)',
+              border: '1px solid rgba(99, 102, 241,0.2)',
             }}
           >
             Workflow Auditor
@@ -321,11 +321,11 @@ export const WorkflowRunner = () => {
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{
-              background: 'rgba(94,210,156,0.1)',
-              border: '1px solid rgba(94,210,156,0.2)',
+              background: 'rgba(99, 102, 241,0.1)',
+              border: '1px solid rgba(99, 102, 241,0.2)',
             }}
           >
-            <Brain className="w-5 h-5" style={{ color: '#5ed29c' }} />
+            <Brain className="w-5 h-5" style={{ color: '#6366f1' }} />
           </div>
           Agent Execution Console
         </h1>
@@ -343,7 +343,7 @@ export const WorkflowRunner = () => {
           <Panel>
             <div className="p-5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <PlusCircle className="w-4 h-4" style={{ color: '#5ed29c' }} />
+                <PlusCircle className="w-4 h-4" style={{ color: '#6366f1' }} />
                 <h2 className="font-bold text-white text-sm tracking-tight">Create Project</h2>
               </div>
               <form onSubmit={handleCreateProject} className="space-y-2.5">
@@ -363,15 +363,15 @@ export const WorkflowRunner = () => {
                   type="submit"
                   className="w-full text-xs font-bold py-2 rounded-lg transition-all mt-1 font-mono uppercase tracking-wider"
                   style={{
-                    background: 'rgba(94,210,156,0.1)',
-                    border: '1px solid rgba(94,210,156,0.25)',
-                    color: '#5ed29c',
+                    background: 'rgba(99, 102, 241,0.1)',
+                    border: '1px solid rgba(99, 102, 241,0.25)',
+                    color: '#6366f1',
                   }}
                   onMouseEnter={e => {
-                    (e.target as HTMLElement).style.background = 'rgba(94,210,156,0.18)';
+                    (e.target as HTMLElement).style.background = 'rgba(99, 102, 241,0.18)';
                   }}
                   onMouseLeave={e => {
-                    (e.target as HTMLElement).style.background = 'rgba(94,210,156,0.1)';
+                    (e.target as HTMLElement).style.background = 'rgba(99, 102, 241,0.1)';
                   }}
                 >
                   Add Project
@@ -384,7 +384,7 @@ export const WorkflowRunner = () => {
           <Panel>
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4" style={{ color: '#5ed29c' }} />
+                <Brain className="w-4 h-4" style={{ color: '#6366f1' }} />
                 <h2 className="font-bold text-white text-sm tracking-tight">Agent Configuration</h2>
               </div>
 
@@ -434,8 +434,8 @@ export const WorkflowRunner = () => {
                     disabled={loading || !selectedProjectId}
                     className="w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40 font-mono uppercase tracking-wider"
                     style={{
-                      background: loading ? 'rgba(94,210,156,0.1)' : '#5ed29c',
-                      color: loading ? '#5ed29c' : '#070b0a',
+                      background: loading ? 'rgba(99, 102, 241,0.1)' : '#6366f1',
+                      color: loading ? '#6366f1' : '#070b0a',
                     }}
                   >
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
@@ -465,7 +465,7 @@ export const WorkflowRunner = () => {
                   {model && (
                     <div className="flex justify-between">
                       <span>Model</span>
-                      <span className="font-mono truncate max-w-[140px]" style={{ color: '#5ed29c' }}>{model}</span>
+                      <span className="font-mono truncate max-w-[140px]" style={{ color: '#6366f1' }}>{model}</span>
                     </div>
                   )}
                   {workflowId && (
@@ -490,7 +490,7 @@ export const WorkflowRunner = () => {
                         className="h-1.5 rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min((effectiveStep / 30) * 100, 100)}%`,
-                          background: 'linear-gradient(to right, #10b981, #5ed29c)',
+                          background: 'linear-gradient(to right, #10b981, #6366f1)',
                         }}
                       />
                     </div>
@@ -515,9 +515,9 @@ export const WorkflowRunner = () => {
                 onClick={() => setActiveTab(tab)}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all"
                 style={{
-                  background: activeTab === tab ? 'rgba(94,210,156,0.12)' : 'transparent',
-                  border: activeTab === tab ? '1px solid rgba(94,210,156,0.25)' : '1px solid transparent',
-                  color: activeTab === tab ? '#5ed29c' : 'rgba(255,255,255,0.4)',
+                  background: activeTab === tab ? 'rgba(99, 102, 241,0.12)' : 'transparent',
+                  border: activeTab === tab ? '1px solid rgba(99, 102, 241,0.25)' : '1px solid transparent',
+                  color: activeTab === tab ? '#6366f1' : 'rgba(255,255,255,0.4)',
                 }}
               >
                 {tab === 'thoughts' ? <Brain className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
@@ -525,7 +525,7 @@ export const WorkflowRunner = () => {
                 {tab === 'thoughts' && thoughts.length > 0 && (
                   <span
                     className="ml-1 rounded-full px-1.5 py-0 text-[10px]"
-                    style={{ background: 'rgba(94,210,156,0.15)', color: '#5ed29c' }}
+                    style={{ background: 'rgba(99, 102, 241,0.15)', color: '#6366f1' }}
                   >
                     {thoughts.length}
                   </span>
@@ -533,7 +533,7 @@ export const WorkflowRunner = () => {
                 {tab === 'actions' && actions.length > 0 && (
                   <span
                     className="ml-1 rounded-full px-1.5 py-0 text-[10px]"
-                    style={{ background: 'rgba(94,210,156,0.15)', color: '#5ed29c' }}
+                    style={{ background: 'rgba(99, 102, 241,0.15)', color: '#6366f1' }}
                   >
                     {actions.length}
                   </span>
@@ -554,11 +554,11 @@ export const WorkflowRunner = () => {
                   <span className="relative flex h-2 w-2">
                     <span
                       className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                      style={{ background: '#5ed29c' }}
+                      style={{ background: '#6366f1' }}
                     />
                     <span
                       className="relative inline-flex rounded-full h-2 w-2"
-                      style={{ background: '#5ed29c' }}
+                      style={{ background: '#6366f1' }}
                     />
                   </span>
                 )}
@@ -567,7 +567,7 @@ export const WorkflowRunner = () => {
                 </span>
               </div>
               {uiStatus === 'running' && (
-                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(94,210,156,0.7)' }}>
+                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(99, 102, 241,0.7)' }}>
                   <RefreshCw className="w-3 h-3 animate-spin" />
                   <span className="font-mono text-[10px]">Polling every 2s</span>
                 </div>
@@ -580,11 +580,11 @@ export const WorkflowRunner = () => {
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
                   style={{
-                    background: 'rgba(94,210,156,0.08)',
-                    border: '1px solid rgba(94,210,156,0.18)',
+                    background: 'rgba(99, 102, 241,0.08)',
+                    border: '1px solid rgba(99, 102, 241,0.18)',
                   }}
                 >
-                  <Zap className="w-7 h-7" style={{ color: '#5ed29c' }} />
+                  <Zap className="w-7 h-7" style={{ color: '#6366f1' }} />
                 </div>
                 <div>
                   <h3 className="text-white font-bold">Agent Ready</h3>
@@ -598,7 +598,7 @@ export const WorkflowRunner = () => {
             {/* Loading State */}
             {loading && (
               <div className="flex flex-col items-center justify-center h-80 gap-3">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#5ed29c' }} />
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#6366f1' }} />
                 <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Initializing agent session...</p>
               </div>
             )}
@@ -654,18 +654,18 @@ export const WorkflowRunner = () => {
               className="rounded-2xl border p-4 flex items-center gap-4"
               style={{
                 background: sessionStatus.status === 'COMPLETED'
-                  ? 'rgba(94,210,156,0.05)'
+                  ? 'rgba(99, 102, 241,0.05)'
                   : 'rgba(244,63,94,0.05)',
                 border: sessionStatus.status === 'COMPLETED'
-                  ? '1px solid rgba(94,210,156,0.2)'
+                  ? '1px solid rgba(99, 102, 241,0.2)'
                   : '1px solid rgba(244,63,94,0.2)',
               }}
             >
               {sessionStatus.status === 'COMPLETED'
-                ? <CheckCircle className="w-6 h-6 flex-shrink-0" style={{ color: '#5ed29c' }} />
+                ? <CheckCircle className="w-6 h-6 flex-shrink-0" style={{ color: '#6366f1' }} />
                 : <AlertTriangle className="w-6 h-6 text-rose-400 flex-shrink-0" />}
               <div>
-                <p className="font-bold text-sm" style={{ color: sessionStatus.status === 'COMPLETED' ? '#5ed29c' : '#fb7185' }}>
+                <p className="font-bold text-sm" style={{ color: sessionStatus.status === 'COMPLETED' ? '#6366f1' : '#fb7185' }}>
                   Workflow {statusCfg.label}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -677,9 +677,9 @@ export const WorkflowRunner = () => {
                   to={`/app/reports/${workflowId}`}
                   className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors font-mono uppercase tracking-wider"
                   style={{
-                    background: 'rgba(94,210,156,0.1)',
-                    border: '1px solid rgba(94,210,156,0.25)',
-                    color: '#5ed29c',
+                    background: 'rgba(99, 102, 241,0.1)',
+                    border: '1px solid rgba(99, 102, 241,0.25)',
+                    color: '#6366f1',
                   }}
                 >
                   <Eye className="w-3.5 h-3.5" /> View Report
@@ -703,21 +703,21 @@ export const WorkflowRunner = () => {
           <div className="flex items-center gap-2 mb-4">
             <div
               className="h-px flex-1"
-              style={{ background: 'linear-gradient(to right, rgba(94,210,156,0.2), transparent)' }}
+              style={{ background: 'linear-gradient(to right, rgba(99, 102, 241,0.2), transparent)' }}
             />
             <span
               className="text-[9px] font-black uppercase tracking-widest font-mono px-3 py-1 rounded-full"
               style={{
-                color: '#5ed29c',
-                background: 'rgba(94,210,156,0.08)',
-                border: '1px solid rgba(94,210,156,0.18)',
+                color: '#6366f1',
+                background: 'rgba(99, 102, 241,0.08)',
+                border: '1px solid rgba(99, 102, 241,0.18)',
               }}
             >
               Intelligence Operations Console
             </span>
             <div
               className="h-px flex-1"
-              style={{ background: 'linear-gradient(to left, rgba(94,210,156,0.2), transparent)' }}
+              style={{ background: 'linear-gradient(to left, rgba(99, 102, 241,0.2), transparent)' }}
             />
           </div>
           <AgentOrchestrationConsole

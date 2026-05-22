@@ -11,7 +11,7 @@ export const Dashboard = () => {
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Total Runs', value: '1,248', icon: Activity, color: 'text-[#5ed29c]' },
+          { label: 'Total Runs', value: '1,248', icon: Activity, color: 'text-[#6366f1]' },
           { label: 'Avg UX Score', value: '84/100', icon: CheckCircle2, color: 'text-emerald-400' },
           { label: 'Critical Issues', value: '12', icon: AlertCircle, color: 'text-rose-400' },
           { label: 'Testing Hours', value: '340h', icon: Clock, color: 'text-amber-400' },

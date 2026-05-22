@@ -28,7 +28,7 @@ export const DashboardLayout = () => {
         {/* Subtle right-edge glow */}
         <div
           className="absolute inset-y-0 right-0 w-[1px] pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, transparent, rgba(94,210,156,0.12), transparent)' }}
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(99, 102, 241,0.12), transparent)' }}
         />
 
         {/* Logo */}
@@ -39,17 +39,17 @@ export const DashboardLayout = () => {
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
-              background: 'rgba(94,210,156,0.1)',
-              border: '1px solid rgba(94,210,156,0.25)',
+              background: 'rgba(99, 102, 241,0.1)',
+              border: '1px solid rgba(99, 102, 241,0.25)',
             }}
           >
-            <Brain className="w-4 h-4" style={{ color: '#5ed29c' }} />
+            <Brain className="w-4 h-4" style={{ color: '#6366f1' }} />
           </div>
           <div className="flex flex-col">
             <span className="text-white font-bold text-sm tracking-tight leading-none">Fricta</span>
             <span
               className="text-[9px] font-mono uppercase tracking-widest leading-none mt-0.5"
-              style={{ color: 'rgba(94,210,156,0.6)' }}
+              style={{ color: 'rgba(99, 102, 241,0.6)' }}
             >
               Intelligence
             </span>
@@ -76,26 +76,26 @@ export const DashboardLayout = () => {
                 to={item.path}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative"
                 style={{
-                  background: isActive ? 'rgba(94,210,156,0.08)' : 'transparent',
-                  border: isActive ? '1px solid rgba(94,210,156,0.18)' : '1px solid transparent',
+                  background: isActive ? 'rgba(99, 102, 241,0.08)' : 'transparent',
+                  border: isActive ? '1px solid rgba(99, 102, 241,0.18)' : '1px solid transparent',
                 }}
               >
                 {/* Active left indicator bar */}
                 {isActive && (
                   <div
                     className="absolute left-0 top-1/4 bottom-1/4 w-[2.5px] rounded-full"
-                    style={{ background: '#5ed29c' }}
+                    style={{ background: '#6366f1' }}
                   />
                 )}
 
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200"
                   style={{
-                    background: isActive ? 'rgba(94,210,156,0.12)' : 'rgba(255,255,255,0.04)',
+                    background: isActive ? 'rgba(99, 102, 241,0.12)' : 'rgba(255,255,255,0.04)',
                     border: isActive
-                      ? '1px solid rgba(94,210,156,0.25)'
+                      ? '1px solid rgba(99, 102, 241,0.25)'
                       : '1px solid rgba(255,255,255,0.06)',
-                    color: isActive ? '#5ed29c' : 'rgba(255,255,255,0.45)',
+                    color: isActive ? '#6366f1' : 'rgba(255,255,255,0.45)',
                   }}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -119,7 +119,7 @@ export const DashboardLayout = () => {
                 {isActive && (
                   <ChevronRight
                     className="w-3 h-3 ml-auto"
-                    style={{ color: 'rgba(94,210,156,0.5)' }}
+                    style={{ color: 'rgba(99, 102, 241,0.5)' }}
                   />
                 )}
               </Link>
@@ -170,7 +170,7 @@ export const DashboardLayout = () => {
           <div className="flex items-center gap-2">
             <span
               className="text-[10px] font-mono uppercase tracking-widest font-bold"
-              style={{ color: 'rgba(94,210,156,0.6)' }}
+              style={{ color: 'rgba(99, 102, 241,0.6)' }}
             >
               Fricta
             </span>
@@ -189,14 +189,14 @@ export const DashboardLayout = () => {
             <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold"
               style={{
-                background: 'rgba(94,210,156,0.06)',
-                border: '1px solid rgba(94,210,156,0.15)',
-                color: 'rgba(94,210,156,0.8)',
+                background: 'rgba(99, 102, 241,0.06)',
+                border: '1px solid rgba(99, 102, 241,0.15)',
+                color: 'rgba(99, 102, 241,0.8)',
               }}
             >
               <div
                 className="w-1.5 h-1.5 rounded-full"
-                style={{ background: '#5ed29c', boxShadow: '0 0 6px rgba(94,210,156,0.6)' }}
+                style={{ background: '#6366f1', boxShadow: '0 0 6px rgba(99, 102, 241,0.6)' }}
               />
               SYSTEM ACTIVE
             </div>
