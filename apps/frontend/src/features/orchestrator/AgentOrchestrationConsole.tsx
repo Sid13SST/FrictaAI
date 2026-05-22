@@ -678,13 +678,13 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
 
   // Topology node coords
   const nodeCoords: Record<string, { x: number; y: number }> = {
-    VISUAL_AGENT: { x: 190, y: 110 },
-    DISCOVERABILITY_AGENT: { x: 190, y: 310 },
-    NAVIGATION_AGENT: { x: 190, y: 510 },
-    ONBOARDING_AGENT: { x: 1010, y: 110 },
-    COGNITIVE_AGENT: { x: 1010, y: 310 },
-    WORKFLOW_AGENT: { x: 1010, y: 510 },
-    UX_ORCHESTRATOR: { x: 600, y: 700 }
+    VISUAL_AGENT: { x: 190, y: 90 },
+    DISCOVERABILITY_AGENT: { x: 190, y: 270 },
+    NAVIGATION_AGENT: { x: 190, y: 450 },
+    ONBOARDING_AGENT: { x: 1010, y: 90 },
+    COGNITIVE_AGENT: { x: 1010, y: 270 },
+    WORKFLOW_AGENT: { x: 1010, y: 450 },
+    UX_ORCHESTRATOR: { x: 600, y: 610 }
   };
 
   const getBezierPath = (x1: number, y1: number, x2: number, y2: number) => {
@@ -965,7 +965,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
               </div>
 
               <div className="overflow-x-auto w-full flex justify-center py-2">
-                <svg viewBox="0 0 1200 820" className="w-full max-w-[1200px] h-auto overflow-visible select-none">
+                <svg viewBox="0 0 1200 720" className="w-full max-w-[1200px] h-auto overflow-visible select-none">
                   <defs>
                     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                       <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.01)" strokeWidth="1" />

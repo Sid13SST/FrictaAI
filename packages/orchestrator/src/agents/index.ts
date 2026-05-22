@@ -25,7 +25,7 @@ export abstract class BaseOrchestratedAgent {
     public readonly agentType: AgentType
   ) {}
 
-  abstract execute(task: OrchestrationTask): Promise<any>;
+  abstract execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any>;
 
   protected async fetchSessionData(): Promise<any> {
     const session = await this.prisma.workflowSession.findUnique({
@@ -62,28 +62,33 @@ export class VisualAuditorAgent extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'VISUAL_AUDITOR');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Visual Auditor Agent started analyzing layout structure and CTA discoverability for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const coordinator = new VisualIntelligenceCoordinator(this.prisma);
     const result = await coordinator.analyzeSession(this.sessionId);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     // Sync findings to context
     await this.context.appendEvent('VISUAL_FINDINGS_SYNC', {
       findingsCount: result.findings.length,
       scores: result.scores
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Visual Auditor generated ${result.findings.length} visual observations and computed layout score of ${result.scores.overallScore}%.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('SYNC_COMPLETED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -108,28 +113,33 @@ export class CognitiveSimulatorAgent extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'COGNITIVE_SIMULATOR');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Cognitive Simulator Agent running behavior/thought heuristics for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const coordinator = new UXIntelligenceCoordinator(this.prisma);
     const result = await coordinator.analyzeSession(this.sessionId);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     // Sync findings to context
     await this.context.appendEvent('COGNITIVE_FINDINGS_SYNC', {
       findingsCount: result.findings.length,
       signalsCount: result.cognitiveSignals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Cognitive Simulator generated ${result.findings.length} usability findings and ${result.cognitiveSignals.length} cognitive friction signals.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('SYNC_COMPLETED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -154,12 +164,15 @@ export class UXOrchestratorAgent extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'UX_ORCHESTRATOR');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `UX Orchestrator synthesizing unified scorecard and executive summary for session ${this.sessionId}.`
     });
+
+    if (signal?.aborted) throw new Error('Agent execution aborted');
 
     // Run report compilation
     const session = await this.prisma.workflowSession.findUnique({
@@ -207,6 +220,8 @@ export class UXOrchestratorAgent extends BaseOrchestratedAgent {
     };
 
     const reportData = buildUXReport(sessionData as any);
+
+    if (signal?.aborted) throw new Error('Agent execution aborted');
 
     // Save reportData scores to DB
     await this.prisma.$transaction(async (tx) => {
@@ -293,23 +308,28 @@ export class NavigationAgentWrapper extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'NAVIGATION_AGENT');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Navigation Agent specialist started analysis for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const sessionData = await this.fetchSessionData();
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const specialist = new NavigationSpecialist();
     const result = await specialist.execute(sessionData);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
       agentType: this.agentType,
       findingsCount: result.findings.length,
       signalsCount: result.signals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -325,23 +345,28 @@ export class OnboardingAgentWrapper extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'ONBOARDING_AGENT');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Onboarding Agent specialist started analysis for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const sessionData = await this.fetchSessionData();
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const specialist = new OnboardingSpecialist();
     const result = await specialist.execute(sessionData);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
       agentType: this.agentType,
       findingsCount: result.findings.length,
       signalsCount: result.signals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -357,23 +382,28 @@ export class DiscoverabilityAgentWrapper extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'DISCOVERABILITY_AGENT');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Discoverability Agent specialist started analysis for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const sessionData = await this.fetchSessionData();
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const specialist = new DiscoverabilitySpecialist();
     const result = await specialist.execute(sessionData);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
       agentType: this.agentType,
       findingsCount: result.findings.length,
       signalsCount: result.signals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -389,23 +419,28 @@ export class CognitiveAgentWrapper extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'COGNITIVE_AGENT');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Cognitive Agent specialist started analysis for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const sessionData = await this.fetchSessionData();
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const specialist = new CognitiveSpecialist();
     const result = await specialist.execute(sessionData);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
       agentType: this.agentType,
       findingsCount: result.findings.length,
       signalsCount: result.signals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -421,23 +456,28 @@ export class VisualAgentWrapper extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'VISUAL_AGENT');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Visual Agent specialist started analysis for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const sessionData = await this.fetchSessionData();
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const specialist = new VisualSpecialist();
     const result = await specialist.execute(sessionData);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
       agentType: this.agentType,
       findingsCount: result.findings.length,
       signalsCount: result.signals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,
@@ -453,23 +493,28 @@ export class WorkflowAgentWrapper extends BaseOrchestratedAgent {
     super(prisma, sessionId, context, broker, timeline, 'WORKFLOW_AGENT');
   }
 
-  async execute(task: OrchestrationTask): Promise<any> {
+  async execute(task: OrchestrationTask, signal?: AbortSignal): Promise<any> {
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('ANALYSIS_STARTED', {
       agentType: this.agentType,
       taskId: task.id,
       description: `Workflow Agent specialist started analysis for session ${this.sessionId}.`
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const sessionData = await this.fetchSessionData();
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     const specialist = new WorkflowSpecialist();
     const result = await specialist.execute(sessionData);
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.context.appendEvent('SPECIALIZED_AGENT_SYNC', {
       agentType: this.agentType,
       findingsCount: result.findings.length,
       signalsCount: result.signals.length
     });
 
+    if (signal?.aborted) throw new Error('Agent execution aborted');
     await this.timeline.logEvent('FINDING_GENERATED', {
       agentType: this.agentType,
       taskId: task.id,

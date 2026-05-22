@@ -1,5 +1,15 @@
 export interface MemoryEventPayload {
   description?: string;
+  screenshotId?: string;
+  actionContext?: string;
+  findingsCount?: number;
+  intensity?: number;
+  scores?: any;
+  signalsCount?: number;
+  overallScore?: number;
+  summaryLength?: number;
+  agentType?: string;
+  taskId?: string;
   [key: string]: any;
 }
 

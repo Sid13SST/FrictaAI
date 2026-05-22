@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
-import { prisma } from '@fricta/db';
+import { prisma, OrchestrationSession } from '@fricta/db';
 
 export const consoleRoutes = new Hono<{
   Variables: {
-    orchSession: any;
+    orchSession: OrchestrationSession;
   };
 }>()
   /**

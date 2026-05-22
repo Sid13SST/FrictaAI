@@ -345,10 +345,18 @@ export class OrchestratorCoordinator {
 
   private async executeTaskWithTimeout(agent: BaseOrchestratedAgent, task: OrchestrationTask): Promise<any> {
     const timeoutMs = 30000;
+    const controller = new AbortController();
+    const signal = controller.signal;
     
-    const taskPromise = agent.execute(task);
+    const taskPromise = agent.execute(task, signal);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Agent execution timeout')), timeoutMs);
+      const timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('Agent execution timeout'));
+      }, timeoutMs);
+      
+      // Clean up timer if task completes successfully or fails before timeout
+      taskPromise.finally(() => clearTimeout(timer));
     });
 
     return Promise.race([taskPromise, timeoutPromise]);
