@@ -5,6 +5,7 @@ import { compressAndResizeScreenshot } from '../compression';
 import { generateScreenshotMetadata } from '../metadata';
 import { VisualTimelineManager } from '../timeline';
 import { CaptureOptions } from '../types';
+import { RealtimeEventBus } from '@fricta/realtime';
 
 export class VisualCaptureEngine {
   private storage: VisualStorageManager;
@@ -78,6 +79,85 @@ export class VisualCaptureEngine {
           metadata: metadata as any,
         },
       });
+
+      // 6. Broadcast Real-time Events
+      try {
+        const orchestrationSession = await this.prisma.orchestrationSession.findFirst({
+          where: { workflowSessionId: sessionId },
+          orderBy: { createdAt: 'desc' }
+        });
+        const orchestrationSessionId = orchestrationSession?.id || sessionId;
+
+        RealtimeEventBus.getInstance().publish({
+          timestamp: screenshotRecord.timestamp.toISOString(),
+          orchestrationSessionId,
+          eventType: 'screenshot.captured',
+          payload: {
+            id: screenshotRecord.id,
+            workflowSessionId: sessionId,
+            screenshotType: screenshotRecord.screenshotType,
+            filePath: screenshotRecord.filePath,
+            thumbnailPath: screenshotRecord.thumbnailPath,
+            stepIndex: screenshotRecord.stepIndex,
+            pageUrl: screenshotRecord.pageUrl,
+            viewportWidth: screenshotRecord.viewportWidth,
+            viewportHeight: screenshotRecord.viewportHeight,
+            actionContext: screenshotRecord.actionContext,
+            fileSize: screenshotRecord.fileSize,
+            metadata: screenshotRecord.metadata
+          }
+        });
+
+        // Resolve action, thoughts, and findings to compile replay frame
+        const [action, thoughts, findings] = await Promise.all([
+          this.prisma.agentAction.findFirst({
+            where: { workflowSessionId: sessionId, stepNumber: options.stepIndex }
+          }),
+          this.prisma.agentThought.findMany({
+            where: { workflowSessionId: sessionId, stepNumber: options.stepIndex }
+          }),
+          this.prisma.uXFinding.findMany({
+            where: { workflowSessionId: sessionId }
+          })
+        ]);
+
+        const stepFindings = findings.filter(f => {
+          const diff = Math.abs(new Date(f.timestamp).getTime() - screenshotRecord.timestamp.getTime());
+          return diff < 60000;
+        });
+
+        RealtimeEventBus.getInstance().publish({
+          timestamp: screenshotRecord.timestamp.toISOString(),
+          orchestrationSessionId,
+          eventType: 'replay.updated',
+          payload: {
+            stepIndex: screenshotRecord.stepIndex,
+            timestamp: screenshotRecord.timestamp.toISOString(),
+            screenshot: {
+              id: screenshotRecord.id,
+              filePath: screenshotRecord.filePath,
+              pageUrl: screenshotRecord.pageUrl,
+              actionContext: screenshotRecord.actionContext
+            },
+            action: action ? {
+              type: action.action,
+              target: action.target,
+              value: action.value,
+              status: action.status
+            } : null,
+            thoughts: thoughts.map(t => t.thought),
+            findings: stepFindings.map(f => ({
+              id: f.id,
+              title: f.title,
+              severity: f.severity,
+              recommendation: f.recommendation
+            }))
+          }
+        });
+
+      } catch (eventErr) {
+        console.error('[VisualCaptureEngine] Failed to broadcast real-time events:', eventErr);
+      }
 
       return screenshotRecord;
     } catch (error: any) {

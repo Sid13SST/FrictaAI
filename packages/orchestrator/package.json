@@ -19,6 +19,7 @@
     "@fricta/report-engine": "*",
     "@fricta/ux-engine": "*",
     "@fricta/agents": "*",
-    "@fricta/shared-memory": "*"
+    "@fricta/shared-memory": "*",
+    "@fricta/realtime": "*"
   }
 }

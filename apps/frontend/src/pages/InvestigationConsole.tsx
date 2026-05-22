@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Brain, Terminal, Layers, ShieldAlert, Cpu, Sparkles, Database, Eye } from 'lucide-react';
 
@@ -19,6 +19,12 @@ export const InvestigationConsole: React.FC = () => {
 
   // Unified Replay Scrubbing Sync State
   const [activeStep, setActiveStep] = useState<number>(0);
+  const [liveStepCount, setLiveStepCount] = useState<number>(0);
+
+  const activeStepRef = useRef<number>(0);
+  useEffect(() => {
+    activeStepRef.current = activeStep;
+  }, [activeStep]);
 
   // Raw API Datasets
   const [loading, setLoading] = useState(true);
@@ -87,6 +93,444 @@ export const InvestigationConsole: React.FC = () => {
   useEffect(() => {
     if (id) fetchConsoleData();
   }, [id]);
+
+  const handleResetLiveStep = () => {
+    if (replayData && replayData.frames) {
+      setActiveStep(replayData.frames.length - 1);
+    }
+    setLiveStepCount(0);
+  };
+
+  useEffect(() => {
+    if (replayData && replayData.frames && activeStep >= replayData.frames.length - 1) {
+      setLiveStepCount(0);
+    }
+  }, [activeStep, replayData]);
+
+  useEffect(() => {
+    if (!id || loading) return;
+
+    const baseRealtime = 'http://127.0.0.1:3001/api/realtime';
+    const streamNames = ['orchestration', 'timeline', 'agents', 'memory', 'replay', 'insights'] as const;
+    const sources: { [key: string]: EventSource } = {};
+
+    const mapSSEEventToTimelineItem = (eventType: string, data: any) => {
+      const timestamp = data.timestamp || new Date().toISOString();
+      switch (eventType) {
+        case 'delegation.triggered':
+          return {
+            id: `delegation-${timestamp}-${Math.random()}`,
+            type: 'DELEGATION',
+            timestamp,
+            source: data.fromAgent,
+            target: data.toAgent,
+            title: `Delegated to ${data.toAgent}`,
+            description: `Agent ${data.fromAgent} delegated control task: "${data.eventType}"`,
+            metadata: data.payload
+          };
+        case 'memory.updated':
+          return {
+            id: data.id,
+            type: 'CORRELATION',
+            timestamp,
+            source: data.sourceAgent,
+            title: `Memory Sync Event: ${data.eventType}`,
+            description: `Agent ${data.sourceAgent} updated shared memory with keys: ${Object.keys(data.payload || {}).join(', ')}`,
+            metadata: data.payload
+          };
+        case 'agent.finding':
+          return {
+            id: data.finding?.id || `finding-${timestamp}-${Math.random()}`,
+            type: 'FINDING',
+            timestamp,
+            source: data.agentType || 'UX_ORCHESTRATOR',
+            title: data.finding?.title || 'UX Defect Detected',
+            description: data.finding?.description || '',
+            metadata: {
+              severity: data.finding?.severity,
+              recommendation: data.finding?.recommendation,
+              evidence: data.finding?.evidence
+            }
+          };
+        case 'screenshot.captured':
+          return {
+            id: data.id,
+            type: 'SCREENSHOT',
+            timestamp,
+            source: 'VISUAL_AGENT',
+            title: `Captured screenshot at step ${data.stepIndex}`,
+            description: `Captured screenshot of url: ${data.pageUrl} (Context: ${data.actionContext || 'N/A'})`,
+            metadata: {
+              stepIndex: data.stepIndex,
+              filePath: data.filePath,
+              thumbnailPath: data.thumbnailPath,
+              pageUrl: data.pageUrl,
+              viewport: `${data.viewportWidth}x${data.viewportHeight}`
+            }
+          };
+        case 'agent.failed':
+          return {
+            id: data.taskId || `failed-${timestamp}`,
+            type: 'RECOVERY',
+            timestamp,
+            source: data.agentType,
+            title: `${data.agentType} execution failure`,
+            description: `Attempting automated fallback / error recovery path.`,
+            metadata: { error: data.error, retryCount: data.retryCount }
+          };
+        case 'agent.progress':
+          return {
+            id: `progress-${timestamp}-${Math.random()}`,
+            type: 'REASONING',
+            timestamp,
+            source: data.agentType,
+            title: `${data.agentType} reasoning step`,
+            description: data.description,
+            metadata: { stepType: data.step }
+          };
+        default:
+          return {
+            id: `event-${timestamp}-${Math.random()}`,
+            type: 'CONTEXT',
+            timestamp,
+            source: 'SYSTEM',
+            title: `System event: ${eventType}`,
+            description: JSON.stringify(data)
+          };
+      }
+    };
+
+    streamNames.forEach(streamName => {
+      const url = `${baseRealtime}/${streamName}/${id}`;
+      const source = new EventSource(url);
+      sources[streamName] = source;
+
+      source.onerror = (err) => {
+        console.error(`[SSE Connection Error] Stream: ${streamName}`, err);
+      };
+    });
+
+    // orchestration stream listeners
+    sources.orchestration.addEventListener('orchestration.started', (e: any) => {
+      const data = JSON.parse(e.data);
+      setOverviewData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          session: {
+            ...prev.session,
+            workflowSessionId: data.workflowSessionId,
+            goal: data.goal,
+            startedAt: data.startedAt
+          }
+        };
+      });
+    });
+
+    const handleOrchUpdate = (e: any) => {
+      const data = JSON.parse(e.data);
+      setOverviewData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          session: {
+            ...prev.session,
+            status: data.status,
+            completedAt: data.completedAt || prev.session.completedAt,
+            metadata: data.metadata || prev.session.metadata
+          }
+        };
+      });
+    };
+    sources.orchestration.addEventListener('orchestration.updated', handleOrchUpdate);
+    sources.orchestration.addEventListener('orchestration.completed', handleOrchUpdate);
+
+    // timeline stream listeners
+    const timelineEventNames = [
+      'delegation.triggered',
+      'memory.updated',
+      'agent.finding',
+      'screenshot.captured',
+      'agent.failed',
+      'agent.progress'
+    ];
+    timelineEventNames.forEach(evtName => {
+      sources.timeline.addEventListener(evtName, (e: any) => {
+        const data = JSON.parse(e.data);
+        const item = mapSSEEventToTimelineItem(evtName, data);
+        
+        setTimelineData((prev: any) => {
+          if (!prev) return prev;
+          const list = prev.timeline || [];
+          const existsIndex = list.findIndex((x: any) => x.id === item.id);
+          let updatedList;
+          if (existsIndex > -1) {
+            updatedList = [...list];
+            updatedList[existsIndex] = item;
+          } else {
+            updatedList = [...list, item];
+          }
+          updatedList.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          return { ...prev, timeline: updatedList };
+        });
+
+        if (evtName === 'screenshot.captured') {
+          setEvidenceData((prev: any) => {
+            if (!prev) return prev;
+            const exists = (prev.screenshots || []).some((s: any) => s.id === data.id);
+            if (exists) return prev;
+            return {
+              ...prev,
+              screenshots: [...(prev.screenshots || []), data]
+            };
+          });
+        }
+      });
+    });
+
+    // agents stream listeners
+    sources.agents.addEventListener('agent.started', (e: any) => {
+      const data = JSON.parse(e.data);
+      setAgentsData((prev: any) => {
+        if (!prev) return prev;
+        const list = prev.agents || [];
+        const exists = list.find((a: any) => a.id === data.taskId);
+        if (exists) {
+          exists.status = 'RUNNING';
+          exists.task = data.description;
+          return { ...prev };
+        }
+        const newAgent = {
+          id: data.taskId,
+          agentType: data.agentType,
+          status: 'RUNNING',
+          task: data.description,
+          startedAt: new Date().toISOString(),
+          completedAt: null,
+          findings: [],
+          signals: [],
+          reasoningTraces: []
+        };
+        return { ...prev, agents: [...list, newAgent] };
+      });
+    });
+
+    sources.agents.addEventListener('agent.progress', (e: any) => {
+      const data = JSON.parse(e.data);
+      setAgentsData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          agents: (prev.agents || []).map((a: any) => {
+            if (a.id !== data.taskId) return a;
+            const traceExists = (a.reasoningTraces || []).some((t: any) => t.summary === data.description && t.stepType === data.step);
+            if (traceExists) return a;
+            return {
+              ...a,
+              reasoningTraces: [
+                ...(a.reasoningTraces || []),
+                {
+                  id: `trace-${Date.now()}-${Math.random()}`,
+                  summary: data.description,
+                  stepType: data.step,
+                  timestamp: new Date().toISOString()
+                }
+              ]
+            };
+          })
+        };
+      });
+    });
+
+    sources.agents.addEventListener('agent.finding', (e: any) => {
+      const data = JSON.parse(e.data);
+      setAgentsData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          agents: (prev.agents || []).map((a: any) => {
+            if (a.id !== data.taskId) return a;
+            const findingExists = (a.findings || []).some((f: any) => f.id === data.finding.id);
+            if (findingExists) return a;
+            return {
+              ...a,
+              findings: [...(a.findings || []), data.finding]
+            };
+          })
+        };
+      });
+
+      setOverviewData((prev: any) => {
+        if (!prev) return prev;
+        const sev = (data.finding.severity || 'LOW').toUpperCase();
+        return {
+          ...prev,
+          severity: {
+            ...prev.severity,
+            [sev]: (prev.severity[sev] || 0) + 1
+          }
+        };
+      });
+
+      setEvidenceData((prev: any) => {
+        if (!prev) return prev;
+        const exists = (prev.uxFindings || []).some((f: any) => f.id === data.finding.id);
+        if (exists) return prev;
+        return {
+          ...prev,
+          uxFindings: [
+            ...(prev.uxFindings || []),
+            {
+              id: data.finding.id,
+              workflowSessionId: id,
+              findingType: data.finding.findingType,
+              severity: data.finding.severity,
+              title: data.finding.title,
+              description: data.finding.description,
+              evidence: data.finding.evidence,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        };
+      });
+    });
+
+    sources.agents.addEventListener('agent.failed', (e: any) => {
+      const data = JSON.parse(e.data);
+      setAgentsData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          agents: (prev.agents || []).map((a: any) => {
+            if (a.id !== data.taskId) return a;
+            return {
+              ...a,
+              status: 'FAILED',
+              completedAt: new Date().toISOString()
+            };
+          })
+        };
+      });
+    });
+
+    // memory stream listeners
+    sources.memory.addEventListener('memory.updated', (e: any) => {
+      const data = JSON.parse(e.data);
+      setMemoryData((prev: any) => {
+        if (!prev) return prev;
+        const list = prev.events || [];
+        const exists = list.some((x: any) => x.id === data.id);
+        if (exists) return prev;
+        return {
+          ...prev,
+          events: [...list, {
+            id: data.id,
+            eventType: data.eventType,
+            sourceAgent: data.sourceAgent,
+            payload: data.payload,
+            timestamp: new Date(data.timestamp)
+          }]
+        };
+      });
+    });
+
+    // replay stream listeners
+    sources.replay.addEventListener('replay.updated', (e: any) => {
+      const data = JSON.parse(e.data);
+      setReplayData((prev: any) => {
+        if (!prev) return prev;
+        const frames = prev.frames || [];
+        const existingIndex = frames.findIndex((f: any) => f.stepIndex === data.stepIndex);
+        let updatedFrames;
+        if (existingIndex > -1) {
+          updatedFrames = [...frames];
+          updatedFrames[existingIndex] = data;
+        } else {
+          updatedFrames = [...frames, data];
+        }
+        updatedFrames.sort((a, b) => a.stepIndex - b.stepIndex);
+
+        const lastFrameIndex = frames.length - 1;
+        const isNewFrame = existingIndex === -1;
+
+        if (isNewFrame) {
+          const currentActiveStep = activeStepRef.current;
+          if (currentActiveStep >= lastFrameIndex || lastFrameIndex < 0) {
+            const newLastIndex = updatedFrames.length - 1;
+            setActiveStep(newLastIndex);
+            setLiveStepCount(0);
+          } else {
+            setLiveStepCount(c => c + 1);
+          }
+        }
+
+        return { ...prev, frames: updatedFrames };
+      });
+    });
+
+    // insights stream listeners
+    sources.insights.addEventListener('insight.generated', (e: any) => {
+      const data = JSON.parse(e.data);
+      setInsightsData((prev: any) => {
+        if (!prev) return prev;
+        const list = prev.insights || [];
+        const exists = list.some((i: any) => i.id === data.insightId);
+        if (exists) return prev;
+        return {
+          ...prev,
+          insights: [...list, {
+            id: data.insightId,
+            orchestrationSessionId: id,
+            title: data.title,
+            summary: data.summary,
+            supportingEvidence: data.supportingEvidence,
+            severity: data.severity,
+            confidence: data.confidence,
+            timestamp: new Date().toISOString()
+          }]
+        };
+      });
+
+      setOverviewData((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          insightsCount: (prev.insightsCount || 0) + 1
+        };
+      });
+    });
+
+    sources.insights.addEventListener('correlation.generated', (e: any) => {
+      const data = JSON.parse(e.data);
+      setEvidenceData((prev: any) => {
+        if (!prev) return prev;
+        const list = prev.correlations || [];
+        const exists = list.some((c: any) => c.id === data.correlationId);
+        if (exists) return prev;
+        return {
+          ...prev,
+          correlations: [...list, {
+            id: data.correlationId,
+            orchestrationSessionId: id,
+            findingIds: data.findingIds,
+            correlationType: data.correlationType,
+            summary: data.summary,
+            confidence: data.confidence,
+            metadata: data.metadata,
+            timestamp: new Date().toISOString()
+          }]
+        };
+      });
+    });
+
+    return () => {
+      streamNames.forEach(streamName => {
+        if (sources[streamName]) {
+          sources[streamName].close();
+        }
+      });
+    };
+  }, [id, loading]);
 
   if (loading) {
     return (
@@ -223,6 +667,8 @@ export const InvestigationConsole: React.FC = () => {
                         setActiveStep={setActiveStep}
                         visualFindings={evidenceData.visualFindings || []}
                         mode="full"
+                        liveStepCount={liveStepCount}
+                        onResetLiveStep={handleResetLiveStep}
                       />
                     </div>
                   )}
@@ -327,6 +773,8 @@ export const InvestigationConsole: React.FC = () => {
                 setActiveStep={setActiveStep}
                 visualFindings={evidenceData?.visualFindings || []}
                 mode="minimal"
+                liveStepCount={liveStepCount}
+                onResetLiveStep={handleResetLiveStep}
               />
             ) : (
               <div className="text-center py-6 text-zinc-600 font-mono text-[11px] italic">

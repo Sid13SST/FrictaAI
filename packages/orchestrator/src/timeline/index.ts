@@ -1,4 +1,5 @@
 import { PrismaClient } from '@fricta/db';
+import { RealtimeEventBus } from '@fricta/realtime';
 
 export type OrchestratorTimelineEventType = 
   | 'AGENT_SPAWNED'
@@ -21,12 +22,31 @@ export class TimelineRecorder {
    */
   async logEvent(eventType: OrchestratorTimelineEventType, payload: Record<string, any>) {
     console.log(`[TimelineRecorder] [${eventType}] ${payload.description || ''}`);
-    return await this.prisma.sharedContextEvent.create({
+    
+    const result = await this.prisma.sharedContextEvent.create({
       data: {
         orchestrationSessionId: this.orchestrationSessionId,
         eventType,
         payload
       }
     });
+
+    try {
+      RealtimeEventBus.getInstance().publish({
+        timestamp: new Date().toISOString(),
+        orchestrationSessionId: this.orchestrationSessionId,
+        eventType: 'delegation.triggered',
+        payload: {
+          fromAgent: payload.fromAgent || 'UX_ORCHESTRATOR',
+          toAgent: payload.toAgent || payload.agentType || 'ALL',
+          eventType,
+          payload
+        }
+      });
+    } catch (err) {
+      console.error('[TimelineRecorder] Failed to publish delegation event to realtime event bus:', err);
+    }
+
+    return result;
   }
 }

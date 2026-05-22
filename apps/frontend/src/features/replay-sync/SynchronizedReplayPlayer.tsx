@@ -40,6 +40,8 @@ interface SynchronizedReplayPlayerProps {
   setActiveStep: (step: number) => void;
   visualFindings: VisualFinding[];
   mode?: 'full' | 'minimal';
+  liveStepCount?: number;
+  onResetLiveStep?: () => void;
 }
 
 export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> = ({
@@ -48,6 +50,8 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
   setActiveStep,
   visualFindings,
   mode = 'full',
+  liveStepCount = 0,
+  onResetLiveStep,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
@@ -168,6 +172,16 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
             <span className="text-[10px] font-mono text-zinc-400 ml-2">
               STEP <span className="text-[#5ed29c] font-black">{activeStep + 1}</span> / {totalSteps}
             </span>
+
+            {liveStepCount > 0 && (
+              <button
+                onClick={onResetLiveStep}
+                className="ml-2 px-1.5 py-0.5 rounded bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/20 text-[#5ed29c] text-[9px] font-mono flex items-center gap-1 cursor-pointer transition-all animate-pulse"
+              >
+                <span className="w-1 h-1 rounded-full bg-[#5ed29c] inline-block" />
+                +{liveStepCount} Live Step{liveStepCount > 1 ? 's' : ''}
+              </button>
+            )}
           </div>
 
           {currentFrame.screenshot && (
@@ -334,6 +348,16 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
               <span className="text-[11px] font-mono text-zinc-400 ml-2">
                 STEP <span className="text-[#5ed29c] font-black">{activeStep + 1}</span> / {totalSteps}
               </span>
+
+              {liveStepCount > 0 && (
+                <button
+                  onClick={onResetLiveStep}
+                  className="ml-2 px-1.5 py-0.5 rounded bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/20 text-[#5ed29c] text-[9.5px] font-mono flex items-center gap-1 cursor-pointer transition-all animate-pulse"
+                >
+                  <span className="w-1 h-1 rounded-full bg-[#5ed29c] inline-block" />
+                  +{liveStepCount} Live Step{liveStepCount > 1 ? 's' : ''}
+                </button>
+              )}
             </div>
 
             {/* Playback Speed Toggles */}

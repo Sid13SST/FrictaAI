@@ -22,6 +22,7 @@ import {
   SharedMemoryCorrelationEngine, 
   SharedMemorySynthesisEngine 
 } from '@fricta/shared-memory';
+import { RealtimeEventBus } from '@fricta/realtime';
 
 
 export class OrchestratorCoordinator {
@@ -77,6 +78,17 @@ export class OrchestratorCoordinator {
       });
       const goal = workflowSession?.goal || 'General Usability Diagnostics';
 
+      RealtimeEventBus.getInstance().publish({
+        timestamp: new Date().toISOString(),
+        orchestrationSessionId: sessionId,
+        eventType: 'orchestration.started',
+        payload: {
+          workflowSessionId,
+          goal,
+          startedAt: new Date().toISOString()
+        }
+      });
+
       await this.timeline.logEvent('AGENT_SPAWNED', {
         description: 'Orchestration core online. Spawning specialized UX agent workers.'
       });
@@ -120,6 +132,17 @@ export class OrchestratorCoordinator {
               }
             });
 
+            RealtimeEventBus.getInstance().publish({
+              timestamp: new Date().toISOString(),
+              orchestrationSessionId: sessionId!,
+              eventType: 'agent.started',
+              payload: {
+                taskId: task.id,
+                agentType: task.agentType,
+                description: task.description
+              }
+            });
+
             await this.context.appendMemoryEvent({
               eventType: 'AGENT_TASK_START',
               sourceAgent: task.agentType,
@@ -147,6 +170,46 @@ export class OrchestratorCoordinator {
               // Persist findings, signals, and reasoning traces if they exist
               if (result && (result.findings || result.signals || result.reasoningTraces)) {
                 await this.persistAgentOutput(task.id, task.agentType, result);
+              }
+
+              // Stream progress steps
+              if (result && Array.isArray(result.reasoningTraces)) {
+                for (const trace of result.reasoningTraces) {
+                  RealtimeEventBus.getInstance().publish({
+                    timestamp: new Date().toISOString(),
+                    orchestrationSessionId: sessionId!,
+                    eventType: 'agent.progress',
+                    payload: {
+                      taskId: task.id,
+                      agentType: task.agentType,
+                      description: trace.summary,
+                      step: trace.stepType
+                    }
+                  });
+                }
+              }
+
+              // Stream findings
+              if (result && Array.isArray(result.findings)) {
+                for (const finding of result.findings) {
+                  RealtimeEventBus.getInstance().publish({
+                    timestamp: new Date().toISOString(),
+                    orchestrationSessionId: sessionId!,
+                    eventType: 'agent.finding',
+                    payload: {
+                      taskId: task.id,
+                      agentType: task.agentType,
+                      finding: {
+                        id: finding.id || Math.random().toString(36).substring(7),
+                        findingType: finding.findingType,
+                        severity: finding.severity,
+                        title: finding.title,
+                        description: finding.description,
+                        evidence: finding.evidence || ''
+                      }
+                    }
+                  });
+                }
               }
 
               await this.context.appendMemoryEvent({
@@ -199,6 +262,18 @@ export class OrchestratorCoordinator {
                   }
                 });
 
+                RealtimeEventBus.getInstance().publish({
+                  timestamp: new Date().toISOString(),
+                  orchestrationSessionId: sessionId!,
+                  eventType: 'agent.failed',
+                  payload: {
+                    taskId: task.id,
+                    agentType: task.agentType,
+                    error: errorMsg,
+                    retryCount: task.retryCount
+                  }
+                });
+
                 // Log task failure via broker
                 await this.broker.sendMessage({
                   fromAgent: task.agentType,
@@ -242,6 +317,19 @@ export class OrchestratorCoordinator {
         }
       });
 
+      RealtimeEventBus.getInstance().publish({
+        timestamp: new Date().toISOString(),
+        orchestrationSessionId: sessionId,
+        eventType: 'orchestration.completed',
+        payload: {
+          status: finalStatus,
+          completedAt: new Date().toISOString(),
+          metadata: {
+            tasks: finalQueue.map(t => ({ id: t.id, status: t.status, agent: t.agentType }))
+          }
+        }
+      });
+
       await this.timeline.logEvent('ORCHESTRATION_COMPLETED', {
         description: `Multi-agent investigation completed with status: ${finalStatus}.`
       });
@@ -257,6 +345,17 @@ export class OrchestratorCoordinator {
             data: {
               status: 'FAILED',
               completedAt: new Date(),
+              metadata: { error: orchestrationError.message || 'Fatal orchestration error' }
+            }
+          });
+
+          RealtimeEventBus.getInstance().publish({
+            timestamp: new Date().toISOString(),
+            orchestrationSessionId: sessionId,
+            eventType: 'orchestration.completed',
+            payload: {
+              status: 'FAILED',
+              completedAt: new Date().toISOString(),
               metadata: { error: orchestrationError.message || 'Fatal orchestration error' }
             }
           });

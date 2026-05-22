@@ -1,5 +1,6 @@
 import { PrismaClient } from '@fricta/db';
 import { AgentMessage } from '../types';
+import { RealtimeEventBus } from '@fricta/realtime';
 
 export class MessageBroker {
   constructor(
@@ -14,7 +15,7 @@ export class MessageBroker {
     const timestamp = new Date();
     console.log(`[MessageBroker] [${timestamp.toISOString()}] ${message.fromAgent} -> ${message.toAgent} [${message.messageType}]`);
     
-    return await this.prisma.delegationEvent.create({
+    const result = await this.prisma.delegationEvent.create({
       data: {
         orchestrationSessionId: this.orchestrationSessionId,
         fromAgent: message.fromAgent,
@@ -24,6 +25,24 @@ export class MessageBroker {
         timestamp
       }
     });
+
+    try {
+      RealtimeEventBus.getInstance().publish({
+        timestamp: timestamp.toISOString(),
+        orchestrationSessionId: this.orchestrationSessionId,
+        eventType: 'delegation.triggered',
+        payload: {
+          fromAgent: message.fromAgent,
+          toAgent: message.toAgent,
+          eventType: message.messageType,
+          payload: message.payload ?? {}
+        }
+      });
+    } catch (err) {
+      console.error('[MessageBroker] Failed to publish delegation.triggered event:', err);
+    }
+
+    return result;
   }
 
   /**

@@ -1,5 +1,5 @@
 {
-  "name": "@fricta/shared-memory",
+  "name": "@fricta/realtime",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -7,13 +7,12 @@
   "scripts": {
     "build": "tsc"
   },
+  "dependencies": {
+    "@fricta/db": "*",
+    "hono": "^4.3.4"
+  },
   "devDependencies": {
     "@fricta/config": "*",
     "typescript": "^5.4.5"
-  },
-  "dependencies": {
-    "@fricta/db": "*",
-    "@fricta/types": "*",
-    "@fricta/realtime": "*"
   }
 }

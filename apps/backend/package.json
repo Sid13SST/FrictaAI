@@ -17,6 +17,7 @@
     "@fricta/visual-intelligence": "*",
     "@fricta/report-engine": "*",
     "@fricta/orchestrator": "*",
+    "@fricta/realtime": "*",
     "@hono/node-server": "^1.11.1",
     "hono": "^4.3.4",
     "zod": "^3.23.8",
