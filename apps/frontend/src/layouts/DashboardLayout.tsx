@@ -32,18 +32,22 @@ export const DashboardLayout = () => {
         />
 
         {/* Logo */}
-        <div
-          className="h-16 flex items-center px-5 gap-3 flex-shrink-0"
+        <Link
+          to="/app"
+          className="h-16 flex items-center px-5 gap-3 flex-shrink-0 hover:opacity-90 transition-opacity"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
         >
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
             style={{
-              background: 'rgba(99, 102, 241,0.1)',
               border: '1px solid rgba(99, 102, 241,0.25)',
             }}
           >
-            <Brain className="w-4 h-4" style={{ color: '#6366f1' }} />
+            <img
+              src="/logo.png"
+              alt="Fricta"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-white font-bold text-sm tracking-tight leading-none">Fricta</span>
@@ -54,7 +58,7 @@ export const DashboardLayout = () => {
               Intelligence
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Nav */}
         <nav className="flex-1 p-3 flex flex-col gap-0.5 mt-1">
