@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Download, Clipboard, Brain, ShieldAlert, Sparkles,
   Code, FileText, Check, RefreshCw, ChevronRight,
@@ -310,23 +311,33 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             ))}
           </div>
 
-          <button
-            onClick={handleRunDiagnostics}
-            disabled={analyzing}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#3730a3] text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-2 sm:mb-0"
-          >
-            {analyzing ? (
-              <>
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin" />
-                <span>Running Diagnostics...</span>
-              </>
-            ) : (
-              <>
-                <Brain className="w-3.5 h-3.5" />
-                <span>Run UX Diagnostics</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap mb-2 sm:mb-0">
+            <Link
+              to={`/app/console/${sessionId}`}
+              className="flex items-center gap-2 px-4 py-2 bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/30 text-[#5ed29c] text-xs font-bold rounded-lg transition-all"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Launch Operational Console</span>
+            </Link>
+
+            <button
+              onClick={handleRunDiagnostics}
+              disabled={analyzing}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#3730a3] text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {analyzing ? (
+                <>
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent border-white animate-spin" />
+                  <span>Running Diagnostics...</span>
+                </>
+              ) : (
+                <>
+                  <Brain className="w-3.5 h-3.5" />
+                  <span>Run UX Diagnostics</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* ── Tab Content ──────────────────────────────────────────────────────── */}

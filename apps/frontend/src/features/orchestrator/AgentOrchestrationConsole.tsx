@@ -233,7 +233,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
 
   // Accent system color helpers

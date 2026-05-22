@@ -13,6 +13,7 @@ import { Reports } from './pages/Reports';
 import { Personas } from './pages/Personas';
 import { Settings } from './pages/Settings';
 import ReportDetails from './pages/ReportDetails';
+import { InvestigationConsole } from './pages/InvestigationConsole';
 
 function App() {
   return (
@@ -25,6 +26,16 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login/*" element={<Login />} />
         <Route path="/register/*" element={<Register />} />
+        <Route path="/app/console/:id" element={
+          <>
+            <SignedIn>
+              <InvestigationConsole />
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn signInForceRedirectUrl="/app" />
+            </SignedOut>
+          </>
+        } />
         <Route path="/app" element={
           <>
             <SignedIn>
