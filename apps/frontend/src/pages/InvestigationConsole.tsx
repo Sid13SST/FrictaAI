@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Brain, Terminal, Layers, ShieldAlert, Cpu, Sparkles, Database, Eye } from 'lucide-react';
+import { ArrowLeft, Brain, Terminal, Layers, ShieldAlert, Cpu, Sparkles, Database, Eye, Activity } from 'lucide-react';
 
 import { OrchestrationOverview } from '../features/orchestration/OrchestrationOverview';
 import { MultiAgentTimeline } from '../features/timeline/MultiAgentTimeline';
@@ -9,12 +9,13 @@ import { FindingCorrelationInspector } from '../features/correlations/FindingCor
 import { CollaborativeInsightCenter } from '../features/insights/CollaborativeInsightCenter';
 import { SharedMemoryStream } from '../features/shared-memory/SharedMemoryStream';
 import { SynchronizedReplayPlayer } from '../features/replay-sync/SynchronizedReplayPlayer';
+import { RuntimeObservabilityPanel } from '../features/orchestrator/RuntimeObservabilityPanel';
 
 export const InvestigationConsole: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
   // Layout Tab selection
-  type ActiveViewTab = 'overview' | 'timeline' | 'evidence' | 'agents' | 'insights' | 'memory';
+  type ActiveViewTab = 'overview' | 'timeline' | 'evidence' | 'agents' | 'insights' | 'memory' | 'runtime';
   const [activeTab, setActiveTab] = useState<ActiveViewTab>('overview');
 
   // Unified Replay Scrubbing Sync State
@@ -564,6 +565,7 @@ export const InvestigationConsole: React.FC = () => {
     { key: 'agents', label: 'Specialist Agents', icon: Cpu },
     { key: 'insights', label: 'Insight Center', icon: Sparkles },
     { key: 'memory', label: 'Shared Memory Stream', icon: Database },
+    { key: 'runtime', label: 'Runtime Observability', icon: Activity },
   ] as const;
 
   return (
@@ -700,6 +702,9 @@ export const InvestigationConsole: React.FC = () => {
                 <SharedMemoryStream 
                   memoryEvents={memoryData.events || []} 
                 />
+              )}
+              {activeTab === 'runtime' && id && (
+                <RuntimeObservabilityPanel sessionId={id} />
               )}
             </main>
 

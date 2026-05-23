@@ -11,7 +11,8 @@ export type RealtimeEventType =
   | 'insight.generated'
   | 'replay.updated'
   | 'screenshot.captured'
-  | 'memory.updated';
+  | 'memory.updated'
+  | 'runtime.telemetry';
 
 export interface RealtimeEvent<T = any> {
   id?: string;

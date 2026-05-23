@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { OrchestratorCoordinator } from '@fricta/orchestrator';
+import { startRuntime, RuntimeCoordinator } from '@fricta/runtime';
 
 export const orchestratorRoutes = new Hono()
   /**
@@ -50,15 +51,19 @@ export const orchestratorRoutes = new Hono()
     }
 
     // Instantiate and run coordinator in the background
-    const coordinator = new OrchestratorCoordinator(prisma);
-    
-    // We get the promise to start it, but don't await the full run
-    // so we can return the newly created OrchestrationSession ID immediately
     let orchestrationSessionId: string | null = null;
     
     try {
-      // We can run it in background
-      coordinator.runOrchestration(workflowSessionId).catch((err) => {
+      const runtime = await startRuntime(prisma);
+      const runtimeCoordinator = new RuntimeCoordinator(
+        prisma,
+        runtime.queueOrchestrator,
+        runtime.lockManager,
+        runtime.telemetryService,
+        'api-server-coordinator'
+      );
+
+      runtimeCoordinator.executeSession(workflowSessionId).catch((err) => {
         console.error(`[Orchestration Background Failure] Session ${workflowSessionId}:`, err);
       });
 

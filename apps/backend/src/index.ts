@@ -22,7 +22,10 @@ import { agentsRoutes } from './routes/agents';
 import { memoryRoutes } from './routes/memory';
 import { consoleRoutes } from './routes/console';
 import { realtimeRoutes } from './routes/realtime';
+import { runtimeRoutes } from './routes/runtime';
 import { startWorker } from '@fricta/agent';
+import { startRuntime } from '@fricta/runtime';
+import { prisma } from '@fricta/db';
 
 // Trigger reload for EADDRINUSE resolution
 const app = new Hono();
@@ -50,6 +53,7 @@ app.route('/api/console', consoleRoutes);
 app.route('/console', consoleRoutes);
 app.route('/realtime', realtimeRoutes);
 app.route('/api/realtime', realtimeRoutes);
+app.route('/api/runtime', runtimeRoutes);
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 
@@ -58,6 +62,10 @@ console.log(`Server is running on port ${port}`);
 
 // Start BullMQ Worker
 startWorker();
+// Start Runtime Infrastructure (Workers, Supervisor, Telemetry)
+startRuntime(prisma).catch((err) => {
+  console.error('Failed to start distributed runtime:', err);
+});
 
 serve({
   fetch: app.fetch,
