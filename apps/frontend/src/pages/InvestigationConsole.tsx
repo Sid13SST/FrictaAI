@@ -295,11 +295,16 @@ export const InvestigationConsole: React.FC = () => {
       setAgentsData((prev: any) => {
         if (!prev) return prev;
         const list = prev.agents || [];
-        const exists = list.find((a: any) => a.id === data.taskId);
-        if (exists) {
-          exists.status = 'RUNNING';
-          exists.task = data.description;
-          return { ...prev };
+        const existsIndex = list.findIndex((a: any) => a.id === data.taskId || a.agentType === data.agentType);
+        if (existsIndex > -1) {
+          const updatedList = [...list];
+          updatedList[existsIndex] = {
+            ...updatedList[existsIndex],
+            id: data.taskId,
+            status: 'RUNNING',
+            task: data.description
+          };
+          return { ...prev, agents: updatedList };
         }
         const newAgent = {
           id: data.taskId,
@@ -323,11 +328,12 @@ export const InvestigationConsole: React.FC = () => {
         return {
           ...prev,
           agents: (prev.agents || []).map((a: any) => {
-            if (a.id !== data.taskId) return a;
+            if (a.id !== data.taskId && a.agentType !== data.agentType) return a;
             const traceExists = (a.reasoningTraces || []).some((t: any) => t.summary === data.description && t.stepType === data.step);
-            if (traceExists) return a;
+            if (traceExists) return { ...a, id: data.taskId };
             return {
               ...a,
+              id: data.taskId,
               reasoningTraces: [
                 ...(a.reasoningTraces || []),
                 {
@@ -350,11 +356,12 @@ export const InvestigationConsole: React.FC = () => {
         return {
           ...prev,
           agents: (prev.agents || []).map((a: any) => {
-            if (a.id !== data.taskId) return a;
+            if (a.id !== data.taskId && a.agentType !== data.agentType) return a;
             const findingExists = (a.findings || []).some((f: any) => f.id === data.finding.id);
-            if (findingExists) return a;
+            if (findingExists) return { ...a, id: data.taskId };
             return {
               ...a,
+              id: data.taskId,
               findings: [...(a.findings || []), data.finding]
             };
           })
@@ -403,9 +410,10 @@ export const InvestigationConsole: React.FC = () => {
         return {
           ...prev,
           agents: (prev.agents || []).map((a: any) => {
-            if (a.id !== data.taskId) return a;
+            if (a.id !== data.taskId && a.agentType !== data.agentType) return a;
             return {
               ...a,
+              id: data.taskId,
               status: 'FAILED',
               completedAt: new Date().toISOString()
             };

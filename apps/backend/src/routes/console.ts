@@ -315,6 +315,7 @@ export const consoleRoutes = new Hono<{
       }
 
       return {
+        id: execs.length > 0 ? execs[execs.length - 1].id : undefined,
         agentType,
         status: executionStatus,
         scopedResponsibilities: scopedDescriptions[agentType],
