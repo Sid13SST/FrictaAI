@@ -15,6 +15,7 @@ import { Settings } from './pages/Settings';
 import ReportDetails from './pages/ReportDetails';
 import { InvestigationConsole } from './pages/InvestigationConsole';
 import { HistoricalDashboard } from './pages/HistoricalDashboard';
+import { WorkspaceConsole } from './pages/WorkspaceConsole';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:id" element={<ReportDetails />} />
           <Route path="historical" element={<HistoricalDashboard />} />
+          <Route path="workspace" element={<WorkspaceConsole />} />
           <Route path="personas" element={<Personas />} />
           <Route path="settings" element={<Settings />} />
         </Route>

@@ -12,11 +12,17 @@ export type RealtimeEventType =
   | 'replay.updated'
   | 'screenshot.captured'
   | 'memory.updated'
-  | 'runtime.telemetry';
+  | 'runtime.telemetry'
+  | 'presence.sync'
+  | 'annotation.created'
+  | 'annotation.resolved'
+  | 'comment.created'
+  | 'review.updated'
+  | 'workspace.members.updated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
-  timestamp: string;
+  timestamp?: string;
   orchestrationSessionId: string;
   eventType: RealtimeEventType;
   payload: T;

@@ -408,6 +408,7 @@ export const HistoricalDashboard: React.FC = () => {
                     const chartTop = 20;
                     const chartWidth = 530;
                     const chartHeight = 175;
+                    
                     const points = stabilityTrend.map((t, idx) => {
                       const x = stabilityTrend.length > 1
                         ? chartLeft + (idx / (stabilityTrend.length - 1)) * chartWidth
@@ -416,9 +417,28 @@ export const HistoricalDashboard: React.FC = () => {
                       return { x, y, score: t.score, date: t.createdAt, sessionId: t.sessionId, index: idx };
                     });
 
-                    const linePath = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                    // Compute smooth cubic Bezier curve path
+                    const getBezierPath = (pts: typeof points) => {
+                      if (pts.length === 0) return '';
+                      if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+                      
+                      let path = `M ${pts[0].x} ${pts[0].y}`;
+                      for (let i = 0; i < pts.length - 1; i++) {
+                        const p0 = pts[i];
+                        const p1 = pts[i + 1];
+                        // Control points at 1/3 and 2/3 of the X distance
+                        const cp1x = p0.x + (p1.x - p0.x) / 3;
+                        const cp1y = p0.y;
+                        const cp2x = p0.x + 2 * (p1.x - p0.x) / 3;
+                        const cp2y = p1.y;
+                        path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+                      }
+                      return path;
+                    };
+
+                    const linePath = getBezierPath(points);
                     const areaPath = points.length > 0
-                      ? `M ${points[0].x} ${chartTop + chartHeight} ${points.map(p => `L ${p.x} ${p.y}`).join(' ')} L ${points[points.length - 1].x} ${chartTop + chartHeight} Z`
+                      ? `${linePath} L ${points[points.length - 1].x} ${chartTop + chartHeight} L ${points[0].x} ${chartTop + chartHeight} Z`
                       : '';
 
                     return (
@@ -426,17 +446,27 @@ export const HistoricalDashboard: React.FC = () => {
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 600 240">
                           <defs>
                             <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.2"/>
+                              <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.25"/>
                               <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0"/>
                             </linearGradient>
                             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                              <feGaussianBlur stdDeviation="3.5" result="blur" />
+                              <feGaussianBlur stdDeviation="4" result="blur" />
                               <feMerge>
                                 <feMergeNode in="blur" />
                                 <feMergeNode in="SourceGraphic" />
                               </feMerge>
                             </filter>
                           </defs>
+
+                          <style>{`
+                            @keyframes pulse-glow {
+                              0% { r: 4px; opacity: 0.9; stroke-width: 1.5px; }
+                              100% { r: 14px; opacity: 0; stroke-width: 0.5px; }
+                            }
+                            .pulse-ring {
+                              animation: pulse-glow 2s infinite ease-out;
+                            }
+                          `}</style>
 
                           {/* Grid Lines */}
                           {[25, 50, 75, 100].map((val) => {
@@ -448,21 +478,36 @@ export const HistoricalDashboard: React.FC = () => {
                                   y1={yVal}
                                   x2={chartLeft + chartWidth}
                                   y2={yVal}
-                                  stroke="#222226"
-                                  strokeDasharray="3 4"
+                                  stroke="#1c1c1f"
+                                  strokeDasharray="4 6"
                                   strokeWidth="1"
                                 />
                                 <text
                                   x={chartLeft - 12}
                                   y={yVal + 3}
                                   textAnchor="end"
-                                  className="fill-zinc-600 font-mono text-[9px] font-black"
+                                  className="fill-zinc-600 font-mono text-[9px] font-bold"
                                 >
                                   {val}%
                                 </text>
                               </g>
                             );
                           })}
+
+                          {/* Vertical Grid Lines for checkpoints */}
+                          {points.map((p, idx) => (
+                            <line
+                              key={`v-grid-${idx}`}
+                              x1={p.x}
+                              y1={chartTop}
+                              x2={p.x}
+                              y2={chartTop + chartHeight}
+                              stroke={hoveredPoint?.sessionId === p.sessionId || selectedSessionId === p.sessionId ? 'rgba(94, 210, 156, 0.25)' : '#1c1c1f'}
+                              strokeDasharray="3 3"
+                              strokeWidth={selectedSessionId === p.sessionId ? 1.5 : 1}
+                              className="transition-all duration-150"
+                            />
+                          ))}
 
                           {/* Draw Area */}
                           {areaPath && (
@@ -490,7 +535,7 @@ export const HistoricalDashboard: React.FC = () => {
                             y1={chartTop + chartHeight}
                             x2={chartLeft + chartWidth}
                             y2={chartTop + chartHeight}
-                            stroke="#222226"
+                            stroke="#27272a"
                             strokeWidth="1.5"
                           />
 
@@ -505,7 +550,7 @@ export const HistoricalDashboard: React.FC = () => {
                                   y1={chartTop + chartHeight}
                                   x2={p.x}
                                   y2={chartTop + chartHeight + 4}
-                                  stroke="#222226"
+                                  stroke="#27272a"
                                   strokeWidth="1.5"
                                 />
                                 <text
@@ -521,29 +566,43 @@ export const HistoricalDashboard: React.FC = () => {
                           })}
 
                           {/* Interactive Circles */}
-                          {points.map((p, idx) => (
-                            <circle
-                              key={p.sessionId}
-                              cx={p.x}
-                              cy={p.y}
-                              r={hoveredPoint?.sessionId === p.sessionId ? 6 : 4}
-                              fill={hoveredPoint?.sessionId === p.sessionId ? '#5ed29c' : '#121214'}
-                              stroke="#5ed29c"
-                              strokeWidth={hoveredPoint?.sessionId === p.sessionId ? 3 : 2}
-                              className="transition-all duration-150 cursor-pointer"
-                              onMouseEnter={() => setHoveredPoint(p)}
-                              onMouseLeave={() => setHoveredPoint(null)}
-                              onClick={() => {
-                                setSelectedSessionId(p.sessionId);
-                              }}
-                            />
-                          ))}
+                          {points.map((p, idx) => {
+                            const isSelected = selectedSessionId === p.sessionId;
+                            const isHovered = hoveredPoint?.sessionId === p.sessionId;
+                            return (
+                              <g key={p.sessionId}>
+                                {isSelected && (
+                                  <circle
+                                    cx={p.x}
+                                    cy={p.y}
+                                    fill="none"
+                                    stroke="#5ed29c"
+                                    className="pulse-ring"
+                                  />
+                                )}
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={isHovered ? 6 : isSelected ? 5.5 : 4}
+                                  fill={isHovered ? '#5ed29c' : isSelected ? '#5ed29c' : '#09090b'}
+                                  stroke="#5ed29c"
+                                  strokeWidth={isHovered || isSelected ? 3 : 2}
+                                  className="transition-all duration-150 cursor-pointer"
+                                  onMouseEnter={() => setHoveredPoint(p)}
+                                  onMouseLeave={() => setHoveredPoint(null)}
+                                  onClick={() => {
+                                    setSelectedSessionId(p.sessionId);
+                                  }}
+                                />
+                              </g>
+                            );
+                          })}
                         </svg>
 
                         {/* Floating Tooltip */}
                         {hoveredPoint && (
                           <div
-                            className="absolute bg-[#18181b]/95 border border-[#2d2d30] backdrop-blur-md rounded-xl p-3 shadow-2xl pointer-events-none transition-all duration-100 z-30 font-mono text-[10px] min-w-[140px]"
+                            className="absolute bg-[#121214]/95 border border-[#2d2d30] backdrop-blur-md rounded-xl p-3 shadow-2xl pointer-events-none transition-all duration-100 z-30 font-mono text-[10px] min-w-[140px]"
                             style={{
                               left: `${(hoveredPoint.x / 600) * 100}%`,
                               top: `${(hoveredPoint.y / 240) * 100}%`,

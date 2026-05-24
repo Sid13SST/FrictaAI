@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2 } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 
 export const DashboardLayout = () => {
@@ -11,6 +11,7 @@ export const DashboardLayout = () => {
     { name: 'Run Test',   path: '/app/workflow',     icon: PlaySquare,      desc: 'UX Audit' },
     { name: 'Reports',    path: '/app/reports',      icon: FileText,        desc: 'Analysis' },
     { name: 'UX Memory',  path: '/app/historical',   icon: Brain,           desc: 'Analytics' },
+    { name: 'Workspace',  path: '/app/workspace',    icon: Share2,          desc: 'Collaborate' },
     { name: 'Personas',   path: '/app/personas',     icon: Users,           desc: 'Profiles' },
     { name: 'Settings',   path: '/app/settings',     icon: Settings,        desc: 'Config' },
   ];
