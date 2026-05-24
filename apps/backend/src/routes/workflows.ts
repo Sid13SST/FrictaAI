@@ -66,9 +66,24 @@ workflowRoutes.get('/screenshots/:screenshotId', async (c) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SESSION ROUTES — parameterized /:id/* routes
-// ─────────────────────────────────────────────────────────────────────────────
+workflowRoutes.get('/', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) {
+    return c.json({ error: 'Missing projectId query parameter' }, 400);
+  }
+
+  try {
+    const sessions = await prisma.workflowSession.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return c.json({ sessions });
+  } catch (error: any) {
+    console.warn('Prisma workflow sessions fetch failed, using memory store:', error.message);
+    const sessions = Array.from(memorySessions.values()).filter(s => s.projectId === projectId);
+    return c.json({ sessions });
+  }
+});
 
 workflowRoutes.post('/start', async (c) => {
   const body = await c.req.json().catch(() => ({}));

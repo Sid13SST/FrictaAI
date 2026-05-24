@@ -92,6 +92,7 @@ export const HistoricalDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const [hoveredPoint, setHoveredPoint] = useState<any>(null);
 
   // Tabs for Dashboard views
   type SubTab = 'overview' | 'regressions' | 'personas' | 'adaptation';
@@ -383,52 +384,195 @@ export const HistoricalDashboard: React.FC = () => {
                 
                 {/* Stability Line Chart */}
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
-                  <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-4">
-                    UX Stability Index Curve
-                  </h3>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white">
+                      UX Stability Index Curve
+                    </h3>
+                    {hoveredPoint ? (
+                      <span className="text-[10px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/10 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                        Run #{hoveredPoint.index + 1}: {hoveredPoint.score}% Stability
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                        Hover points for timeline details
+                      </span>
+                    )}
+                  </div>
+                  
                   {stabilityTrend.length === 0 ? (
                     <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic">
                       Run more investigations to generate stability tracking trendlines.
                     </div>
-                  ) : (
-                    <div className="w-full h-48 relative">
-                      {/* Simple SVG Chart */}
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.25"/>
-                            <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0"/>
-                          </linearGradient>
-                        </defs>
-                        {/* Draw Area */}
-                        <path
-                          d={`M 0 100 ${stabilityTrend.map((t, idx) => {
-                            const x = (idx / (stabilityTrend.length - 1)) * 100;
-                            const y = 100 - t.score; // Invert for SVG coordinates (higher score = lower y)
-                            return `L ${x} ${y}`;
-                          }).join(' ')} L 100 100 Z`}
-                          fill="url(#chartGrad)"
-                        />
-                        {/* Draw Line */}
-                        <path
-                          d={stabilityTrend.map((t, idx) => {
-                            const x = (idx / (stabilityTrend.length - 1)) * 100;
-                            const y = 100 - t.score;
-                            return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
-                          }).join(' ')}
-                          fill="none"
-                          stroke="#5ed29c"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      {/* X Axis Labels */}
-                      <div className="flex justify-between mt-2 text-[8.5px] font-mono text-zinc-500">
-                        <span>Run 1</span>
-                        <span>Latest Run</span>
+                  ) : (() => {
+                    const chartLeft = 50;
+                    const chartTop = 20;
+                    const chartWidth = 530;
+                    const chartHeight = 175;
+                    const points = stabilityTrend.map((t, idx) => {
+                      const x = stabilityTrend.length > 1
+                        ? chartLeft + (idx / (stabilityTrend.length - 1)) * chartWidth
+                        : chartLeft + chartWidth / 2;
+                      const y = chartTop + (1 - t.score / 100) * chartHeight;
+                      return { x, y, score: t.score, date: t.createdAt, sessionId: t.sessionId, index: idx };
+                    });
+
+                    const linePath = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                    const areaPath = points.length > 0
+                      ? `M ${points[0].x} ${chartTop + chartHeight} ${points.map(p => `L ${p.x} ${p.y}`).join(' ')} L ${points[points.length - 1].x} ${chartTop + chartHeight} Z`
+                      : '';
+
+                    return (
+                      <div className="w-full h-64 relative mt-2 select-none">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 600 240">
+                          <defs>
+                            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.2"/>
+                              <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0"/>
+                            </linearGradient>
+                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                              <feGaussianBlur stdDeviation="3.5" result="blur" />
+                              <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                              </feMerge>
+                            </filter>
+                          </defs>
+
+                          {/* Grid Lines */}
+                          {[25, 50, 75, 100].map((val) => {
+                            const yVal = chartTop + (1 - val / 100) * chartHeight;
+                            return (
+                              <g key={val}>
+                                <line
+                                  x1={chartLeft}
+                                  y1={yVal}
+                                  x2={chartLeft + chartWidth}
+                                  y2={yVal}
+                                  stroke="#222226"
+                                  strokeDasharray="3 4"
+                                  strokeWidth="1"
+                                />
+                                <text
+                                  x={chartLeft - 12}
+                                  y={yVal + 3}
+                                  textAnchor="end"
+                                  className="fill-zinc-600 font-mono text-[9px] font-black"
+                                >
+                                  {val}%
+                                </text>
+                              </g>
+                            );
+                          })}
+
+                          {/* Draw Area */}
+                          {areaPath && (
+                            <path
+                              d={areaPath}
+                              fill="url(#chartGrad)"
+                            />
+                          )}
+
+                          {/* Draw Line */}
+                          {linePath && (
+                            <path
+                              d={linePath}
+                              fill="none"
+                              stroke="#5ed29c"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              filter="url(#glow)"
+                            />
+                          )}
+
+                          {/* X Axis Line */}
+                          <line
+                            x1={chartLeft}
+                            y1={chartTop + chartHeight}
+                            x2={chartLeft + chartWidth}
+                            y2={chartTop + chartHeight}
+                            stroke="#222226"
+                            strokeWidth="1.5"
+                          />
+
+                          {/* X Axis Labels */}
+                          {points.map((p, idx) => {
+                            const showLabel = points.length <= 8 || idx === 0 || idx === points.length - 1 || idx === Math.floor(points.length / 2);
+                            if (!showLabel) return null;
+                            return (
+                              <g key={idx}>
+                                <line
+                                  x1={p.x}
+                                  y1={chartTop + chartHeight}
+                                  x2={p.x}
+                                  y2={chartTop + chartHeight + 4}
+                                  stroke="#222226"
+                                  strokeWidth="1.5"
+                                />
+                                <text
+                                  x={p.x}
+                                  y={chartTop + chartHeight + 16}
+                                  textAnchor="middle"
+                                  className="fill-zinc-500 font-mono text-[9px] font-bold"
+                                >
+                                  Run #{idx + 1}
+                                </text>
+                              </g>
+                            );
+                          })}
+
+                          {/* Interactive Circles */}
+                          {points.map((p, idx) => (
+                            <circle
+                              key={p.sessionId}
+                              cx={p.x}
+                              cy={p.y}
+                              r={hoveredPoint?.sessionId === p.sessionId ? 6 : 4}
+                              fill={hoveredPoint?.sessionId === p.sessionId ? '#5ed29c' : '#121214'}
+                              stroke="#5ed29c"
+                              strokeWidth={hoveredPoint?.sessionId === p.sessionId ? 3 : 2}
+                              className="transition-all duration-150 cursor-pointer"
+                              onMouseEnter={() => setHoveredPoint(p)}
+                              onMouseLeave={() => setHoveredPoint(null)}
+                              onClick={() => {
+                                setSelectedSessionId(p.sessionId);
+                              }}
+                            />
+                          ))}
+                        </svg>
+
+                        {/* Floating Tooltip */}
+                        {hoveredPoint && (
+                          <div
+                            className="absolute bg-[#18181b]/95 border border-[#2d2d30] backdrop-blur-md rounded-xl p-3 shadow-2xl pointer-events-none transition-all duration-100 z-30 font-mono text-[10px] min-w-[140px]"
+                            style={{
+                              left: `${(hoveredPoint.x / 600) * 100}%`,
+                              top: `${(hoveredPoint.y / 240) * 100}%`,
+                              transform: 'translate(-50%, -115%)',
+                            }}
+                          >
+                            <div className="text-zinc-500 text-[8.5px] uppercase font-bold mb-1">
+                              Run #{hoveredPoint.index + 1}
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#5ed29c] animate-pulse"></span>
+                              <span className="text-white font-bold text-xs">{hoveredPoint.score}% Stability</span>
+                            </div>
+                            <div className="text-zinc-400 text-[9px] mb-1">
+                              {new Date(hoveredPoint.date).toLocaleString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            <div className="text-[#5ed29c] text-[8px] uppercase tracking-wider font-semibold">
+                              Click to select session
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* UX Health Friction Heatmap */}
