@@ -308,6 +308,9 @@ export const WorkspaceConsole: React.FC = () => {
 
       setInviteEmail('');
       alert('Workspace member added/updated successfully!');
+      if (selectedWorkspaceId) {
+        fetchWorkspaceDetails(selectedWorkspaceId);
+      }
     } catch (err: any) {
       alert(err.message);
     }
@@ -336,6 +339,9 @@ export const WorkspaceConsole: React.FC = () => {
       }
 
       setNewAnnotationContent('');
+      if (selectedProjectId) {
+        fetchProjectDetails(selectedProjectId);
+      }
     } catch (err: any) {
       alert(Muft(err.message));
     }
@@ -343,11 +349,15 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleResolveAnnotation = async (id: string, currentStatus: boolean) => {
     try {
-      await fetch(`${baseApiUrl}/workspace/annotations/${id}/resolve`, {
+      const res = await fetch(`${baseApiUrl}/workspace/annotations/${id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resolved: !currentStatus })
       });
+      if (!res.ok) throw new Error('Resolution update failed');
+      if (selectedProjectId) {
+        fetchProjectDetails(selectedProjectId);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -366,6 +376,9 @@ export const WorkspaceConsole: React.FC = () => {
 
       if (!res.ok) throw new Error('Failed to submit comment');
       setNewCommentContent('');
+      if (selectedProjectId) {
+        fetchProjectDetails(selectedProjectId);
+      }
     } catch (err: any) {
       alert(err.message);
     }
@@ -387,6 +400,9 @@ export const WorkspaceConsole: React.FC = () => {
         const body = await res.json();
         throw new Error(body.error || 'Review update failed');
       }
+      if (selectedProjectId) {
+        fetchProjectDetails(selectedProjectId);
+      }
     } catch (err: any) {
       alert(err.message);
     }
@@ -403,6 +419,9 @@ export const WorkspaceConsole: React.FC = () => {
         })
       });
       if (!res.ok) throw new Error('Assignment failed');
+      if (selectedProjectId) {
+        fetchProjectDetails(selectedProjectId);
+      }
     } catch (err: any) {
       alert(err.message);
     }
