@@ -64,6 +64,10 @@ export class RuntimeCoordinator {
         logger.info({ workflowSessionId }, 'Executing session in LOCAL mode');
         const coordinator = new OrchestratorCoordinator(this.prisma);
         const orchestrationSessionId = await coordinator.runOrchestration(workflowSessionId);
+        
+        // Trigger historical learning pipeline
+        await this.triggerHistoricalPipeline(workflowSessionId, orchestrationSessionId);
+        
         return orchestrationSessionId;
       }
 
@@ -77,10 +81,32 @@ export class RuntimeCoordinator {
         this.workerId
       );
       const orchestrationSessionId = await manager.runDistributedOrchestration(workflowSessionId);
+      
+      // Trigger historical learning pipeline
+      await this.triggerHistoricalPipeline(workflowSessionId, orchestrationSessionId);
+      
       return orchestrationSessionId;
     } finally {
       clearInterval(lockRenewInterval);
       await this.lockManager.release(workflowSessionId, 'execution', this.workerId);
+    }
+  }
+
+  private async triggerHistoricalPipeline(workflowSessionId: string, orchestrationSessionId: string) {
+    try {
+      const workflowSession = await this.prisma.workflowSession.findUnique({
+        where: { id: workflowSessionId }
+      });
+      if (!workflowSession) return;
+
+      const projectId = workflowSession.projectId;
+      logger.info({ projectId, workflowSessionId, orchestrationSessionId }, 'Orchestration finished, triggering HistoricalIntelligencePipeline');
+      
+      const { HistoricalIntelligencePipeline } = require('@fricta/historical-intelligence');
+      const pipeline = new HistoricalIntelligencePipeline(this.prisma);
+      await pipeline.runPipeline(projectId, workflowSessionId);
+    } catch (err: any) {
+      logger.error({ err: err.message }, 'Failed to trigger historical learning pipeline');
     }
   }
 }
@@ -134,34 +160,55 @@ export class SessionExecutionManager {
     });
 
     // Mock sequence tasks (reproducing original route Investigation logic)
-    // In @fricta/orchestrator delegation, we route tasks:
-    // For general Usability, we delegate to Visual, Cognitive, UX, etc.
-    // Let's import DelegationEngine or mock it
     const { DelegationEngine } = require('@fricta/orchestrator');
     const delegation = new DelegationEngine();
     const tasks = delegation.routeInvestigation(goal);
 
+    // Fetch active adaptive profiles for the project
+    const projectId = workflowSession?.projectId || '';
+    const adaptiveProfiles = await this.prisma.adaptiveSignalProfile.findMany({
+      where: { projectId, isActive: true }
+    });
+
     // Create DB records for execution & dependencies
     for (const task of tasks) {
+      const profile = adaptiveProfiles.find(p => p.agentType === task.agentType);
+      let priority = task.priority;
+      let metadataOverrides = {};
+
+      if (profile) {
+        priority = profile.targetPriority;
+        metadataOverrides = {
+          adapted: true,
+          reasonTrigger: profile.reasonTrigger,
+          overrides: (profile.metadata as any)?.overrides || {}
+        };
+        logger.info(
+          { agentType: task.agentType, originalPriority: task.priority, adaptedPriority: priority },
+          'Orchestrator applying adaptive prioritization overrides'
+        );
+      }
+
       const execMeta: DistributedExecutionMetadata = {
         version: 1,
         queueName: 'agent-task-queue',
         jobId: '',
-        retryCount: 0
+        retryCount: 0,
+        ...metadataOverrides
       };
 
-          await this.prisma.agentExecution.create({
-            data: {
-              id: task.id,
-              orchestrationSessionId: sessionId,
-              agentType: task.agentType,
-              status: 'QUEUED',
-              task: task.description,
-              startedAt: null,
-              completedAt: null,
-              metadata: execMeta as any
-            }
-          });
+      await this.prisma.agentExecution.create({
+        data: {
+          id: task.id,
+          orchestrationSessionId: sessionId,
+          agentType: task.agentType,
+          status: 'QUEUED',
+          task: task.description,
+          startedAt: null,
+          completedAt: null,
+          metadata: execMeta as any
+        }
+      });
     }
 
     // Publish timeline event
@@ -203,14 +250,17 @@ export class SessionExecutionManager {
               data: { status: 'RUNNING', startedAt: new Date() }
             });
 
-            // Enqueue Agent Task to Queue
+            // Enqueue Agent Task to Queue with adaptive priority
+            const profile = adaptiveProfiles.find(p => p.agentType === task.agentType);
+            const finalPriority = profile ? profile.targetPriority : task.priority;
+
             const job = await this.queueOrchestrator.enqueueAgentTask(
               sessionId,
               workflowSessionId,
               task.id,
               task.agentType,
               task.description,
-              task.priority === 'CRITICAL' ? 1 : task.priority === 'HIGH' ? 3 : 5
+              finalPriority === 'CRITICAL' ? 1 : finalPriority === 'HIGH' ? 3 : 5
             );
 
             // Update metadata with BullMQ jobId

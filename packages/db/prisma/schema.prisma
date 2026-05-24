@@ -17,14 +17,20 @@ model User {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  userId      String
-  projectName String
-  websiteUrl  String
-  createdAt   DateTime @default(now())
+  id                     String                  @id @default(uuid())
+  userId                 String
+  projectName            String
+  websiteUrl             String
+  createdAt              DateTime                @default(now())
   
-  user        User     @relation(fields: [userId], references: [id])
-  sessions    WorkflowSession[]
+  user                   User                    @relation(fields: [userId], references: [id])
+  sessions               WorkflowSession[]
+  historicalPatterns     HistoricalPattern[]
+  workflowRegressions    WorkflowRegression[]
+  personaTrends          PersonaTrend[]
+  organizationalInsights OrganizationalInsight[]
+  historicalCorrelations HistoricalCorrelation[]
+  adaptiveSignalProfiles AdaptiveSignalProfile[]
 }
 
 model WorkflowSession {
@@ -404,5 +410,93 @@ model MemorySnapshot {
   createdAt              DateTime             @default(now())
 
   orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+}
+
+model HistoricalPattern {
+  id               String      @id @default(uuid())
+  projectId        String
+  patternType      String      // "NAVIGATION_CONFUSION" | "ONBOARDING_FRICTION" | "CTA_DISCOVERABILITY" | etc.
+  name             String
+  description      String
+  severity         String      // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  confidence       Float
+  frequency        Int         // How many times this pattern has been detected
+  affectedSessions Json        // List of session IDs (JSON array of strings)
+  evidenceSummary  String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowRegression {
+  id                  String      @id @default(uuid())
+  projectId           String
+  workflowPath        String      // e.g., "/onboarding"
+  metricName          String      // "COGNITIVE_LOAD" | "STEPS_TO_COMPLETE" | "SUCCESS_RATE" | etc.
+  baseValue           Float
+  currentValue        Float
+  deltaPercentage     Float
+  severity            String      // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  explanation         String
+  evidenceSessionId   String      // The session where the regression was caught
+  baseSessionId       String      // The baseline session compared against
+  createdAt           DateTime    @default(now())
+
+  project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PersonaTrend {
+  id             String      @id @default(uuid())
+  projectId      String
+  personaType    String      // "BEGINNER" | "POWER_USER" | etc.
+  metricName     String      // "SUCCESS_RATE" | "DECISION_DELAY" | etc.
+  trendDirection String      // "IMPROVING" | "STABLE" | "DEGRADING"
+  averageValue   Float
+  observation    String
+  sampleCount    Int
+  createdAt      DateTime    @default(now())
+
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationalInsight {
+  id              String      @id @default(uuid())
+  projectId       String
+  title           String
+  summary         String
+  insightCategory String      // "STABILITY" | "IMPROVEMENT" | "RECURRING_DEFECT" | etc.
+  metrics         Json?       // Structured data/charts
+  impactScore     Float       // 0.0 to 1.0 representing severity/impact
+  createdAt       DateTime    @default(now())
+
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model HistoricalCorrelation {
+  id                  String      @id @default(uuid())
+  projectId           String
+  findingType         String
+  summary             String
+  sessionCount        Int
+  correlatedFindingIds Json       // List of finding IDs across different sessions
+  confidence          Float
+  createdAt           DateTime    @default(now())
+
+  project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AdaptiveSignalProfile {
+  id             String      @id @default(uuid())
+  projectId      String
+  agentType      String      // e.g., "ONBOARDING_AGENT"
+  targetPriority String      // "HIGH" | "CRITICAL" | "NORMAL"
+  reasonTrigger  String      // "Historical onboarding regression detected on step X"
+  isActive       Boolean     @default(true)
+  metadata       Json?       // prioritization overrides, parameters, thresholds
+  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime    @default(now())
+
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 

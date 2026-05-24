@@ -10,6 +10,7 @@ export const DashboardLayout = () => {
     { name: 'Dashboard',  path: '/app',             icon: LayoutDashboard, desc: 'Overview' },
     { name: 'Run Test',   path: '/app/workflow',     icon: PlaySquare,      desc: 'UX Audit' },
     { name: 'Reports',    path: '/app/reports',      icon: FileText,        desc: 'Analysis' },
+    { name: 'UX Memory',  path: '/app/historical',   icon: Brain,           desc: 'Analytics' },
     { name: 'Personas',   path: '/app/personas',     icon: Users,           desc: 'Profiles' },
     { name: 'Settings',   path: '/app/settings',     icon: Settings,        desc: 'Config' },
   ];

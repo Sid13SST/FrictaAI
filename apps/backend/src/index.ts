@@ -23,6 +23,7 @@ import { memoryRoutes } from './routes/memory';
 import { consoleRoutes } from './routes/console';
 import { realtimeRoutes } from './routes/realtime';
 import { runtimeRoutes } from './routes/runtime';
+import { historicalRoutes } from './routes/historical';
 import { startWorker } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
@@ -54,6 +55,8 @@ app.route('/console', consoleRoutes);
 app.route('/realtime', realtimeRoutes);
 app.route('/api/realtime', realtimeRoutes);
 app.route('/api/runtime', runtimeRoutes);
+app.route('/api/historical', historicalRoutes);
+app.route('/historical', historicalRoutes);
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 

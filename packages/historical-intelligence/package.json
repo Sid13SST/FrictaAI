@@ -1,5 +1,5 @@
 {
-  "name": "@fricta/runtime",
+  "name": "@fricta/historical-intelligence",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -13,15 +13,8 @@
   },
   "dependencies": {
     "@fricta/db": "*",
-    "@fricta/orchestrator": "*",
     "@fricta/types": "*",
     "@fricta/shared": "*",
-    "@fricta/realtime": "*",
-    "@fricta/agent": "*",
-    "@fricta/historical-intelligence": "*",
-    "bullmq": "^5.76.10",
-    "ioredis": "^5.10.1",
-    "playwright": "^1.60.0",
-    "playwright-core": "^1.60.0"
+    "@fricta/realtime": "*"
   }
 }

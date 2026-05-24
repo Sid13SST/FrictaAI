@@ -14,6 +14,7 @@ import { Personas } from './pages/Personas';
 import { Settings } from './pages/Settings';
 import ReportDetails from './pages/ReportDetails';
 import { InvestigationConsole } from './pages/InvestigationConsole';
+import { HistoricalDashboard } from './pages/HistoricalDashboard';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
           <Route path="workflow" element={<WorkflowRunner />} />
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:id" element={<ReportDetails />} />
+          <Route path="historical" element={<HistoricalDashboard />} />
           <Route path="personas" element={<Personas />} />
           <Route path="settings" element={<Settings />} />
         </Route>
