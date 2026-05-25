@@ -19,7 +19,8 @@ export type RealtimeEventType =
   | 'comment.created'
   | 'review.updated'
   | 'workspace.members.updated'
-  | 'cognition.updated';
+  | 'cognition.updated'
+  | 'swarm.step';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
