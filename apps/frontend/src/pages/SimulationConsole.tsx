@@ -165,7 +165,7 @@ export const SimulationConsole: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'explorer' | 'cognition' | 'swarm'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'cognition' | 'swarm' | 'predictive'>('explorer');
 
   // Cognition states
   const [cognitiveStates, setCognitiveStates] = useState<any[]>([]);
@@ -191,6 +191,16 @@ export const SimulationConsole: React.FC = () => {
   const [swarmRunning, setSwarmRunning] = useState<boolean>(false);
   const [liveSwarmProgress, setLiveSwarmProgress] = useState<any[]>([]);
 
+  // Predictive States
+  const [workflowForecasts, setWorkflowForecasts] = useState<any[]>([]);
+  const [selectedForecastId, setSelectedForecastId] = useState<string>('');
+  const [predictiveRisks, setPredictiveRisks] = useState<any[]>([]);
+  const [predictiveRegressions, setPredictiveRegressions] = useState<any[]>([]);
+  const [predictiveSurvivability, setPredictiveSurvivability] = useState<any[]>([]);
+  const [predictiveAbandonment, setPredictiveAbandonment] = useState<any[]>([]);
+  const [predictiveTimelines, setPredictiveTimelines] = useState<any[]>([]);
+  const [predictiveRunning, setPredictiveRunning] = useState<boolean>(false);
+
   const baseApiUrl = 'http://127.0.0.1:3001/api';
 
   useEffect(() => {
@@ -215,6 +225,12 @@ export const SimulationConsole: React.FC = () => {
     }
   }, [selectedSwarmSessionId]);
 
+  useEffect(() => {
+    if (selectedForecastId) {
+      fetchPredictiveDetails(selectedForecastId);
+    }
+  }, [selectedForecastId]);
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -237,22 +253,28 @@ export const SimulationConsole: React.FC = () => {
 
   const fetchProjectSimulationDetails = async (projectId: string) => {
     try {
-      const [profilesRes, pathsRes, swarmSessionsRes, swarmPresetsRes] = await Promise.all([
+      const [profilesRes, pathsRes, swarmSessionsRes, swarmPresetsRes, forecastsRes, regressionsRes] = await Promise.all([
         fetch(`${baseApiUrl}/simulation/personas?projectId=${projectId}`),
         fetch(`${baseApiUrl}/simulation/exploration?projectId=${projectId}`),
         fetch(`${baseApiUrl}/swarm/sessions?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/swarm/personas`)
+        fetch(`${baseApiUrl}/swarm/personas`),
+        fetch(`${baseApiUrl}/predictive/forecasts?projectId=${projectId}`),
+        fetch(`${baseApiUrl}/predictive/regressions?projectId=${projectId}`)
       ]);
 
       const profData = await profilesRes.json();
       const pathData = await pathsRes.json();
       const swarmSessionData = await swarmSessionsRes.json();
       const swarmPresetData = await swarmPresetsRes.json();
+      const forecastsData = await forecastsRes.json();
+      const regressionsData = await regressionsRes.json();
 
       setProfiles(profData.profiles || []);
       setPaths(pathData.paths || []);
       setSwarmSessions(swarmSessionData.sessions || []);
       setSwarmPersonas(swarmPresetData.personas || []);
+      setWorkflowForecasts(forecastsData.forecasts || []);
+      setPredictiveRegressions(regressionsData.regressions || []);
 
       if (profData.profiles && profData.profiles.length > 0) {
         setSelectedProfileId(profData.profiles[0].id);
@@ -262,6 +284,9 @@ export const SimulationConsole: React.FC = () => {
       }
       if (swarmSessionData.sessions && swarmSessionData.sessions.length > 0) {
         setSelectedSwarmSessionId(swarmSessionData.sessions[0].id);
+      }
+      if (forecastsData.forecasts && forecastsData.forecasts.length > 0) {
+        setSelectedForecastId(forecastsData.forecasts[0].id);
       }
     } catch (err: any) {
       console.error('Failed to load project simulation details:', err);
@@ -292,6 +317,96 @@ export const SimulationConsole: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch swarm session details:', err);
     }
+  };
+
+  const fetchPredictiveDetails = async (forecastId: string) => {
+    try {
+      const [riskRes, survRes, abandonRes, timelineRes] = await Promise.all([
+        fetch(`${baseApiUrl}/predictive/risk?workflowForecastId=${forecastId}`),
+        fetch(`${baseApiUrl}/predictive/survivability?workflowForecastId=${forecastId}`),
+        fetch(`${baseApiUrl}/predictive/abandonment?workflowForecastId=${forecastId}`),
+        fetch(`${baseApiUrl}/predictive/timelines?workflowForecastId=${forecastId}`)
+      ]);
+
+      const riskData = await riskRes.json();
+      const survData = await survRes.json();
+      const abandonData = await abandonRes.json();
+      const timelineData = await timelineRes.json();
+
+      setPredictiveRisks(riskData.signals || []);
+      setPredictiveSurvivability(survData.forecasts || []);
+      setPredictiveAbandonment(abandonData.predictions || []);
+      setPredictiveTimelines(timelineData.events || []);
+    } catch (err) {
+      console.error('Failed to fetch predictive details:', err);
+    }
+  };
+
+  const handleStartPredictiveForecasting = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProjectId) return;
+
+    try {
+      setPredictiveRunning(true);
+      setError(null);
+      
+      const res = await fetch(`${baseApiUrl}/predictive/forecasting`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedProjectId,
+          workflowPath: targetUrl,
+          baselineName: 'V1.0 System Baseline'
+        })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to generate predictive forecast');
+      }
+
+      const data = await res.json();
+      setupPredictiveSSE(data.id);
+    } catch (err: any) {
+      setError(err.message || 'Error executing predictive analysis');
+      setPredictiveRunning(false);
+    }
+  };
+
+  const setupPredictiveSSE = (forecastId: string) => {
+    const sseUrl = `${baseApiUrl}/predictive/stream/${forecastId}`;
+    const eventSource = new EventSource(sseUrl);
+
+    eventSource.addEventListener('predictive.risk', (e: any) => {
+      const payload = JSON.parse(e.data);
+      setPredictiveRisks((prev) => {
+        if (prev.some((p) => p.riskType === payload.risk.riskType && p.stepIndex === payload.risk.stepIndex)) {
+          return prev;
+        }
+        return [...prev, payload.risk];
+      });
+    });
+
+    eventSource.addEventListener('predictive.regression', (e: any) => {
+      const payload = JSON.parse(e.data);
+      setPredictiveRegressions((prev) => {
+        if (prev.some((r) => r.metricName === payload.regression.metricName)) {
+          return prev;
+        }
+        return [payload.regression, ...prev];
+      });
+    });
+
+    eventSource.addEventListener('system.connected', () => {
+      console.log('SSE connected for predictive session:', forecastId);
+    });
+
+    setTimeout(() => {
+      eventSource.close();
+      setPredictiveRunning(false);
+      fetchProjectSimulationDetails(selectedProjectId);
+      setSelectedForecastId(forecastId);
+    }, 5000);
   };
 
   const fetchSessionBehaviorDetails = async (sessionId: string) => {
@@ -967,6 +1082,17 @@ export const SimulationConsole: React.FC = () => {
               >
                 <Users className="w-4 h-4 shrink-0" />
                 3. Swarm Population
+              </button>
+              <button
+                onClick={() => setActiveTab('predictive')}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                  activeTab === 'predictive'
+                    ? 'bg-[#5ed29c] text-[#070b0a] shadow-[0_0_20px_rgba(94,210,156,0.25)] border border-[#5ed29c]'
+                    : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
+                }`}
+              >
+                <Zap className="w-4 h-4 shrink-0" />
+                4. Predictive Analytics
               </button>
             </div>
           </div>
@@ -2042,7 +2168,7 @@ export const SimulationConsole: React.FC = () => {
               </div>
 
             </div>
-          ) : (
+          ) : activeTab === 'swarm' ? (
             <div className="flex flex-col gap-6">
               
               {/* Swarm Configuration Panel & Run command */}
@@ -2364,6 +2490,344 @@ export const SimulationConsole: React.FC = () => {
                 )}
               </div>
 
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              
+              {/* Predictive Command Center */}
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-[#5ed29c]" /> Predictive Intelligence Console
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">Forecast operational UX risks and usability failures</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {workflowForecasts.length > 0 && (
+                      <div className="flex items-center gap-1.5 bg-[#070b0a] border border-[#222226] px-2.5 py-1.5 rounded-lg">
+                        <span className="text-[9px] font-mono text-zinc-500 uppercase">Selected Forecast:</span>
+                        <select
+                          value={selectedForecastId}
+                          onChange={(e) => setSelectedForecastId(e.target.value)}
+                          className="bg-transparent border-none text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
+                        >
+                          {workflowForecasts.map((f, idx) => (
+                            <option key={f.id} value={f.id} className="bg-[#121214] text-white">
+                              Forecast {workflowForecasts.length - idx} ({new Date(f.createdAt).toLocaleDateString()}) - {f.riskLevel}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleStartPredictiveForecasting}>
+                      <button
+                        type="submit"
+                        disabled={predictiveRunning || !selectedProjectId}
+                        className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] px-4 py-2 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        {predictiveRunning ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ANALYZING FLOW...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-[#5ed29c]" />
+                            RUN FORECASTING
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Summary: Risk Level and Stability Gauge */}
+              {(() => {
+                const activeForecast = workflowForecasts.find(f => f.id === selectedForecastId);
+                if (!activeForecast) {
+                  return (
+                    <div className="text-center py-8 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl bg-[#121214]">
+                      No active forecast loaded. Click "Run Forecasting" to begin.
+                    </div>
+                  );
+                }
+
+                const riskColor = activeForecast.riskLevel === 'CRITICAL' || activeForecast.riskLevel === 'HIGH' ? 'text-red-400' : activeForecast.riskLevel === 'MEDIUM' ? 'text-orange-400' : 'text-[#5ed29c]';
+                const progressColor = activeForecast.stabilityScore > 0.7 ? 'bg-[#5ed29c]' : activeForecast.stabilityScore > 0.4 ? 'bg-orange-400' : 'bg-red-400';
+
+                return (
+                  <div className="flex flex-col gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      
+                      {/* Stability Score Card */}
+                      <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                        <div>
+                          <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Workflow Stability Forecast</h4>
+                          <p className="text-[9px] text-zinc-500 font-mono uppercase">Predicted health coefficient</p>
+                        </div>
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="text-3xl font-black text-white">{(activeForecast.stabilityScore * 100).toFixed(0)}%</div>
+                          <div className="w-full bg-[#1c1c1f] h-2 rounded-full overflow-hidden">
+                            <div className={`h-full ${progressColor}`} style={{ width: `${activeForecast.stabilityScore * 100}%` }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Risk Level Card */}
+                      <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                        <div>
+                          <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Estimated Threat Level</h4>
+                          <p className="text-[9px] text-zinc-500 font-mono uppercase">Usability risk evaluation</p>
+                        </div>
+                        <div className="mt-4 flex items-baseline gap-1.5">
+                          <span className={`text-3xl font-black ${riskColor}`}>{activeForecast.riskLevel}</span>
+                          <span className="text-[10px] text-zinc-500 font-mono uppercase">RISK</span>
+                        </div>
+                      </div>
+
+                      {/* Completion Forecast */}
+                      <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                        <div>
+                          <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Predicted Success Rate</h4>
+                          <p className="text-[9px] text-zinc-500 font-mono uppercase">Estimated completion factor</p>
+                        </div>
+                        <div className="mt-4 flex items-baseline gap-1.5">
+                          <span className="text-3xl font-black text-emerald-400">{(activeForecast.completionRate * 100).toFixed(0)}%</span>
+                          <span className="text-[10px] text-zinc-500 font-mono">POPULATION</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Risks & Regressions Split Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      
+                      {/* Risk Signals */}
+                      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl flex flex-col gap-4">
+                        <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0" /> Predicted Usability Risk Signals
+                        </h3>
+
+                        <div className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-1">
+                          {predictiveRisks.length === 0 ? (
+                            <div className="text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                              No risk signals detected.
+                            </div>
+                          ) : (
+                            predictiveRisks.map((sig, idx) => {
+                              const sev = sig.severity.toUpperCase();
+                              const badge = sev === 'CRITICAL' || sev === 'HIGH' ? 'text-red-400 bg-red-950/15 border-red-500/20' : 'text-orange-400 bg-orange-950/15 border-orange-500/20';
+
+                              return (
+                                <div key={sig.id || idx} className="p-3 bg-[#18181b]/50 border border-zinc-800/60 rounded-xl font-mono text-[10.5px] flex flex-col gap-2">
+                                  <div className="flex justify-between items-center gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="bg-zinc-800 text-zinc-400 px-1 rounded text-[9.5px]">Step #{sig.stepIndex + 1}</span>
+                                      <span className="text-white font-bold uppercase truncate">{sig.riskType.replace(/_/g, ' ')}</span>
+                                    </div>
+                                    <span className={`text-[8.5px] font-black px-1.5 rounded border uppercase shrink-0 ${badge}`}>
+                                      {sig.severity}
+                                    </span>
+                                  </div>
+
+                                  <p className="text-zinc-300 leading-normal text-[10.5px]">{sig.evidenceNotes}</p>
+                                  <p className="text-zinc-500 text-[9px] italic border-t border-white/[0.02] pt-1.5 mt-0.5">Basis: {sig.historicalBasis}</p>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Regression Console */}
+                      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl flex flex-col gap-4">
+                        <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <TrendingUp className="w-4 h-4 text-[#5ed29c] shrink-0" /> UX Regression & Drift Analytics
+                        </h3>
+
+                        <div className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-1">
+                          {predictiveRegressions.length === 0 ? (
+                            <div className="text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                              No metric regressions detected against baseline.
+                            </div>
+                          ) : (
+                            predictiveRegressions.map((reg, idx) => {
+                              const isNegative = reg.driftPercentage < 0;
+                              const badge = isNegative ? 'text-red-400 bg-red-950/15 border-red-500/20' : 'text-emerald-400 bg-emerald-950/15 border-emerald-500/20';
+
+                              return (
+                                <div key={reg.id || idx} className="p-3 bg-[#18181b]/50 border border-zinc-800/60 rounded-xl font-mono text-[10.5px] flex flex-col gap-2">
+                                  <div className="flex justify-between items-center gap-2">
+                                    <span className="text-white font-bold uppercase">{reg.metricName.replace(/_/g, ' ')}</span>
+                                    <span className={`text-[8.5px] font-black px-1.5 rounded border uppercase shrink-0 ${badge}`}>
+                                      {reg.driftPercentage.toFixed(1)}% DRIFT
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4 text-[10.5px] text-zinc-400 bg-[#121214]/65 p-2 rounded-lg border border-zinc-900">
+                                    <div>
+                                      <span className="text-zinc-500 uppercase">Base Baseline:</span> <b className="text-white">{reg.baseValue.toFixed(2)}</b>
+                                    </div>
+                                    <div>
+                                      <span className="text-zinc-500 uppercase">Forecasted:</span> <b className="text-white">{reg.forecastedValue.toFixed(2)}</b>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {reg.contributingFactors && (reg.contributingFactors as string[]).map((f, i) => (
+                                      <span key={i} className="bg-zinc-800/40 text-zinc-500 text-[8.5px] px-1.5 py-0.5 rounded border border-zinc-900 truncate max-w-xs">{f}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Survivability Forecasts */}
+                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl flex flex-col gap-4">
+                      <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-purple-400 shrink-0" /> Persona-Specific Survivability Forecasts
+                      </h3>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {predictiveSurvivability.length === 0 ? (
+                          <div className="col-span-3 text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                            No survivability forecasts loaded.
+                          </div>
+                        ) : (
+                          predictiveSurvivability.map((surv, idx) => {
+                            const rateColor = surv.predictedSurvivalRate > 0.8 ? 'text-emerald-400' : surv.predictedSurvivalRate > 0.5 ? 'text-orange-400' : 'text-red-400';
+                            
+                            return (
+                              <div key={surv.id || idx} className="bg-[#0b0c0e] border border-[#222226] p-4 rounded-xl font-mono text-xs flex flex-col justify-between gap-3 shadow-md hover:border-zinc-800 transition-all">
+                                <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
+                                  <span className="text-white font-bold">{surv.personaType}</span>
+                                  <span className={`font-black ${rateColor}`}>{(surv.predictedSurvivalRate * 100).toFixed(0)}% SRV</span>
+                                </div>
+
+                                <div className="text-[10px] text-zinc-400 flex flex-col gap-1">
+                                  <span>Patience Step Limit: <b className="text-white">{surv.estimatedStepsToAbandon} steps</b></span>
+                                  <span>Primary Trigger: <code className="text-red-400 bg-red-950/5 border border-red-500/10 px-1 py-0.5 rounded text-[8.5px] font-mono">{surv.primaryAbandonmentTrigger}</code></span>
+                                </div>
+
+                                <div className="flex flex-col gap-1 border-t border-zinc-900 pt-2 text-[9px] text-zinc-500">
+                                  <span className="uppercase font-bold text-zinc-600">Risk Factors:</span>
+                                  {surv.riskFactors && (surv.riskFactors as string[]).map((f, i) => (
+                                    <span key={i} className="truncate">• {f}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Abandonment Graph and Timelines */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      
+                      {/* Step-by-Step Abandonment Chart */}
+                      <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl">
+                        <div className="flex justify-between items-center mb-3">
+                          <div>
+                            <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider">Step-by-Step Abandonment Probability</h4>
+                            <p className="text-[9px] text-zinc-500 font-mono uppercase">Fatigue Accumulation Graph</p>
+                          </div>
+                          <span className="flex items-center gap-1 text-[9px] font-mono text-orange-400 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" /> EXIT LIKELIHOOD
+                          </span>
+                        </div>
+
+                        <div className="w-full h-48 bg-[#0b0c0e]/40 border border-zinc-900 rounded-xl p-2">
+                          {predictiveAbandonment.length === 0 ? (
+                            <div className="flex items-center justify-center h-full text-zinc-500 font-mono text-[11px] italic">No data.</div>
+                          ) : (
+                            (() => {
+                              const w = 450;
+                              const h = 180;
+                              const pad = 35;
+                              const pathData = getSvgPathForSeries(predictiveAbandonment, 'abandonmentProbability', w, h, pad);
+
+                              return (
+                                <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${w} ${h}`}>
+                                  <defs>
+                                    <linearGradient id="abGrad" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#f97316" stopOpacity="0.18" />
+                                      <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                                    </linearGradient>
+                                  </defs>
+
+                                  {[0, 0.25, 0.5, 0.75, 1].map((val) => {
+                                    const y = h - pad - val * (h - pad * 2);
+                                    return (
+                                      <g key={val}>
+                                        <line x1={pad} y1={y} x2={w - pad} y2={y} stroke="#1f1f23" strokeWidth="1" strokeDasharray="2 2" />
+                                        <text x="5" y={y + 3} fill="#71717a" fontSize="8" fontFamily="monospace" className="font-bold">
+                                          {(val * 100).toFixed(0)}%
+                                        </text>
+                                      </g>
+                                    );
+                                  })}
+
+                                  {predictiveAbandonment.map((item, idx) => {
+                                    const x = pad + (predictiveAbandonment.length > 1 ? (idx / (predictiveAbandonment.length - 1)) * (w - pad * 2) : (w - pad * 2) / 2);
+                                    return (
+                                      <text key={idx} x={x} y={h - 10} fill="#71717a" fontSize="8" fontFamily="monospace" textAnchor="middle" className="font-bold">
+                                        Step {idx + 1}
+                                      </text>
+                                    );
+                                  })}
+
+                                  {pathData.areaPath && <path d={pathData.areaPath} fill="url(#abGrad)" />}
+                                  {pathData.path && <path d={pathData.path} fill="none" stroke="#f97316" strokeWidth="2" />}
+                                  {pathData.points.map((p, idx) => (
+                                    <circle key={idx} cx={p.x} cy={p.y} r="3" fill="#f97316" stroke="#121214" strokeWidth="1" />
+                                  ))}
+                                </svg>
+                              );
+                            })()
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Predictive Timeline Event List */}
+                      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl flex flex-col gap-4">
+                        <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-yellow-500 shrink-0" /> Predicted Threat Timeline
+                        </h3>
+
+                        <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">
+                          {predictiveTimelines.length === 0 ? (
+                            <div className="text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                              No predicted timeline events.
+                            </div>
+                          ) : (
+                            predictiveTimelines.map((ev, idx) => (
+                              <div key={ev.id || idx} className="p-2 bg-[#18181b]/50 border border-zinc-800/60 rounded-lg font-mono text-[10px] flex justify-between items-start gap-2">
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1 rounded shrink-0">+{ev.timeOffsetMs}ms</span>
+                                    <span className="text-white font-bold text-[9px] uppercase tracking-wide truncate">{ev.eventType.replace(/_/g, ' ')}</span>
+                                  </div>
+                                  <p className="text-zinc-300 leading-normal text-[9.5px] mt-1 break-words">{ev.description}</p>
+                                </div>
+                                <span className="text-orange-400 font-bold shrink-0">{(ev.predictedIntensity * 100).toFixed(0)}%</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
             </div>
           )}
         </main>
