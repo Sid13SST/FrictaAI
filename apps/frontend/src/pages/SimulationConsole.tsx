@@ -333,7 +333,7 @@ export const SimulationConsole: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b0a] text-zinc-100 p-6 select-none font-sans">
+    <div className="min-h-screen bg-[#070b0a] text-zinc-100 p-6 select-none font-sans overflow-x-hidden max-w-full">
       
       {/* ── Header ───────────────────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#222226] pb-5 mb-6">
@@ -650,7 +650,7 @@ export const SimulationConsole: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Live Visualizer Replay Overlay Map */}
-            <div className="md:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
+            <div className="md:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 overflow-hidden">
               <div className="flex justify-between items-center">
                 <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
                   <MousePointer className="w-4 h-4 text-[#5ed29c]" /> Behavioral Replay & Cursor Trails
@@ -660,10 +660,10 @@ export const SimulationConsole: React.FC = () => {
                 </div>
               </div>
 
-              {/* Mock Screen Overlay with cursor trail */}
-              <div className="w-full flex items-center justify-center p-3.5 bg-[#08080a] border border-[#222226] rounded-xl overflow-x-auto">
+              {/* Mock Screen Overlay with cursor trail - responsive with no horizontal scroll */}
+              <div className="w-full flex items-center justify-center p-3.5 bg-[#08080a] border border-[#222226] rounded-xl overflow-hidden">
                 <div 
-                  className="w-[540px] h-[280px] bg-[#0b0c0e] rounded-lg border border-white/[0.04] relative overflow-hidden flex-shrink-0"
+                  className="w-full aspect-[27/14] bg-[#0b0c0e] rounded-lg border border-white/[0.04] relative overflow-hidden"
                   style={{
                     background: 'radial-gradient(circle at top left, rgba(94, 210, 156, 0.02), transparent 50%), #0b0c0e'
                   }}
@@ -706,7 +706,7 @@ export const SimulationConsole: React.FC = () => {
                         {/* Simulated website frame header */}
                         <div 
                           className="absolute bg-white/[0.01] border-b border-white/[0.03] px-3 py-1.5 flex items-center justify-between"
-                          style={{ left: '0px', top: '0px', width: '540px', height: '35px' }}
+                          style={{ left: '0px', top: '0px', width: '100%', height: '35px' }}
                         >
                           <div className="flex items-center gap-1.5">
                             <div className="w-2.5 h-2.5 rounded bg-[#5ed29c]/10 border border-[#5ed29c]/30 flex items-center justify-center">
@@ -724,181 +724,194 @@ export const SimulationConsole: React.FC = () => {
 
                         {layout === 'login' && (
                           <>
-                            {/* Username Input (left: 80px) */}
+                            {/* Username Input (left: 12%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                              style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[6.5px] uppercase tracking-wider text-zinc-500 font-bold">Username</span>
-                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-[#5ed29c] overflow-hidden truncate">
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Username</span>
+                              <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#5ed29c] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
                                 {selectedSessionId || running ? 'admin@domain.com' : ''}
                               </div>
-                              <span className="text-[5.5px] text-zinc-600">[input#username]</span>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#username]</span>
                             </div>
 
-                            {/* Password Input (left: 175px) */}
+                            {/* Password Input (left: 32%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                              style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[6.5px] uppercase tracking-wider text-zinc-500 font-bold">Password</span>
-                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-zinc-600 overflow-hidden">
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Password</span>
+                              <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-zinc-600 overflow-hidden">
                                 ••••••••
                               </div>
-                              <span className="text-[5.5px] text-zinc-600">[input#password]</span>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#password]</span>
                             </div>
 
-                            {/* Forgot Password Link (left: 270px) */}
+                            {/* Forgot Password Link (left: 52%) */}
                             <div 
-                              className="absolute bg-[#111215]/50 border border-white/[0.02] rounded-lg p-2 flex flex-col justify-center items-center text-center"
-                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
+                              style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] text-[#5ed29c] font-bold underline cursor-pointer hover:text-emerald-400">Reset Password</span>
-                              <span className="text-[5px] text-zinc-500 uppercase mt-1">forgot-link</span>
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">Recovery</span>
+                              <span className="text-[11px] text-[#5ed29c] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Reset Pass</span>
+                              <span className="text-[7.5px] text-zinc-500 uppercase font-mono tracking-wider">[link#forgot]</span>
                             </div>
 
-                            {/* Log In Button (left: 365px) */}
+                            {/* Log In Button (left: 72%) */}
                             <div 
-                              className="absolute bg-[#12241b] border border-[#5ed29c]/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(16,185,129,0.05)]"
-                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.12)]"
+                              style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7.5px] font-black text-[#5ed29c] uppercase tracking-wider">Sign In</span>
-                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[button.login-btn]</span>
+                              <span className="text-[9px] font-black text-white tracking-widest uppercase">Sign In</span>
+                              <div className="flex items-center justify-center py-1">
+                                <MousePointer className="w-4 h-4 text-[#5ed29c] animate-pulse" />
+                              </div>
+                              <span className="text-[7.5px] text-[#5ed29c]/70 font-mono tracking-wider">[btn#submit]</span>
                             </div>
                           </>
                         )}
 
                         {layout === 'pricing' && (
                           <>
-                            {/* Starter Card Description (left: 80px) */}
+                            {/* Starter Card Description (left: 12%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
+                              style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] font-black text-white uppercase">Starter Plan</span>
-                              <span className="text-[9px] font-black text-[#5ed29c]">$19<span className="text-[5px] text-zinc-500 font-normal">/mo</span></span>
-                              <span className="text-[5px] text-zinc-600 uppercase">starter-card</span>
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Starter Plan</span>
+                              <span className="text-[13px] font-black text-[#5ed29c]">$19<span className="text-[8.5px] text-zinc-500 font-normal">/mo</span></span>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[card#starter]</span>
                             </div>
 
-                            {/* Select Starter CTA (left: 175px) */}
+                            {/* Select Starter CTA (left: 32%) */}
                             <div 
-                              className="absolute bg-[#12241b]/60 border border-[#5ed29c]/15 rounded-lg p-2 flex flex-col justify-center items-center text-center"
-                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1"
+                              style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] font-bold text-[#5ed29c] uppercase">Get Starter</span>
-                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[btn.starter]</span>
+                              <span className="text-[9px] font-black text-white tracking-widest uppercase">Select Starter</span>
+                              <span className="text-[10.5px] font-bold text-[#5ed29c] uppercase">Get Started</span>
+                              <span className="text-[7.5px] text-[#5ed29c]/60 font-mono tracking-wider">[btn#select-starter]</span>
                             </div>
 
-                            {/* Pro Card Description (left: 270px) */}
+                            {/* Pro Card Description (left: 52%) */}
                             <div 
-                              className="absolute bg-[#1c121e]/80 border border-purple-500/20 rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(168,85,247,0.05)]"
-                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#1c1228]/90 to-[#0e0915]/95 border border-purple-500/20 hover:border-purple-400/50 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(168,85,247,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(168,85,247,0.1)]"
+                              style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <div className="flex justify-between items-center">
-                                <span className="text-[7px] font-black text-white uppercase">Pro Plan</span>
-                                <Sparkles className="w-2 h-2 text-purple-400 shrink-0" />
+                              <div className="flex justify-between items-center w-full">
+                                <span className="text-[8px] uppercase tracking-widest text-purple-300 font-bold">Pro Plan</span>
+                                <Sparkles className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                               </div>
-                              <span className="text-[9px] font-black text-purple-400">$49<span className="text-[5px] text-zinc-500 font-normal">/mo</span></span>
-                              <span className="text-[5px] text-zinc-600 uppercase">pro-card</span>
+                              <span className="text-[13px] font-black text-purple-400">$49<span className="text-[8.5px] text-zinc-500 font-normal">/mo</span></span>
+                              <span className="text-[7.5px] text-purple-400/70 font-mono tracking-wider">[card#pro]</span>
                             </div>
 
-                            {/* Select Pro CTA (left: 365px) */}
+                            {/* Select Pro CTA (left: 72%) */}
                             <div 
-                              className="absolute bg-[#281534] border border-purple-500/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(168,85,247,0.05)]"
-                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#2a133d]/90 to-[#12071d]/95 border border-purple-500/30 hover:border-purple-400/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(168,85,247,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(168,85,247,0.14)]"
+                              style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7.5px] font-black text-purple-400 uppercase tracking-wider">Try Pro</span>
-                              <span className="text-[5px] text-purple-400/60 mt-0.5">[btn.pro]</span>
+                              <span className="text-[9.5px] font-black text-purple-200 uppercase tracking-widest">Select Pro</span>
+                              <span className="text-[11px] font-black text-purple-400 uppercase tracking-wider">Try Pro Free</span>
+                              <span className="text-[7.5px] text-purple-400/60 font-mono tracking-wider">[btn#select-pro]</span>
                             </div>
                           </>
                         )}
 
                         {layout === 'checkout' && (
                           <>
-                            {/* Email Field (left: 80px) */}
+                            {/* Email Field (left: 12%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                              style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold">Email</span>
-                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-[#5ed29c] overflow-hidden truncate">
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Email Address</span>
+                              <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#5ed29c] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
                                 {selectedSessionId || running ? 'user@fricta.ai' : ''}
                               </div>
-                              <span className="text-[5.5px] text-zinc-600">[input#email]</span>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#email]</span>
                             </div>
 
-                            {/* Password Field (left: 175px) */}
+                            {/* Password Field (left: 32%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                              style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold">Password</span>
-                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-zinc-600 overflow-hidden">
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Password</span>
+                              <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-zinc-600 overflow-hidden">
                                 ••••••••••••
                               </div>
-                              <span className="text-[5.5px] text-zinc-600">[input#pass]</span>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#pass]</span>
                             </div>
 
-                            {/* Help Link (left: 270px) */}
+                            {/* Help Link (left: 52%) */}
                             <div 
-                              className="absolute bg-[#111215]/50 border border-white/[0.02] rounded-lg p-2 flex flex-col justify-center items-center text-center"
-                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
+                              style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7.5px] text-[#5ed29c] font-bold underline cursor-pointer">Get Help</span>
-                              <span className="text-[5px] text-zinc-500 uppercase mt-1">help-link</span>
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">Assistance</span>
+                              <span className="text-[11px] text-[#5ed29c] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Get Help</span>
+                              <span className="text-[7.5px] text-zinc-500 uppercase font-mono tracking-wider">[link#help]</span>
                             </div>
 
-                            {/* Submit Button (left: 365px) */}
+                            {/* Submit Button (left: 72%) */}
                             <div 
-                              className="absolute bg-[#12241b] border border-[#5ed29c]/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(16,185,129,0.05)]"
-                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.12)]"
+                              style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7.5px] font-black text-[#5ed29c] uppercase tracking-wider">Pay Now</span>
-                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[button#submit]</span>
+                              <span className="text-[9px] font-black text-white tracking-widest uppercase">Pay Now</span>
+                              <span className="text-[10px] text-[#5ed29c] font-bold tracking-wider">Confirm Billing</span>
+                              <span className="text-[7.5px] text-[#5ed29c]/60 font-mono tracking-wider">[btn#submit]</span>
                             </div>
                           </>
                         )}
 
                         {layout === 'landing' && (
                           <>
-                            {/* Hero Header Description (left: 80px) */}
+                            {/* Hero copy description (left: 12%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
+                              style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] font-black text-white uppercase">Home Hero</span>
-                              <span className="text-[6px] text-zinc-500 leading-normal">Welcome to SaaS</span>
-                              <span className="text-[5px] text-zinc-600 uppercase">hero-text</span>
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Hero Copy</span>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9.5px] font-bold text-white leading-none">Home Hero</span>
+                                <span className="text-[8px] text-zinc-500 leading-normal">Welcome to SaaS</span>
+                              </div>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[section#hero]</span>
                             </div>
 
-                            {/* Get Started CTA (left: 175px) */}
+                            {/* Get Started CTA (left: 32%) */}
                             <div 
-                              className="absolute bg-[#12241b] border border-[#5ed29c]/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(16,185,129,0.05)]"
-                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1"
+                              style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] font-bold text-[#5ed29c] uppercase">Get Started</span>
-                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[cta.started]</span>
+                              <span className="text-[9px] font-black text-white tracking-widest uppercase">Action Call</span>
+                              <span className="text-[10.5px] font-bold text-[#5ed29c] uppercase">Get Started</span>
+                              <span className="text-[7.5px] text-[#5ed29c]/60 font-mono tracking-wider">[cta#get-started]</span>
                             </div>
 
-                            {/* Learn More Link (left: 270px) */}
+                            {/* Learn More Link (left: 52%) */}
                             <div 
-                              className="absolute bg-[#111215]/50 border border-white/[0.02] rounded-lg p-2 flex flex-col justify-center items-center text-center"
-                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
+                              style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[7px] text-[#5ed29c] font-bold underline cursor-pointer">Learn More</span>
-                              <span className="text-[5px] text-zinc-500 uppercase mt-1">more-link</span>
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">Product Tours</span>
+                              <span className="text-[11px] text-[#5ed29c] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Learn More</span>
+                              <span className="text-[7.5px] text-zinc-500 uppercase font-mono tracking-wider">[link#explore]</span>
                             </div>
 
-                            {/* Newsletter Input (left: 365px) */}
+                            {/* Newsletter Input (left: 72%) */}
                             <div 
-                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                              className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
+                              style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                             >
-                              <span className="text-[6.5px] uppercase tracking-wider text-zinc-500 font-bold">Newsletter</span>
-                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-[#5ed29c] overflow-hidden truncate">
+                              <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Newsletter</span>
+                              <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#5ed29c] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
                                 {selectedSessionId || running ? 'sub@email.com' : ''}
                               </div>
-                              <span className="text-[5px] text-zinc-600">[input.news]</span>
+                              <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#news]</span>
                             </div>
                           </>
                         )}
@@ -917,7 +930,10 @@ export const SimulationConsole: React.FC = () => {
                     const linePath = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
 
                     return (
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+                      <svg 
+                        viewBox="0 0 540 280" 
+                        className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+                      >
                         {/* Trail path with dash-offset animation for visual flow */}
                         <path
                           d={linePath}
@@ -970,16 +986,21 @@ export const SimulationConsole: React.FC = () => {
                     );
                   })()}
 
-                  {/* Live Simulation Running Active Cursor Pointer */}
+                  {/* Live Simulation Running Active Cursor Pointer - responsive coordinates positioning */}
                   {running && activeStep >= 0 && (() => {
                     const currentPoint = replayEvents.find((e) => e.stepIndex === activeStep);
                     if (!currentPoint || !currentPoint.coordinates) return null;
+                    
+                    // Convert absolute coordinates (W=540, H=280) to percentages for responsive element placement
+                    const pctX = (currentPoint.coordinates.x / 540) * 100;
+                    const pctY = (currentPoint.coordinates.y / 280) * 100;
+
                     return (
                       <div 
                         className="absolute w-4 h-4 pointer-events-none transition-all duration-300 ease-out"
                         style={{ 
-                          left: `${currentPoint.coordinates.x - 8}px`, 
-                          top: `${currentPoint.coordinates.y - 8}px`,
+                          left: `calc(${pctX}% - 8px)`, 
+                          top: `calc(${pctY}% - 8px)`,
                           zIndex: 50
                         }}
                       >
@@ -1088,44 +1109,129 @@ export const SimulationConsole: React.FC = () => {
 
           {/* Cognitive Friction timeline & reactions */}
           <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
-            <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+            <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-5 flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-[#5ed29c]" /> Cognitive Hesitation & Reactions Timeline
             </h3>
 
-            {signals.length === 0 && reactions.length === 0 ? (
-              <div className="text-center py-6 text-zinc-600 font-mono text-xs italic">
-                No hesitation alerts or friction reactions recorded.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 font-mono text-xs">
-                {signals.map((sig) => (
-                  <div key={sig.id} className="p-3 bg-[#18181b]/55 border border-[#2d2d30] rounded-xl flex items-start gap-3 justify-between">
-                    <div className="flex items-start gap-2.5">
-                      <Clock className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-white font-bold">{sig.description}</p>
-                        <span className="text-[9.5px] text-zinc-500 uppercase mt-0.5 block">
-                          Element: {sig.targetElement || 'Window Frame'} • duration: {sig.durationMs}ms
-                        </span>
-                      </div>
-                    </div>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase shrink-0 ${getSeverityColor(sig.severity)}`}>
-                      {sig.severity}
-                    </span>
-                  </div>
-                ))}
+            {(() => {
+              const unifiedEvents = [
+                ...signals.map((s) => ({ ...s, timelineType: 'signal' as const })),
+                ...reactions.map((r) => ({ ...r, timelineType: 'reaction' as const })),
+              ].sort((a, b) => a.stepIndex - b.stepIndex);
 
-                {reactions.map((react) => (
-                  <div key={react.id} className="p-3 bg-red-950/5 border border-red-500/10 rounded-xl flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-400 font-bold">Friction: {react.reactionType}</p>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">{react.description}</p>
-                    </div>
+              if (unifiedEvents.length === 0) {
+                return (
+                  <div className="text-center py-8 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                    No hesitation alerts or friction reactions recorded.
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              }
+
+              return (
+                <div className="relative pl-6 border-l border-[#222226] ml-3 flex flex-col gap-6 font-mono text-xs">
+                  {unifiedEvents.map((event, idx) => {
+                    const isSignal = event.timelineType === 'signal';
+                    const key = event.id;
+                    const stepNum = event.stepIndex + 1;
+
+                    // Header and Icons
+                    let title = '';
+                    let badgeColor = '';
+                    let badgeText = '';
+                    let iconColor = '';
+                    let iconBg = '';
+                    let borderHighlight = '';
+
+                    if (isSignal) {
+                      title = event.signalType.replace(/_/g, ' ');
+                      badgeText = `${event.severity} SEVERITY`;
+                      badgeColor = getSeverityColor(event.severity);
+                      iconColor = 'text-[#5ed29c]';
+                      iconBg = 'bg-[#5ed29c]/10 border-[#5ed29c]/20';
+                      borderHighlight = 'hover:border-[#5ed29c]/25 border-[#2d2d30]';
+                    } else {
+                      title = `FRICTION REACTION — ${event.reactionType.replace(/_/g, ' ')}`;
+                      badgeText = `INTENSITY ${(event.intensity * 100).toFixed(0)}%`;
+                      
+                      const intensity = event.intensity;
+                      if (intensity > 0.7) {
+                        badgeColor = 'text-red-400 bg-red-950/15 border-red-500/20';
+                      } else if (intensity > 0.4) {
+                        badgeColor = 'text-orange-400 bg-orange-950/15 border-orange-500/20';
+                      } else {
+                        badgeColor = 'text-yellow-400 bg-yellow-950/15 border-yellow-500/20';
+                      }
+                      
+                      iconColor = 'text-red-400';
+                      iconBg = 'bg-red-950/10 border-red-500/20';
+                      borderHighlight = 'hover:border-red-500/25 border-red-500/10 bg-red-950/5';
+                    }
+
+                    return (
+                      <div key={key} className="relative group">
+                        {/* Connecting point dot */}
+                        <div className={`absolute -left-[31px] top-1.5 w-5.5 h-5.5 rounded-full ${iconBg} border flex items-center justify-center z-10`}>
+                          {isSignal ? (
+                            <Clock className={`w-3 h-3 ${iconColor}`} />
+                          ) : (
+                            <AlertTriangle className={`w-3 h-3 ${iconColor}`} />
+                          )}
+                        </div>
+
+                        {/* Event Card */}
+                        <div className={`p-4 rounded-xl border transition-all duration-300 ${borderHighlight} shadow-[0_4px_12px_rgba(0,0,0,0.4)]`}>
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-zinc-500 uppercase bg-[#1c1c1f] border border-[#2d2d30] px-1.5 py-0.5 rounded">
+                                Step #{stepNum}
+                              </span>
+                              <span className={`text-[10.5px] font-black uppercase tracking-wider ${isSignal ? 'text-zinc-200' : 'text-red-400'}`}>
+                                {title}
+                              </span>
+                            </div>
+                            <span className={`text-[8.5px] font-black px-2 py-0.5 rounded border uppercase tracking-wider ${badgeColor}`}>
+                              {badgeText}
+                            </span>
+                          </div>
+
+                          <p className="text-zinc-300 text-[11px] leading-relaxed mb-3">
+                            {event.description}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-2.5 border-t border-white/[0.03] text-[9.5px]">
+                            {isSignal ? (
+                              <>
+                                <span className="text-zinc-500 uppercase">Target Element:</span>
+                                {event.targetElement ? (
+                                  <code className="text-[#5ed29c] bg-[#5ed29c]/5 px-1.5 py-0.5 rounded border border-[#5ed29c]/10 text-[9px] font-mono">
+                                    {event.targetElement}
+                                  </code>
+                                ) : (
+                                  <span className="text-zinc-400 font-bold">Viewport Frame</span>
+                                )}
+                                <span className="text-zinc-600">•</span>
+                                <span className="text-zinc-500 uppercase">Pacing Delay:</span>
+                                <span className="text-white font-bold">{event.durationMs}ms</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-zinc-500 uppercase">Trigger Source:</span>
+                                <span className="text-red-400 bg-red-950/10 px-1.5 py-0.5 rounded border border-red-500/10 text-[9px] font-mono font-bold">
+                                  {event.triggerSource}
+                                </span>
+                                <span className="text-zinc-600">•</span>
+                                <span className="text-zinc-500 uppercase">Abandonment Risk:</span>
+                                <span className="text-white font-bold">{(event.intensity * 100).toFixed(0)}%</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
         </main>

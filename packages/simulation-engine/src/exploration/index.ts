@@ -127,6 +127,18 @@ export class SimulationRunner {
 
       if (hesitation) {
         totalFriction += hesitation.severity === 'HIGH' ? 0.3 : 0.1;
+        
+        let richDescription = hesitation.description;
+        if (hesitation.signalType === 'FORM_FIELD_UNCERTAINTY') {
+          richDescription = `User hesitated while filling out the "${bestChoice.element.text}" field (${bestChoice.element.selector}), double-checking the input format instructions.`;
+        } else if (hesitation.signalType === 'CURSOR_DRIFT') {
+          richDescription = `Cursor drifted aimlessly over the "${bestChoice.element.text}" element. User got distracted or started skimming the layout prior to committing to an action.`;
+        } else if (hesitation.signalType === 'REPEATED_SCANNING') {
+          richDescription = `Dense screen layout near "${bestChoice.element.text}" caused repeated visual scanning loops to search for the correct button or input box.`;
+        } else if (hesitation.signalType === 'HOVER_HESITATION') {
+          richDescription = `User hovered over the "${bestChoice.element.text}" button/link with uncertainty, hesitating for ${hesitation.durationMs}ms before committing to click it.`;
+        }
+
         await this.prisma.hesitationSignal.create({
           data: {
             workflowSessionId: session.id,
@@ -135,7 +147,7 @@ export class SimulationRunner {
             targetElement: hesitation.targetElement || bestChoice.element.selector,
             durationMs: hesitation.durationMs,
             severity: hesitation.severity,
-            description: hesitation.description,
+            description: richDescription,
           },
         });
       }

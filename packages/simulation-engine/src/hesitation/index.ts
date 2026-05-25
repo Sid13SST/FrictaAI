@@ -61,7 +61,7 @@ export class HesitationSimulator {
       signalType: 'HOVER_HESITATION',
       durationMs: duration,
       severity,
-      description: 'Hesitation occurred prior to committing to clicking a navigational link.',
+      description: 'Hover hesitation occurred prior to committing to click the target element.',
     };
   }
 }
