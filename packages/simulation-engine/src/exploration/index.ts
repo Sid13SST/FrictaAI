@@ -188,6 +188,7 @@ export class SimulationRunner {
           findings: [],
           confidence: confidenceTracker.getConfidence(),
           intent: currentIntent,
+          coordinates: coords,
         },
       });
 

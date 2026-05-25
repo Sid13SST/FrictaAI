@@ -231,6 +231,13 @@ export const SimulationConsole: React.FC = () => {
       setActiveStep(-1);
       setLiveIntent('BROWSE_NAVIGATION');
       
+      // Clear previous simulation run states to prevent visual bleed-through
+      setDecisions([]);
+      setSignals([]);
+      setReactions([]);
+      setConfidenceEvents([]);
+      setReplayEvents([]);
+      
       const res = await fetch(`${baseApiUrl}/simulation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -266,6 +273,38 @@ export const SimulationConsole: React.FC = () => {
       setActiveStep(payload.stepIndex);
       setLiveIntent(payload.intent);
       setLiveConfidence(payload.confidence);
+
+      // Append coordinates for real-time cursor tracking
+      if (payload.coordinates) {
+        setReplayEvents((prev) => {
+          if (prev.some((ev) => ev.stepIndex === payload.stepIndex)) return prev;
+          return [
+            ...prev,
+            {
+              id: `live-${payload.stepIndex}`,
+              stepIndex: payload.stepIndex,
+              eventType: payload.action.type,
+              coordinates: payload.coordinates,
+              targetSelector: payload.action.target,
+              durationMs: 1000,
+            }
+          ];
+        });
+      }
+
+      // Append confidence events for real-time graph rendering
+      setConfidenceEvents((prev) => {
+        if (prev.some((ev) => ev.stepIndex === payload.stepIndex)) return prev;
+        return [
+          ...prev,
+          {
+            id: `live-conf-${payload.stepIndex}`,
+            stepIndex: payload.stepIndex,
+            confidenceValue: payload.confidence,
+            contextualDetails: `Step ${payload.stepIndex} complete. Intent: ${payload.intent}.`,
+          }
+        ];
+      });
     });
 
     eventSource.addEventListener('system.connected', () => {
@@ -610,87 +649,194 @@ export const SimulationConsole: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Live Visualizer Replay Overlay Map */}
+                        {/* Live Visualizer Replay Overlay Map */}
             <div className="md:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-              <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
-                <MousePointer className="w-4 h-4 text-[#5ed29c]" /> Behavioral Replay & Cursor Trails
-              </h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <MousePointer className="w-4 h-4 text-[#5ed29c]" /> Behavioral Replay & Cursor Trails
+                </h3>
+                <div className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5ed29c]" /> COORD SCANNING ENABLED
+                </div>
+              </div>
 
               {/* Mock Screen Overlay with cursor trail */}
-              <div className="w-full aspect-[4/3] bg-[#0c0d10] border border-[#222226] rounded-xl relative overflow-hidden flex flex-col p-6 font-mono text-[11px] text-zinc-500 select-none">
-                <div className="absolute top-2 left-3 text-[9px] uppercase tracking-wider text-zinc-600">Simulated UI Viewport</div>
-                
-                {/* Form fields */}
-                <div className="flex flex-col gap-3 mt-8 max-w-xs mx-auto w-full">
-                  <div>
-                    <label className="block text-[8.5px] uppercase mb-1">Email Address</label>
-                    <div className="w-full bg-[#18181b] border border-[#2d2d30] px-3 py-2 rounded-lg text-zinc-400">
-                      {selectedSessionId ? 'user@fricta.ai' : ''}
+              <div className="w-full flex items-center justify-center p-3.5 bg-[#08080a] border border-[#222226] rounded-xl overflow-x-auto">
+                <div 
+                  className="w-[540px] h-[280px] bg-[#0b0c0e] rounded-lg border border-white/[0.04] relative overflow-hidden flex-shrink-0"
+                  style={{
+                    background: 'radial-gradient(circle at top left, rgba(94, 210, 156, 0.02), transparent 50%), #0b0c0e'
+                  }}
+                >
+                  <style>{`
+                    @keyframes dash {
+                      to {
+                        stroke-dashoffset: -20;
+                      }
+                    }
+                  `}</style>
+
+                  {/* Browser top tab bar */}
+                  <div className="h-7 bg-[#121214] border-b border-white/[0.04] flex items-center px-3 gap-2 justify-between select-none">
+                    <div className="flex gap-1.5 shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500/40" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/40" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#5ed29c]/40" />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-[8.5px] uppercase mb-1">Password</label>
-                    <div className="w-full bg-[#18181b] border border-[#2d2d30] px-3 py-2 rounded-lg text-zinc-600">
-                      ••••••••••••
+                    {/* URL bar */}
+                    <div className="w-72 h-4.5 bg-[#1c1c1f] rounded text-[8px] font-mono text-zinc-500 flex items-center px-2 truncate border border-white/[0.01]">
+                      {targetUrl}
                     </div>
+                    <div className="w-8 shrink-0" />
                   </div>
-                  <button
-                    className="w-full mt-4 bg-[#5ed29c]/10 border border-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-lg"
-                    disabled
-                  >
-                    Submit Checkout
-                  </button>
-                </div>
 
-                {/* SVG Overlay representing cursor path */}
-                {replayEvents.length > 0 && (() => {
-                  const points = replayEvents
-                    .filter((e) => e.coordinates)
-                    .map((e) => e.coordinates as { x: number; y: number });
-                  
-                  if (points.length === 0) return null;
+                  {/* Browser viewport elements absolute aligned to coordinate system */}
+                  <div className="absolute inset-0 top-7 pointer-events-none select-none">
+                    
+                    {/* Simulated website frame header */}
+                    <div 
+                      className="absolute bg-white/[0.01] border-b border-white/[0.02] px-3 py-1.5 flex items-center justify-between"
+                      style={{ left: '0px', top: '0px', width: '540px', height: '35px' }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-[#5ed29c]/10 border border-[#5ed29c]/30" />
+                        <span className="text-[7.5px] font-mono text-zinc-400 font-bold uppercase tracking-wider">Checkout Sandbox</span>
+                      </div>
+                      <span className="text-[7px] font-mono text-zinc-600">COORDINATE MONITOR LAYER</span>
+                    </div>
 
-                  const linePath = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                    {/* Visual mockup of the Email Field */}
+                    <div 
+                      className="absolute bg-[#121214]/90 border border-white/[0.04] rounded p-2 flex flex-col justify-between"
+                      style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                    >
+                      <span className="text-[7px] uppercase tracking-wider text-zinc-500">Email Field</span>
+                      <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 px-1 flex items-center text-[7.5px] text-[#5ed29c] overflow-hidden truncate">
+                        {selectedSessionId || running ? 'user@fricta.ai' : ''}
+                      </div>
+                      <div className="text-[6.5px] text-zinc-600 truncate">Selector: [email]</div>
+                    </div>
 
-                  return (
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
-                      {/* Trail path */}
-                      <path
-                        d={linePath}
-                        fill="none"
-                        stroke="#5ed29c"
-                        strokeWidth="1.5"
-                        strokeDasharray="4 4"
-                        className="opacity-60"
-                      />
-                      
-                      {/* Interactive nodes */}
-                      {points.map((p, idx) => (
-                        <g key={idx}>
-                          <circle
-                            cx={p.x}
-                            cy={p.y}
-                            r="4"
-                            fill="#5ed29c"
-                            className="opacity-80"
-                          />
-                          {idx === points.length - 1 && (
+                    {/* Visual mockup of the Password Field */}
+                    <div 
+                      className="absolute bg-[#121214]/90 border border-white/[0.04] rounded p-2 flex flex-col justify-between"
+                      style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                    >
+                      <span className="text-[7px] uppercase tracking-wider text-zinc-500">Password</span>
+                      <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 px-1 flex items-center text-[7.5px] text-zinc-600 overflow-hidden truncate">
+                        ••••••••••••
+                      </div>
+                      <div className="text-[6.5px] text-zinc-600 truncate">Selector: [pass]</div>
+                    </div>
+
+                    {/* Visual mockup of the Help Link */}
+                    <div 
+                      className="absolute bg-[#121214]/40 border border-white/[0.03] rounded p-2 flex flex-col justify-center items-center text-center"
+                      style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                    >
+                      <span className="text-[7.5px] text-[#5ed29c] font-bold underline">Get Help</span>
+                      <span className="text-[6.5px] text-zinc-600 block mt-1 uppercase">Support doc</span>
+                    </div>
+
+                    {/* Visual mockup of the Submit Button */}
+                    <div 
+                      className="absolute bg-[#1a2d24]/80 border border-[#5ed29c]/20 rounded p-2 flex flex-col justify-center items-center text-center"
+                      style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                    >
+                      <span className="text-[7.5px] font-black text-[#5ed29c] uppercase tracking-wider">Submit Checkout</span>
+                      <span className="text-[6px] text-zinc-600 mt-1 uppercase">CTA Button</span>
+                    </div>
+
+                  </div>
+
+                  {/* SVG Overlay representing cursor path */}
+                  {replayEvents.length > 0 && (() => {
+                    const points = replayEvents
+                      .filter((e) => e.coordinates)
+                      .map((e) => e.coordinates as { x: number; y: number });
+                    
+                    if (points.length === 0) return null;
+
+                    const linePath = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+                    return (
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+                        {/* Trail path with dash-offset animation for visual flow */}
+                        <path
+                          d={linePath}
+                          fill="none"
+                          stroke="#5ed29c"
+                          strokeWidth="2"
+                          strokeDasharray="4 4"
+                          style={{ animation: 'dash 2s linear infinite' }}
+                          className="opacity-70"
+                        />
+                        
+                        {/* Interactive nodes along the coordinate trail */}
+                        {points.map((p, idx) => (
+                          <g key={idx}>
                             <circle
                               cx={p.x}
                               cy={p.y}
-                              r="8"
-                              fill="none"
+                              r="5"
+                              fill="#0b0c0e"
                               stroke="#5ed29c"
-                              strokeWidth="1"
-                              className="animate-ping"
+                              strokeWidth="2"
                             />
-                          )}
-                        </g>
-                      ))}
-                    </svg>
-                  );
-                })()}
+                            <text
+                              x={p.x}
+                              y={p.y - 10}
+                              fill="#5ed29c"
+                              fontSize="8"
+                              fontFamily="monospace"
+                              textAnchor="middle"
+                              className="font-bold opacity-80"
+                            >
+                              S{idx + 1}
+                            </text>
+                            
+                            {/* Pinging circle highlight on the current active step or end-of-path */}
+                            {(idx === points.length - 1 || (running && idx === activeStep)) && (
+                              <circle
+                                cx={p.x}
+                                cy={p.y}
+                                r="10"
+                                fill="none"
+                                stroke="#5ed29c"
+                                strokeWidth="1"
+                                className="animate-ping"
+                              />
+                            )}
+                          </g>
+                        ))}
+                      </svg>
+                    );
+                  })()}
+
+                  {/* Live Simulation Running Active Cursor Pointer */}
+                  {running && activeStep >= 0 && (() => {
+                    const currentPoint = replayEvents.find((e) => e.stepIndex === activeStep);
+                    if (!currentPoint || !currentPoint.coordinates) return null;
+                    return (
+                      <div 
+                        className="absolute w-4 h-4 pointer-events-none transition-all duration-300 ease-out"
+                        style={{ 
+                          left: `${currentPoint.coordinates.x - 8}px`, 
+                          top: `${currentPoint.coordinates.y - 8}px`,
+                          zIndex: 50
+                        }}
+                      >
+                        <div className="relative flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5ed29c] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-[#5ed29c] border border-white flex items-center justify-center shadow-lg">
+                            <span className="text-[7.5px] font-bold text-[#0c0d10] font-mono">{activeStep + 1}</span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                </div>
               </div>
             </div>
 
