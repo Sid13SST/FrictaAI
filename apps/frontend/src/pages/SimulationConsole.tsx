@@ -131,6 +131,7 @@ export const SimulationConsole: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState<boolean>(true);
 
   const baseApiUrl = 'http://127.0.0.1:3001/api';
 
@@ -335,6 +336,74 @@ export const SimulationConsole: React.FC = () => {
           <div>
             <h4 className="text-xs font-black font-mono text-red-400 uppercase">Operational Error</h4>
             <p className="text-xs text-zinc-400 mt-1 font-sans">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {showGuide && (
+        <div className="bg-gradient-to-r from-zinc-900 via-[#0a100d] to-[#0c1410] border border-[#222226] p-5 rounded-2xl mb-6 relative overflow-hidden">
+          {/* Subtle background glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#5ed29c]" />
+              <h2 className="text-xs font-black font-mono text-white uppercase tracking-wider">
+                System Guide: What is Autonomous UX Simulation?
+              </h2>
+            </div>
+            <button
+              onClick={() => setShowGuide(false)}
+              className="text-[10px] font-mono text-zinc-500 hover:text-[#5ed29c] uppercase tracking-widest transition-colors focus:outline-none"
+            >
+              [ Dismiss Guide ]
+            </button>
+          </div>
+
+          <p className="text-xs text-zinc-400 max-w-4xl leading-relaxed mb-4">
+            The Autonomous UX Simulation Engine acts as a **behavioral augmentation layer**. Rather than running simple, rigid test scripts, it generates **synthetic user agents** driven by custom cognitive weights (confidence, reading stability, focus, and patience). It tests your live forms, navigation steps, and interfaces to detect cognitive barriers and friction points before shipping code to real customers.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-3 border-t border-[#222226]">
+            <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Users className="w-3.5 h-3.5 text-[#5ed29c]" />
+                <h4 className="text-[10px] font-bold font-mono text-white uppercase">1. Choose Persona</h4>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-normal">
+                Select an archetype. <b>Beginners</b> hesitate often and read carefully; <b>Power Users</b> scan layouts quickly and abort if delayed. Watch the <i>Active Archetype Coefficient</i> panel adjust dynamically.
+              </p>
+            </div>
+
+            <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <MousePointer className="w-3.5 h-3.5 text-[#5ed29c]" />
+                <h4 className="text-[10px] font-bold font-mono text-white uppercase">2. Viewport Cursor</h4>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-normal">
+                The simulated UI viewport charts coordinates and mouse paths. Jagged paths, loops, or circular coordinates indicate the agent is visual-scanning or looking for a misplaced call-to-action.
+              </p>
+            </div>
+
+            <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-[#5ed29c]" />
+                <h4 className="text-[10px] font-bold font-mono text-white uppercase">3. Live Confidence</h4>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-normal">
+                The <i>Confidence Curve</i> monitors user ease. Successful interactions boost confidence; validation errors, poor contrast, or clutter deplete it. A steep drop warning predicts abandonment.
+              </p>
+            </div>
+
+            <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                <h4 className="text-[10px] font-bold font-mono text-white uppercase">4. Usability Friction</h4>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-normal">
+                Review simulated timeline highlights. Filter hesitation durations (like form validation doubt) and friction triggers to optimize layouts, reduce steps, and improve conversion metrics.
+              </p>
+            </div>
           </div>
         </div>
       )}
