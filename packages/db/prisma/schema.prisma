@@ -43,6 +43,9 @@ model Project {
   shares                 SharedLink[]
   simulationProfiles     SimulationProfile[]
   swarmSessions          SwarmSession[]
+  workflowForecasts      WorkflowForecast[]
+  historicalBaselines    HistoricalBaseline[]
+  regressionEvents       RegressionEvent[]
 }
 
 model WorkflowSession {
@@ -966,4 +969,110 @@ model SwarmReplayEvent {
   description        String
   createdAt          DateTime          @default(now())
 }
+
+model WorkflowForecast {
+  id                    String                   @id @default(uuid())
+  projectId             String
+  project               Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath          String
+  status                String                   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  stabilityScore        Float                    @default(0.0) // 0.0 to 1.0 (overall workflow health prediction)
+  completionRate        Float                    @default(0.0) // predicted completion rate
+  averageFriction       Float                    @default(0.0) // predicted average friction
+  failureClusterPoints  Json                     // Array of selectors where failures are expected
+  riskLevel             String                   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  createdAt             DateTime                 @default(now())
+
+  riskSignals           PredictiveRiskSignal[]
+  survivabilityForecasts SurvivabilityForecast[]
+  abandonmentPredictions AbandonmentPrediction[]
+  timelineEvents        PredictiveTimelineEvent[]
+}
+
+model PredictiveRiskSignal {
+  id                 String           @id @default(uuid())
+  workflowForecastId String
+  forecast           WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
+  stepIndex          Int
+  riskType           String           // "WORKFLOW_COLLAPSE", "ONBOARDING_FAILURE", "CTA_WEAKNESS", "NAVIGATION_FAILURE", "FRICTION_ESCALATION", "COGNITIVE_OVERLOAD", "MOBILE_FAILURE", "PERSONA_FAILURE"
+  confidenceScore    Float            // 0.0 to 1.0
+  severity           String           // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  targetSelector     String?
+  contributingSignals Json            // list of strings
+  evidenceNotes      String
+  historicalBasis    String
+  createdAt          DateTime         @default(now())
+}
+
+model RegressionEvent {
+  id                  String              @id @default(uuid())
+  projectId           String
+  project             Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath        String
+  metricName          String              // "COMPLETION_RATE" | "FRICTION_SCORE" | "COGNITIVE_LOAD" | "STEPS_TO_COMPLETE"
+  baseValue           Float
+  forecastedValue     Float
+  driftPercentage     Float
+  severity            String              // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  contributingFactors Json                // list of factors
+  historicalBaselineId String?
+  baseline            HistoricalBaseline? @relation(fields: [historicalBaselineId], references: [id], onDelete: SetNull)
+  createdAt            DateTime            @default(now())
+}
+
+model HistoricalBaseline {
+  id                   String            @id @default(uuid())
+  projectId            String
+  project              Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                 String
+  workflowPath         String
+  averageSteps         Float
+  averageFriction      Float
+  successRate          Float
+  cognitiveLoadAverage Float
+  sampleSize           Int
+  createdAt            DateTime          @default(now())
+
+  regressionEvents     RegressionEvent[]
+}
+
+model SurvivabilityForecast {
+  id                   String           @id @default(uuid())
+  workflowForecastId   String
+  forecast             WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
+  personaType          String           // "Beginner Teacher", "Power User", etc.
+  predictedSurvivalRate Float
+  estimatedStepsToAbandon Float
+  primaryAbandonmentTrigger String
+  riskFactors          Json             // list of factors/signals
+  createdAt            DateTime         @default(now())
+}
+
+model AbandonmentPrediction {
+  id                            String           @id @default(uuid())
+  workflowForecastId            String
+  forecast                      WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
+  stepIndex                     Int
+  abandonmentProbability        Float            // 0.0 to 1.0
+  triggerSource                 String           // e.g. "CONFIDENCE_DEGRADATION"
+  cognitiveLoadEscalation       Float
+  confidenceCollapseProbability Float
+  retryDensityImpact            Float
+  hesitationAccumulationMs      Int
+  description                   String
+  createdAt                     DateTime         @default(now())
+}
+
+model PredictiveTimelineEvent {
+  id                 String           @id @default(uuid())
+  workflowForecastId String
+  forecast           WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
+  stepIndex          Int
+  eventType          String           // "FRICTION_ESCALATION" | "CONFIDENCE_COLLAPSE" | "ABANDONMENT_TREND" | "REGRESSION_RISK" | "COGNITIVE_OVERLOAD"
+  timeOffsetMs       Int
+  predictedIntensity Float            // 0.0 to 1.0
+  description        String
+  createdAt          DateTime         @default(now())
+}
+
 
