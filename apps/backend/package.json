@@ -22,6 +22,7 @@
     "@fricta/historical-intelligence": "*",
     "@fricta/simulation-engine": "*",
     "@fricta/swarm-engine": "*",
+    "@fricta/predictive-engine": "*",
     "@hono/node-server": "^1.11.1",
     "hono": "^4.3.4",
     "zod": "^3.23.8",
