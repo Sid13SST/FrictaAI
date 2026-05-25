@@ -1036,23 +1036,25 @@ export const SimulationConsole: React.FC = () => {
           </div>
 
           {/* Tab selectors control panel */}
-          <div className="bg-[#121214] border border-[#222226] p-4 rounded-2xl mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-            <div className="flex items-center gap-3 min-w-0 w-full lg:w-auto">
+          <div className="bg-[#121214] border border-[#222226] p-4 rounded-2xl mb-6 flex flex-col gap-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center gap-3 min-w-0 w-full">
               <div className="w-9 h-9 rounded-xl bg-[#5ed29c]/5 border border-[#5ed29c]/15 flex items-center justify-center shrink-0">
-                <Brain className="w-4 h-4 text-purple-400" />
+                <Brain className="w-4 h-4 text-[#5ed29c]" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider truncate">
+                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider">
                   SELECT CONSOLE DISPLAY MODE
                 </h3>
-                <p className="text-[10px] text-zinc-500 font-mono leading-normal">Switch between visual exploration and deep cognitive analytics telemetry</p>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal mt-0.5">
+                  Switch between visual exploration, cognitive analytics, swarm populations, and predictive intelligence telemetry
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row bg-[#070b0a] border border-[#222226] p-1.5 rounded-xl gap-2 w-full lg:w-auto shrink-0 shadow-inner">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 bg-[#070b0a] border border-[#222226] p-1.5 rounded-xl gap-2 w-full shadow-inner">
               <button
                 onClick={() => setActiveTab('explorer')}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[10px] lg:text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full focus:outline-none whitespace-nowrap ${
                   activeTab === 'explorer'
                     ? 'bg-[#5ed29c] text-[#070b0a] shadow-[0_0_20px_rgba(94,210,156,0.25)] border border-[#5ed29c]'
                     : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
@@ -1063,7 +1065,7 @@ export const SimulationConsole: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('cognition')}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[10px] lg:text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full focus:outline-none whitespace-nowrap ${
                   activeTab === 'cognition'
                     ? 'bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.25)] border border-purple-500'
                     : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
@@ -1074,7 +1076,7 @@ export const SimulationConsole: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('swarm')}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[10px] lg:text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full focus:outline-none whitespace-nowrap ${
                   activeTab === 'swarm'
                     ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.25)] border border-emerald-500'
                     : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
@@ -1085,7 +1087,7 @@ export const SimulationConsole: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('predictive')}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[10px] lg:text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full focus:outline-none whitespace-nowrap ${
                   activeTab === 'predictive'
                     ? 'bg-[#5ed29c] text-[#070b0a] shadow-[0_0_20px_rgba(94,210,156,0.25)] border border-[#5ed29c]'
                     : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
