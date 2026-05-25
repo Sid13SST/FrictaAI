@@ -779,7 +779,7 @@ export const SimulationConsole: React.FC = () => {
                   <div
                     key={path.id}
                     onClick={() => setSelectedSessionId(path.id)}
-                    className={`p-3.5 font-mono text-xs flex items-center justify-between gap-4 cursor-pointer transition-all ${
+                    className={`p-3.5 font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-all ${
                       selectedSessionId === path.id ? 'bg-[#1c1c1f]' : 'bg-[#18181b]/55 hover:bg-[#1c1c1f]'
                     }`}
                   >
@@ -793,7 +793,7 @@ export const SimulationConsole: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 font-mono text-[10px]">
+                    <div className="flex items-center gap-3 font-mono text-[10px] shrink-0">
                       <span className={`px-2 py-0.5 rounded border ${
                         path.isSuccess ? 'text-[#5ed29c] border-[#5ed29c]/20 bg-[#5ed29c]/5' : 'text-red-400 border-red-500/20 bg-red-500/5'
                       }`}>
@@ -807,35 +807,49 @@ export const SimulationConsole: React.FC = () => {
             )}
           </div>
 
-          {/* Tab selectors */}
-          <div className="flex bg-[#121214] border border-[#222226] p-1 rounded-xl gap-1 w-fit mb-6 shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-            <button
-              onClick={() => setActiveTab('explorer')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-black font-mono tracking-wider uppercase rounded-lg transition-all focus:outline-none ${
-                activeTab === 'explorer'
-                  ? 'bg-[#5ed29c]/15 text-[#5ed29c] border border-[#5ed29c]/25 shadow-[0_0_16px_rgba(94,210,156,0.06)]'
-                  : 'text-zinc-400 hover:text-zinc-200 border border-transparent hover:bg-[#1c1c20]'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              Explorer View
-            </button>
-            <button
-              onClick={() => setActiveTab('cognition')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-black font-mono tracking-wider uppercase rounded-lg transition-all focus:outline-none ${
-                activeTab === 'cognition'
-                  ? 'bg-[#5ed29c]/15 text-[#5ed29c] border border-[#5ed29c]/25 shadow-[0_0_16px_rgba(94,210,156,0.06)]'
-                  : 'text-zinc-500 hover:text-zinc-200 border border-transparent hover:bg-[#1c1c20]'
-              }`}
-            >
-              <Brain className="w-3.5 h-3.5 text-purple-400" />
-              Cognitive Analytics
-            </button>
+          {/* Tab selectors control panel */}
+          <div className="bg-[#121214] border border-[#222226] p-4 rounded-2xl mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center gap-3 min-w-0 w-full lg:w-auto">
+              <div className="w-9 h-9 rounded-xl bg-[#5ed29c]/5 border border-[#5ed29c]/15 flex items-center justify-center shrink-0">
+                <Brain className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider truncate">
+                  SELECT CONSOLE DISPLAY MODE
+                </h3>
+                <p className="text-[10px] text-zinc-500 font-mono leading-normal">Switch between visual exploration and deep cognitive analytics telemetry</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row bg-[#070b0a] border border-[#222226] p-1.5 rounded-xl gap-2 w-full lg:w-auto shrink-0 shadow-inner">
+              <button
+                onClick={() => setActiveTab('explorer')}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                  activeTab === 'explorer'
+                    ? 'bg-[#5ed29c] text-[#070b0a] shadow-[0_0_20px_rgba(94,210,156,0.25)] border border-[#5ed29c]'
+                    : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
+                }`}
+              >
+                <Compass className="w-4 h-4 shrink-0" />
+                1. Explorer View
+              </button>
+              <button
+                onClick={() => setActiveTab('cognition')}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                  activeTab === 'cognition'
+                    ? 'bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.25)] border border-purple-500'
+                    : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
+                }`}
+              >
+                <Brain className="w-4 h-4 shrink-0" />
+                2. Cognitive Analytics
+              </button>
+            </div>
           </div>
 
           {activeTab === 'explorer' ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* Live Visualizer Replay Overlay Map */}
                 <div className="md:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 overflow-hidden">
                   <div className="flex justify-between items-center">
@@ -1445,7 +1459,7 @@ export const SimulationConsole: React.FC = () => {
                     const displayTrigger = triggerSource.replace(/_/g, ' ').toLowerCase();
                     
                     return (
-                      <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 overflow-hidden">
+                      <div className="flex flex-col xl:flex-row items-center gap-4 mt-4 w-full">
                         <div className="relative w-16 h-16 shrink-0">
                           {/* Circle progress indicator */}
                           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
