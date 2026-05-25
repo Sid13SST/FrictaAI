@@ -20,7 +20,10 @@ export type RealtimeEventType =
   | 'review.updated'
   | 'workspace.members.updated'
   | 'cognition.updated'
-  | 'swarm.step';
+  | 'swarm.step'
+  | 'predictive.forecast'
+  | 'predictive.risk'
+  | 'predictive.regression';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
