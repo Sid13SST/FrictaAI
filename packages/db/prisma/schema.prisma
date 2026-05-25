@@ -42,6 +42,7 @@ model Project {
   annotations            Annotation[]
   shares                 SharedLink[]
   simulationProfiles     SimulationProfile[]
+  swarmSessions          SwarmSession[]
 }
 
 model WorkflowSession {
@@ -88,6 +89,7 @@ model WorkflowSession {
   decisionComplexityEvents DecisionComplexityEvent[]
   abandonmentRiskSignals  AbandonmentRiskSignal[]
   cognitiveTimelineEvents CognitiveTimelineEvent[]
+  personaExecutions      PersonaExecution[]
 }
 
 model AgentThought {
@@ -857,3 +859,111 @@ model CognitiveTimelineEvent {
 
   session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
+
+model SwarmSession {
+  id                   String                        @id @default(uuid())
+  projectId            String
+  project              Project                       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                 String
+  startUrl             String
+  goal                 String
+  status               String                        @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  startedAt            DateTime?
+  endedAt              DateTime?
+  createdAt            DateTime                      @default(now())
+
+  executions           PersonaExecution[]
+  comparisons          PersonaComparison[]
+  survivabilityMetrics WorkflowSurvivabilityMetric[]
+  heatmaps             PopulationHeatmap[]
+  divergenceEvents     DivergenceEvent[]
+}
+
+model PersonaExecution {
+  id                String            @id @default(uuid())
+  swarmSessionId    String
+  swarmSession      SwarmSession      @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  personaType       String            // "Beginner Teacher", "Distracted Student", etc.
+  workflowSessionId String?
+  workflowSession   WorkflowSession?  @relation(fields: [workflowSessionId], references: [id], onDelete: SetNull)
+  status            String            @default("RUNNING") // RUNNING, COMPLETED, FAILED
+  completionRate    Float             @default(0.0) // 0 or 1
+  durationMs        Int               @default(0)
+  frictionScore     Float             @default(0.0)
+  stepsCompleted    Int               @default(0)
+  createdAt         DateTime          @default(now())
+
+  replays           SwarmReplayEvent[]
+}
+
+model PersonaComparison {
+  id                String          @id @default(uuid())
+  swarmSessionId    String
+  swarmSession      SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  personaA          String
+  personaB          String
+  similarityScore   Float
+  divergenceNotes   String
+  pathVariance      Float
+  cognitiveDelta    Float
+  createdAt         DateTime        @default(now())
+}
+
+model DivergenceEvent {
+  id                String          @id @default(uuid())
+  swarmSessionId    String
+  swarmSession      SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  stepIndex         Int
+  eventType         String          // "PATH_DIVERGENCE" | "COGNITIVE_SPIKE" | "ABANDONMENT"
+  selector          String?
+  personaTypeA      String
+  actionA           String
+  personaTypeB      String
+  actionB           String
+  details           String
+  createdAt         DateTime        @default(now())
+}
+
+model WorkflowSurvivabilityMetric {
+  id                    String          @id @default(uuid())
+  swarmSessionId        String
+  swarmSession          SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  workflowPath          String
+  overallCompletionRate Float
+  averageSteps          Float
+  failureClusterCount   Int
+  abandonmentRiskAverage Float
+  failurePoints         Json            // list of selectors/elements where failure clustered
+  createdAt             DateTime        @default(now())
+}
+
+model PopulationHeatmap {
+  id                  String          @id @default(uuid())
+  swarmSessionId      String
+  swarmSession        SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  pageUrl             String
+  selector            String
+  clickCount          Int             @default(0)
+  hoverCount          Int             @default(0)
+  averageHesitationMs Int             @default(0)
+  averageFrictionScore Float           @default(0.0)
+  attentionWeight     Float           @default(0.0)
+  cognitiveDensity    Float           @default(0.0)
+  createdAt           DateTime        @default(now())
+}
+
+model SwarmReplayEvent {
+  id                 String            @id @default(uuid())
+  personaExecutionId String
+  execution          PersonaExecution  @relation(fields: [personaExecutionId], references: [id], onDelete: Cascade)
+  stepIndex          Int
+  timestampMs        Int
+  eventType          String            // "HOVER", "CLICK", "INPUT", etc.
+  targetSelector     String?
+  coordinates        Json?             // { x, y }
+  cognitiveLoad      Float
+  confidence         Float
+  description        String
+  createdAt          DateTime          @default(now())
+}
+
