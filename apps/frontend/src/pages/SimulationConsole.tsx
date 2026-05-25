@@ -165,7 +165,7 @@ export const SimulationConsole: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'explorer' | 'cognition'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'cognition' | 'swarm'>('explorer');
 
   // Cognition states
   const [cognitiveStates, setCognitiveStates] = useState<any[]>([]);
@@ -175,6 +175,21 @@ export const SimulationConsole: React.FC = () => {
   const [abandonmentSignals, setAbandonmentSignals] = useState<any[]>([]);
   const [decisionComplexities, setDecisionComplexities] = useState<any[]>([]);
   const [cognitiveTimeline, setCognitiveTimeline] = useState<any[]>([]);
+
+  // Swarm States
+  const [swarmSessions, setSwarmSessions] = useState<any[]>([]);
+  const [selectedSwarmSessionId, setSelectedSwarmSessionId] = useState<string>('');
+  const [swarmPersonas, setSwarmPersonas] = useState<any[]>([]);
+  const [selectedSwarmPersonas, setSelectedSwarmPersonas] = useState<string[]>([
+    'BEGINNER_TEACHER', 'DISTRACTED_STUDENT', 'IMPATIENT_ADMIN', 'POWER_USER'
+  ]);
+  const [swarmExecutions, setSwarmExecutions] = useState<any[]>([]);
+  const [swarmDivergence, setSwarmDivergence] = useState<any[]>([]);
+  const [swarmSurvivability, setSwarmSurvivability] = useState<any | null>(null);
+  const [swarmHeatmaps, setSwarmHeatmaps] = useState<any[]>([]);
+  const [swarmComparisons, setSwarmComparisons] = useState<any[]>([]);
+  const [swarmRunning, setSwarmRunning] = useState<boolean>(false);
+  const [liveSwarmProgress, setLiveSwarmProgress] = useState<any[]>([]);
 
   const baseApiUrl = 'http://127.0.0.1:3001/api';
 
@@ -193,6 +208,12 @@ export const SimulationConsole: React.FC = () => {
       fetchSessionBehaviorDetails(selectedSessionId);
     }
   }, [selectedSessionId]);
+
+  useEffect(() => {
+    if (selectedSwarmSessionId) {
+      fetchSwarmSessionDetails(selectedSwarmSessionId);
+    }
+  }, [selectedSwarmSessionId]);
 
   const fetchInitialData = async () => {
     try {
@@ -216,16 +237,22 @@ export const SimulationConsole: React.FC = () => {
 
   const fetchProjectSimulationDetails = async (projectId: string) => {
     try {
-      const [profilesRes, pathsRes] = await Promise.all([
+      const [profilesRes, pathsRes, swarmSessionsRes, swarmPresetsRes] = await Promise.all([
         fetch(`${baseApiUrl}/simulation/personas?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/simulation/exploration?projectId=${projectId}`)
+        fetch(`${baseApiUrl}/simulation/exploration?projectId=${projectId}`),
+        fetch(`${baseApiUrl}/swarm/sessions?projectId=${projectId}`),
+        fetch(`${baseApiUrl}/swarm/personas`)
       ]);
 
       const profData = await profilesRes.json();
       const pathData = await pathsRes.json();
+      const swarmSessionData = await swarmSessionsRes.json();
+      const swarmPresetData = await swarmPresetsRes.json();
 
       setProfiles(profData.profiles || []);
       setPaths(pathData.paths || []);
+      setSwarmSessions(swarmSessionData.sessions || []);
+      setSwarmPersonas(swarmPresetData.personas || []);
 
       if (profData.profiles && profData.profiles.length > 0) {
         setSelectedProfileId(profData.profiles[0].id);
@@ -233,10 +260,37 @@ export const SimulationConsole: React.FC = () => {
       if (pathData.paths && pathData.paths.length > 0) {
         setSelectedSessionId(pathData.paths[0].workflowSessionId || '');
       }
+      if (swarmSessionData.sessions && swarmSessionData.sessions.length > 0) {
+        setSelectedSwarmSessionId(swarmSessionData.sessions[0].id);
+      }
     } catch (err: any) {
       console.error('Failed to load project simulation details:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSwarmSessionDetails = async (swarmSessionId: string) => {
+    try {
+      const [divRes, survRes, anRes, heatRes] = await Promise.all([
+        fetch(`${baseApiUrl}/swarm/divergence?swarmSessionId=${swarmSessionId}`),
+        fetch(`${baseApiUrl}/swarm/survivability?swarmSessionId=${swarmSessionId}`),
+        fetch(`${baseApiUrl}/swarm/analytics?swarmSessionId=${swarmSessionId}`),
+        fetch(`${baseApiUrl}/swarm/heatmaps?swarmSessionId=${swarmSessionId}`)
+      ]);
+
+      const divData = await divRes.json();
+      const survData = await survRes.json();
+      const anData = await anRes.json();
+      const heatData = await heatRes.json();
+
+      setSwarmDivergence(divData.events || []);
+      setSwarmSurvivability(survData.metrics || null);
+      setSwarmExecutions(anData.executions || []);
+      setSwarmComparisons(anData.comparisons || []);
+      setSwarmHeatmaps(heatData.heatmaps || []);
+    } catch (err) {
+      console.error('Failed to fetch swarm session details:', err);
     }
   };
 
@@ -477,6 +531,65 @@ export const SimulationConsole: React.FC = () => {
       fetchProjectSimulationDetails(selectedProjectId);
       setSelectedSessionId(sessionId);
     }, 7000);
+  };
+
+  const handleStartSwarmSimulation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProjectId) return;
+
+    try {
+      setSwarmRunning(true);
+      setError(null);
+      setLiveSwarmProgress([]);
+
+      const res = await fetch(`${baseApiUrl}/swarm/executions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedProjectId,
+          startUrl: targetUrl,
+          goal: goalDescription,
+          personas: selectedSwarmPersonas
+        })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to execute swarm simulation');
+      }
+
+      const data = await res.json();
+      setupSwarmSSE(data.swarmSessionId);
+    } catch (err: any) {
+      setError(err.message || 'Error executing swarm simulation');
+      setSwarmRunning(false);
+    }
+  };
+
+  const setupSwarmSSE = (swarmSessionId: string) => {
+    const sseUrl = `${baseApiUrl}/swarm/stream/${swarmSessionId}`;
+    const eventSource = new EventSource(sseUrl);
+
+    eventSource.addEventListener('swarm.step', (e: any) => {
+      const payload = JSON.parse(e.data);
+      setLiveSwarmProgress((prev) => {
+        if (prev.some((p) => p.personaType === payload.personaType && p.stepIndex === payload.stepIndex)) {
+          return prev;
+        }
+        return [...prev, payload];
+      });
+    });
+
+    eventSource.addEventListener('system.connected', () => {
+      console.log('SSE connected for swarm session:', swarmSessionId);
+    });
+
+    setTimeout(() => {
+      eventSource.close();
+      setSwarmRunning(false);
+      fetchProjectSimulationDetails(selectedProjectId);
+      setSelectedSwarmSessionId(swarmSessionId);
+    }, 6000);
   };
 
   const getSeverityColor = (sev: string) => {
@@ -843,6 +956,17 @@ export const SimulationConsole: React.FC = () => {
               >
                 <Brain className="w-4 h-4 shrink-0" />
                 2. Cognitive Analytics
+              </button>
+              <button
+                onClick={() => setActiveTab('swarm')}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full sm:w-auto focus:outline-none ${
+                  activeTab === 'swarm'
+                    ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.25)] border border-emerald-500'
+                    : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
+                }`}
+              >
+                <Users className="w-4 h-4 shrink-0" />
+                3. Swarm Population
               </button>
             </div>
           </div>
@@ -1433,7 +1557,7 @@ export const SimulationConsole: React.FC = () => {
                 })()}
               </div>
             </>
-          ) : (
+          ) : activeTab === 'cognition' ? (
             <div className="flex flex-col gap-6">
               
               {/* Top Row: Metric Cards & Gauges */}
@@ -1913,6 +2037,329 @@ export const SimulationConsole: React.FC = () => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              
+              {/* Swarm Configuration Panel & Run command */}
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                  <div>
+                    <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-emerald-400" /> Swarm Command Center
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">Orchestrate concurrent synthetic user simulations</p>
+                  </div>
+                  
+                  {swarmSessions.length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-[#070b0a] border border-[#222226] px-2.5 py-1.5 rounded-lg">
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase">Swarm Audit Run:</span>
+                      <select
+                        value={selectedSwarmSessionId}
+                        onChange={(e) => setSelectedSwarmSessionId(e.target.value)}
+                        className="bg-transparent border-none text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
+                      >
+                        {swarmSessions.map((s, idx) => (
+                          <option key={s.id} value={s.id} className="bg-[#121214] text-white">
+                            Run {swarmSessions.length - idx} ({new Date(s.createdAt).toLocaleDateString()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleStartSwarmSimulation} className="flex flex-col gap-4 font-mono text-xs border-t border-[#222226] pt-4">
+                  <div>
+                    <label className="text-[9px] text-zinc-500 uppercase font-black block mb-2">Select Swarm Personas to run concurrently</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { key: 'BEGINNER_TEACHER', name: 'Beginner Teacher' },
+                        { key: 'DISTRACTED_STUDENT', name: 'Distracted Student' },
+                        { key: 'IMPATIENT_ADMIN', name: 'Impatient Admin' },
+                        { key: 'LOW_CONFIDENCE', name: 'Low-Confidence User' },
+                        { key: 'ACCESSIBILITY_CONSTRAINED', name: 'Accessibility-Constrained' },
+                        { key: 'MOBILE_FIRST', name: 'Mobile-First User' },
+                        { key: 'POWER_USER', name: 'Power User' },
+                        { key: 'FIRST_TIME_VISITOR', name: 'First-Time Visitor' }
+                      ].map((p) => {
+                        const isChecked = selectedSwarmPersonas.includes(p.key);
+                        return (
+                          <label key={p.key} className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer select-none transition-all ${
+                            isChecked ? 'border-emerald-500/30 bg-emerald-500/5 text-white' : 'border-[#2d2d30] bg-[#1c1c1f] text-zinc-400 hover:border-zinc-700'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                setSelectedSwarmPersonas(prev => 
+                                  prev.includes(p.key) 
+                                    ? prev.filter(k => k !== p.key) 
+                                    : [...prev, p.key]
+                                );
+                              }}
+                              className="accent-emerald-500"
+                            />
+                            <span className="text-[10px] font-bold">{p.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={swarmRunning || selectedSwarmPersonas.length === 0}
+                    className="w-full md:w-auto self-end bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-black uppercase text-[10px] px-6 py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {swarmRunning ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        RUNNING SWARM POPULATION...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        EXECUTE POPULATION SIMULATION
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* Live Swarm updates */}
+              {swarmRunning && (
+                <div className="bg-[#121214] border border-emerald-500/25 p-5 rounded-xl flex flex-col gap-3 shadow-[0_0_24px_rgba(16,185,129,0.06)] animate-pulse">
+                  <h4 className="text-xs font-black font-mono text-white uppercase flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" /> Concurrent Swarm Telemetry Stream
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    {selectedSwarmPersonas.map((persona) => {
+                      const display = persona.split('_').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+                      const progress = liveSwarmProgress.filter(p => p.personaType === display);
+                      const latest = progress[progress.length - 1];
+                      return (
+                        <div key={persona} className="bg-[#0b0c0e] border border-[#222226] p-3 rounded-lg font-mono text-[10px]">
+                          <p className="text-white font-bold">{display}</p>
+                          {latest ? (
+                            <div className="mt-2 flex flex-col gap-1.5">
+                              <p className="text-zinc-400">Step #{latest.stepIndex + 1}: <b className="text-emerald-400">{latest.eventType}</b></p>
+                              <code className="bg-zinc-900/60 p-1 rounded text-zinc-500 text-[8px] truncate">{latest.selector || 'viewport'}</code>
+                              <div className="flex justify-between items-center text-[9px] text-zinc-400 mt-1 border-t border-zinc-900 pt-1">
+                                <span>Conf: <b>{(latest.confidence * 100).toFixed(0)}%</b></span>
+                                <span>Load: <b>{(latest.cognitiveLoad * 100).toFixed(0)}%</b></span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-zinc-600 mt-2 italic">Spinning up environment...</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Workflow Survivability Dashboard */}
+              {swarmSurvivability ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                    <div>
+                      <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Workflow Success</h4>
+                      <p className="text-[9px] text-zinc-500 font-mono uppercase">Population completion rate</p>
+                    </div>
+                    <div className="mt-4 flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-emerald-400">{(swarmSurvivability.overallCompletionRate * 100).toFixed(0)}%</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">SURVIVED</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                    <div>
+                      <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Average Steps</h4>
+                      <p className="text-[9px] text-zinc-500 font-mono uppercase">Avg completion latency</p>
+                    </div>
+                    <div className="mt-4 flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-white">{Number(swarmSurvivability.averageSteps).toFixed(1)}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">STEPS</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                    <div>
+                      <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Failure Clusters</h4>
+                      <p className="text-[9px] text-zinc-500 font-mono uppercase">Distinct failure hotspots</p>
+                    </div>
+                    <div className="mt-4 flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-rose-400">{swarmSurvivability.failureClusterCount}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">LOCATIONS</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl flex flex-col justify-between shadow-lg">
+                    <div>
+                      <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1">Abandonment Risk</h4>
+                      <p className="text-[9px] text-zinc-500 font-mono uppercase">Avg population risk</p>
+                    </div>
+                    <div className="mt-4 flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-orange-400">{(swarmSurvivability.abandonmentRiskAverage * 100).toFixed(0)}%</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">LIKELIHOOD</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                  No population survivability metrics loaded. Execute a swarm to populate.
+                </div>
+              )}
+
+              {/* Comparative Replay Grid */}
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl">
+                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-emerald-400" /> Parallel Persona Replay Grid
+                </h3>
+                
+                {swarmExecutions.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                    No active runs loaded.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {swarmExecutions.map((exec) => (
+                      <div key={exec.id} className="bg-[#0b0c0e] border border-[#222226] p-4 rounded-xl font-mono text-xs flex flex-col gap-3">
+                        <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
+                          <span className="text-white font-bold">{exec.personaType}</span>
+                          <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase ${
+                            exec.status === 'COMPLETED' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' : 'text-red-400 border-red-500/20 bg-red-500/5'
+                          }`}>
+                            {exec.status}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[10px] text-zinc-400">
+                          <span>Steps Completed: <b>{exec.stepsCompleted} / 5</b></span>
+                          <span>Friction: <b className="text-orange-400">{(exec.frictionScore * 100).toFixed(0)}%</b></span>
+                        </div>
+
+                        {/* Telemetry log list */}
+                        <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto pr-1">
+                          {exec.replays && exec.replays.map((rep: any, idx: number) => (
+                            <div key={rep.id} className="flex justify-between items-center p-2 bg-[#121214] border border-zinc-900 rounded text-[9.5px]">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="bg-zinc-800 text-zinc-500 px-1 rounded shrink-0">#{idx + 1}</span>
+                                <span className="text-white uppercase font-bold shrink-0">{rep.eventType}</span>
+                                <span className="text-zinc-500 truncate">{rep.targetSelector || 'viewport'}</span>
+                              </div>
+                              <span className="text-zinc-600 font-bold shrink-0">
+                                {rep.coordinates ? `(${Math.round(rep.coordinates.x)}, ${Math.round(rep.coordinates.y)})` : ''}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Persona Divergence Viewer */}
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl">
+                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> Comparative Path Divergence Viewer
+                </h3>
+
+                {swarmDivergence.length === 0 ? (
+                  <div className="text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                    No path divergences or anomalies recorded. All personas followed identical click paths.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {swarmDivergence.map((div, idx) => (
+                      <div key={div.id || idx} className="p-3 bg-[#18181b]/50 border border-zinc-800 rounded-lg font-mono text-[10px] flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-zinc-800 text-zinc-400 px-1 rounded">Step #{div.stepIndex + 1}</span>
+                            <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase ${
+                              div.eventType === 'ABANDONMENT' ? 'text-red-400 border-red-500/20 bg-rose-950/10' : 'text-yellow-400 border-yellow-500/20 bg-yellow-950/10'
+                            }`}>
+                              {div.eventType}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-zinc-300 leading-relaxed">{div.details}</p>
+
+                        <div className="grid grid-cols-2 gap-4 border-t border-zinc-900 pt-2 text-[9.5px]">
+                          <div>
+                            <span className="text-zinc-500">{div.personaTypeA}:</span> <br />
+                            <span className="text-white font-bold">{div.actionA}</span>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500">{div.personaTypeB}:</span> <br />
+                            <span className="text-white font-bold">{div.actionB}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Swarm Heatmap Console */}
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl">
+                <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                  <MousePointer className="w-3.5 h-3.5 text-emerald-400" /> Aggregated Friction Heatmap Console
+                </h3>
+
+                {swarmHeatmaps.length === 0 ? (
+                  <div className="text-center py-6 text-zinc-600 font-mono text-xs italic border border-dashed border-[#222226] rounded-xl">
+                    No heatmap aggregation metrics loaded.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full font-mono text-[10px] text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-800 text-zinc-500 uppercase">
+                          <th className="py-2 pr-4">Selector / Element</th>
+                          <th className="py-2 px-2 text-center">Clicks</th>
+                          <th className="py-2 px-2 text-center">Hovers</th>
+                          <th className="py-2 px-2 text-center">Avg Hesitation</th>
+                          <th className="py-2 px-2 text-center">Friction Score</th>
+                          <th className="py-2 px-2 text-center">Cognitive Load</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {swarmHeatmaps.map((heat, idx) => (
+                          <tr key={heat.id || idx} className="border-b border-zinc-900/50 hover:bg-[#18181b]/30">
+                            <td className="py-2.5 pr-4 text-white font-bold truncate max-w-xs">
+                              <code>{heat.selector}</code>
+                            </td>
+                            <td className="py-2.5 px-2 text-center text-zinc-300">{heat.clickCount}</td>
+                            <td className="py-2.5 px-2 text-center text-zinc-300">{heat.hoverCount}</td>
+                            <td className="py-2.5 px-2 text-center text-zinc-300 font-bold">
+                              {heat.averageHesitationMs > 0 ? `${heat.averageHesitationMs}ms` : '—'}
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-bold">
+                              <span className={heat.averageFrictionScore > 0.6 ? 'text-red-400' : heat.averageFrictionScore > 0.3 ? 'text-orange-400' : 'text-emerald-400'}>
+                                {(heat.averageFrictionScore * 100).toFixed(0)}%
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <div className="w-12 h-1.5 bg-zinc-800 rounded overflow-hidden">
+                                  <div className="h-full bg-purple-500" style={{ width: `${heat.cognitiveDensity * 100}%` }} />
+                                </div>
+                                <span className="text-purple-400 font-bold">{(heat.cognitiveDensity * 100).toFixed(0)}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
