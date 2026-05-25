@@ -559,7 +559,7 @@ export const SimulationConsole: React.FC = () => {
           </div>
 
           <p className="text-xs text-zinc-400 max-w-4xl leading-relaxed mb-4">
-            The Autonomous UX Simulation Engine acts as a **behavioral augmentation layer**. Rather than running simple, rigid test scripts, it generates **synthetic user agents** driven by custom cognitive weights (confidence, reading stability, focus, and patience). It tests your live forms, navigation steps, and interfaces to detect cognitive barriers and friction points before shipping code to real customers.
+            The Autonomous UX Simulation Engine acts as a <strong className="text-white font-bold">behavioral augmentation layer</strong>. Rather than running simple, rigid test scripts, it generates <strong className="text-white font-bold">synthetic user agents</strong> driven by custom cognitive weights (confidence, reading stability, focus, and patience). It tests your live forms, navigation steps, and interfaces to detect cognitive barriers and friction points before shipping code to real customers.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-3 border-t border-[#222226]">
