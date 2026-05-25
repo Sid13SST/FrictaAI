@@ -1,0 +1,226 @@
+import { PrismaClient } from '@fricta/db';
+import { RealtimeEventBus } from '@fricta/realtime';
+import { PersonaManager } from '../personas';
+import { ConfidenceTracker } from '../confidence';
+import { ShortTermMemory } from '../memory';
+import { TimingEngine } from '../timing';
+import { HesitationSimulator } from '../hesitation';
+import { FrictionResponseEngine } from '../friction';
+import { VisualDecisionEngine, VisualElement } from '../decisioning';
+import { IntentEngine, UserIntent } from '../intent';
+import { SimulationConfig } from '../types';
+
+export class SimulationRunner {
+  private memory = new ShortTermMemory();
+
+  constructor(private prisma: PrismaClient) {}
+
+  /**
+   * Runs an autonomous behavior simulation based on profile configuration.
+   */
+  public async run(config: SimulationConfig): Promise<any> {
+    const { projectId, personaType, startUrl, goal } = config;
+    const traits = PersonaManager.getTraits(personaType);
+    const confidenceTracker = new ConfidenceTracker(traits);
+
+    // 1. Create a WorkflowSession representing this simulation run
+    const session = await this.prisma.workflowSession.create({
+      data: {
+        projectId,
+        goal: `Simulated: ${goal}`,
+        persona: `${personaType} (Synthetic)`,
+        status: 'RUNNING',
+        startedAt: new Date(),
+      },
+    });
+
+    // 2. Create SimulationProfile record
+    const profile = await this.prisma.simulationProfile.create({
+      data: {
+        projectId,
+        name: `${personaType} Audit Profile`,
+        personaType,
+        description: `Autonomous exploration of ${startUrl} targeting goal: "${goal}"`,
+        traits: traits as any,
+      },
+    });
+
+    // Mock website elements
+    const mockElements: VisualElement[] = [
+      { selector: 'input[name="email"]', type: 'INPUT', text: 'Email Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
+      { selector: 'input[name="password"]', type: 'INPUT', text: 'Password Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
+      { selector: 'button[type="submit"]', type: 'BUTTON', text: 'Submit Form', ctaProminence: 0.9, contrastStrength: 0.9, interactionDensity: 0.4 },
+      { selector: 'a.help-link', type: 'LINK', text: 'Get Help', ctaProminence: 0.1, contrastStrength: 0.5, interactionDensity: 0.2 },
+      { selector: 'div.sidebar-banner', type: 'TEXT_BLOCK', text: 'Ad Banner', ctaProminence: 0.7, contrastStrength: 0.4, interactionDensity: 0.8 },
+    ];
+
+    let currentIntent: UserIntent = 'BROWSE_NAVIGATION';
+    let failuresCount = 0;
+    const stepsLog: any[] = [];
+    let isSuccess = false;
+    let totalFriction = 0.0;
+
+    // Simulate 5 interactive steps
+    for (let stepIndex = 0; stepIndex < 5; stepIndex++) {
+      // a. Rank visual elements based on layout properties and active traits
+      const ranked = VisualDecisionEngine.rankElements(mockElements, traits, confidenceTracker.getConfidence());
+      const bestChoice = ranked[0];
+
+      // b. Update intent state
+      currentIntent = IntentEngine.transition(currentIntent, traits, confidenceTracker.getConfidence(), failuresCount, {
+        hasFormOnPage: true,
+        hasHelpLink: true,
+      });
+
+      // c. Check for abandonment
+      if (currentIntent === 'SYSTEM_ABANDONMENT') {
+        totalFriction += 0.8;
+        await this.prisma.frictionReaction.create({
+          data: {
+            workflowSessionId: session.id,
+            stepIndex,
+            reactionType: 'ABANDONMENT_RISK',
+            triggerSource: 'Low Confidence & Persistence Failure',
+            intensity: 0.9,
+            description: 'Simulation abandoned early due to high cognitive friction.',
+          },
+        });
+        break;
+      }
+
+      // d. Hesitation Check
+      const hesitation = HesitationSimulator.simulate(traits, confidenceTracker.getConfidence(), {
+        elementClutter: bestChoice.element.interactionDensity,
+        isForm: bestChoice.element.type === 'INPUT',
+      });
+
+      if (hesitation) {
+        totalFriction += hesitation.severity === 'HIGH' ? 0.3 : 0.1;
+        await this.prisma.hesitationSignal.create({
+          data: {
+            workflowSessionId: session.id,
+            stepIndex,
+            signalType: hesitation.signalType,
+            targetElement: hesitation.targetElement || bestChoice.element.selector,
+            durationMs: hesitation.durationMs,
+            severity: hesitation.severity,
+            description: hesitation.description,
+          },
+        });
+      }
+
+      // e. Timing & Latency
+      const latency = TimingEngine.calculateDelay(
+        bestChoice.element.type === 'INPUT' ? 'INPUT' : 'CLICK',
+        traits,
+        { elementClutter: bestChoice.element.interactionDensity, textLength: 15 }
+      );
+
+      // f. Update Confidence
+      const isCorrectClick = bestChoice.element.type === 'BUTTON' || bestChoice.element.type === 'INPUT';
+      if (isCorrectClick) {
+        confidenceTracker.adjustAfterSuccess();
+        failuresCount = 0;
+      } else {
+        confidenceTracker.adjustAfterFailure('MEDIUM');
+        failuresCount++;
+      }
+
+      await this.prisma.navigationConfidenceEvent.create({
+        data: {
+          workflowSessionId: session.id,
+          stepIndex,
+          confidenceValue: confidenceTracker.getConfidence(),
+          contextualDetails: `Step ${stepIndex} complete. Intent: ${currentIntent}. Element: ${bestChoice.element.text}`,
+        },
+      });
+
+      // g. Save decision
+      await this.prisma.behavioralDecision.create({
+        data: {
+          simulationProfileId: profile.id,
+          workflowSessionId: session.id,
+          stepIndex,
+          actionType: bestChoice.element.type === 'INPUT' ? 'INPUT' : 'CLICK',
+          targetElement: bestChoice.element.selector,
+          decisionReason: bestChoice.reason,
+          confidenceBefore: confidenceTracker.getConfidence(),
+          confidenceAfter: confidenceTracker.getConfidence(),
+          latencyMs: latency,
+        },
+      });
+
+      // h. Emit Replay events
+      const coords = { x: 100 + stepIndex * 80 + Math.random() * 20, y: 150 + Math.random() * 50 };
+      const replayEvent = await this.prisma.behavioralReplayEvent.create({
+        data: {
+          simulationProfileId: profile.id,
+          workflowSessionId: session.id,
+          stepIndex,
+          eventType: bestChoice.element.type === 'INPUT' ? 'INPUT' : 'CLICK',
+          coordinates: coords,
+          targetSelector: bestChoice.element.selector,
+          durationMs: latency,
+        },
+      });
+
+      stepsLog.push({
+        stepIndex,
+        url: startUrl,
+        action: bestChoice.element.type === 'INPUT' ? 'INPUT' : 'CLICK',
+        duration: latency,
+      });
+
+      // i. Broadcast live simulation update
+      RealtimeEventBus.getInstance().publish({
+        orchestrationSessionId: session.id,
+        eventType: 'replay.updated', // streams directly to the dashboard player
+        payload: {
+          stepIndex,
+          timestamp: new Date().toISOString(),
+          action: {
+            type: bestChoice.element.type === 'INPUT' ? 'INPUT' : 'CLICK',
+            target: bestChoice.element.selector,
+            value: null,
+            status: 'completed',
+          },
+          thoughts: [bestChoice.reason],
+          findings: [],
+          confidence: confidenceTracker.getConfidence(),
+          intent: currentIntent,
+        },
+      });
+
+      if (bestChoice.element.type === 'BUTTON') {
+        isSuccess = true;
+      }
+    }
+
+    // 3. Save Final Exploration Path
+    const path = await this.prisma.explorationPath.create({
+      data: {
+        simulationProfileId: profile.id,
+        workflowSessionId: session.id,
+        steps: stepsLog as any,
+        isSuccess,
+        totalFrictionScore: totalFriction,
+      },
+    });
+
+    // Update session status
+    await this.prisma.workflowSession.update({
+      where: { id: session.id },
+      data: {
+        status: isSuccess ? 'COMPLETED' : 'FAILED',
+        endedAt: new Date(),
+      },
+    });
+
+    return {
+      sessionId: session.id,
+      profileId: profile.id,
+      pathId: path.id,
+      success: isSuccess,
+    };
+  }
+}

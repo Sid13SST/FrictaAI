@@ -41,6 +41,7 @@ model Project {
   adaptiveSignalProfiles AdaptiveSignalProfile[]
   annotations            Annotation[]
   shares                 SharedLink[]
+  simulationProfiles     SimulationProfile[]
 }
 
 model WorkflowSession {
@@ -74,6 +75,12 @@ model WorkflowSession {
   cognitiveSignals CognitiveSignal[]
   orchestrationSessions OrchestrationSession[]
   reviews      InvestigationReview[]
+  simulationDecisions    BehavioralDecision[]
+  simulationPaths        ExplorationPath[]
+  hesitationSignals      HesitationSignal[]
+  confidenceEvents       NavigationConfidenceEvent[]
+  frictionReactions      FrictionReaction[]
+  behavioralReplayEvents BehavioralReplayEvent[]
 }
 
 model AgentThought {
@@ -648,4 +655,102 @@ model PermissionGrant {
   member      WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
+model SimulationProfile {
+  id          String                  @id @default(uuid())
+  projectId   String
+  name        String
+  personaType String                  // "BEGINNER" | "POWER_USER" | "FIRST_TIME_USER" | "DISTRACTED_USER"
+  description String?
+  traits      Json                    // Configuration weights for confidence, patience, reading depth, etc.
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  
+  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  decisions   BehavioralDecision[]
+  paths       ExplorationPath[]
+  replays     BehavioralReplayEvent[]
+}
 
+model BehavioralDecision {
+  id                  String             @id @default(uuid())
+  simulationProfileId String
+  workflowSessionId   String?
+  stepIndex           Int
+  actionType          String             // "CLICK" | "HOVER" | "SCAN" | "BACKTRACK" | "INPUT" | "PAUSE"
+  targetElement       String             // Selector or coordinate description
+  decisionReason      String             // Why this action was chosen (intent-driven)
+  confidenceBefore    Float              // Confidence metric before action (0.0 to 1.0)
+  confidenceAfter     Float              // Confidence metric after action (0.0 to 1.0)
+  latencyMs           Int                // Simulated pacing duration
+  createdAt           DateTime           @default(now())
+  
+  profile             SimulationProfile  @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
+  session             WorkflowSession?   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model ExplorationPath {
+  id                  String             @id @default(uuid())
+  simulationProfileId String
+  workflowSessionId   String?
+  steps               Json               // List of { stepIndex, url, action, duration }
+  isSuccess           Boolean            @default(false)
+  totalFrictionScore  Float              // Aggregated friction during this run
+  createdAt           DateTime           @default(now())
+  
+  profile             SimulationProfile  @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
+  session             WorkflowSession?   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model HesitationSignal {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  signalType        String          // "HOVER_HESITATION" | "REPEATED_SCANNING" | "DELAYED_CLICKING" | "CURSOR_DRIFT"
+  targetElement     String?
+  durationMs        Int
+  severity          String          // "LOW" | "MEDIUM" | "HIGH"
+  description       String
+  createdAt         DateTime        @default(now())
+  
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model NavigationConfidenceEvent {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  confidenceValue   Float           // 0.0 to 1.0
+  contextualDetails String
+  createdAt         DateTime        @default(now())
+  
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model FrictionReaction {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  reactionType      String          // "ABANDONMENT_RISK" | "EXPLORATION_SLOWDOWN" | "RETRY_HESITATION"
+  triggerSource     String          // e.g. "CTA_AMBIGUITY"
+  intensity         Float           // 0.0 to 1.0
+  description       String
+  createdAt         DateTime        @default(now())
+  
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model BehavioralReplayEvent {
+  id                  String            @id @default(uuid())
+  simulationProfileId String
+  workflowSessionId   String
+  stepIndex           Int
+  eventType           String            // "HOVER" | "CLICK" | "INPUT" | "SCAN" | "SCROLL" | "BACKTRACK"
+  coordinates         Json?             // { x, y } target or path coordinates
+  targetSelector      String?
+  durationMs          Int
+  metaData            Json?             // Pacing/decision metadata
+  createdAt           DateTime          @default(now())
+  
+  profile             SimulationProfile @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
+  session             WorkflowSession   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
