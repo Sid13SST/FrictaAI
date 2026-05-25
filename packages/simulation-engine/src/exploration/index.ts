@@ -1,5 +1,6 @@
 import { PrismaClient } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
+import { CognitiveReasoningEngine } from '@fricta/cognitive-engine';
 import { PersonaManager } from '../personas';
 import { ConfidenceTracker } from '../confidence';
 import { ShortTermMemory } from '../memory';
@@ -151,6 +152,21 @@ export class SimulationRunner {
           },
         });
       }
+
+      // Invoke the Cognitive Decision Modeling Engine
+      const cognitiveEngine = new CognitiveReasoningEngine(this.prisma);
+      await cognitiveEngine.processStep({
+        workflowSessionId: session.id,
+        stepIndex,
+        traits,
+        elements: mockElements as any,
+        activeElement: bestChoice.element as any,
+        failuresCount,
+        currentConfidence: confidenceTracker.getConfidence(),
+        url: startUrl,
+        hasHesitated: hesitation !== null,
+        hesitationType: hesitation?.signalType,
+      });
 
       // e. Timing & Latency
       const latency = TimingEngine.calculateDelay(

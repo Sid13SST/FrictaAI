@@ -18,7 +18,8 @@ export type RealtimeEventType =
   | 'annotation.resolved'
   | 'comment.created'
   | 'review.updated'
-  | 'workspace.members.updated';
+  | 'workspace.members.updated'
+  | 'cognition.updated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;

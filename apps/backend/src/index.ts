@@ -26,6 +26,7 @@ import { runtimeRoutes } from './routes/runtime';
 import { historicalRoutes } from './routes/historical';
 import { workspaceRoutes } from './routes/workspace';
 import { simulationRoutes } from './routes/simulation';
+import { cognitionRoutes } from './routes/cognition';
 import { startWorker } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
@@ -61,6 +62,7 @@ app.route('/api/historical', historicalRoutes);
 app.route('/historical', historicalRoutes);
 app.route('/api/workspace', workspaceRoutes);
 app.route('/api/simulation', simulationRoutes);
+app.route('/api/cognition', cognitionRoutes);
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 

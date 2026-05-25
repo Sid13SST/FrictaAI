@@ -81,6 +81,13 @@ model WorkflowSession {
   confidenceEvents       NavigationConfidenceEvent[]
   frictionReactions      FrictionReaction[]
   behavioralReplayEvents BehavioralReplayEvent[]
+  cognitiveStates         CognitiveState[]
+  confidenceSignals       ConfidenceSignal[]
+  attentionEvents         AttentionEvent[]
+  expectationMismatches   ExpectationMismatch[]
+  decisionComplexityEvents DecisionComplexityEvent[]
+  abandonmentRiskSignals  AbandonmentRiskSignal[]
+  cognitiveTimelineEvents CognitiveTimelineEvent[]
 }
 
 model AgentThought {
@@ -753,4 +760,100 @@ model BehavioralReplayEvent {
   
   profile             SimulationProfile @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
   session             WorkflowSession   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model CognitiveState {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  cognitiveLoad     Float           // 0.0 to 1.0 (overall load)
+  mentalEffort      Float           // 0.0 to 1.0 (interaction-driven)
+  informationLoad   Float           // 0.0 to 1.0 (visual/information density)
+  interactionLoad   Float           // 0.0 to 1.0 (clutter/input)
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model ConfidenceSignal {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  confidenceScore   Float           // 0.0 to 1.0
+  certaintyLevel    String          // "HIGH" | "MEDIUM" | "LOW"
+  targetElement     String?
+  evidenceSource    String          // e.g., "CLICK_CERTAINTY", "CURSOR_DRIFT", "REPEATED_SCANNING", "BACKTRACKING"
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model AttentionEvent {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  targetElement     String?
+  visibilityWeight  Float           // 0.0 to 1.0 (CTA prominence / visual dominance)
+  focusHeat         Float           // 0.0 to 1.0 (computed visual focus weight)
+  overloadDetected  Boolean         @default(false)
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model ExpectationMismatch {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  expectedAction    String          // E.g., "Navbar Settings"
+  actualAction      String          // E.g., "Hidden Settings in Avatar Dropdown"
+  mismatchSeverity  String          // "LOW" | "MEDIUM" | "HIGH"
+  mismatchCategory  String          // "NAV_MISPLACEMENT", "CTA_AMBIGUITY", "UI_CONVENTION_BREAK", "PROGRESS_DESYNC"
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model DecisionComplexityEvent {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  choiceCount       Int             // Number of interactable choices
+  ambiguityScore    Float           // 0.0 to 1.0 (lack of focal CTA)
+  complexityLevel   String          // "LOW" | "MEDIUM" | "HIGH"
+  nextActionClarity Float           // 0.0 to 1.0
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model AbandonmentRiskSignal {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  riskProbability   Float           // 0.0 to 1.0 (predictive likelihood of session abandon)
+  triggerSource     String          // E.g., "CONFIDENCE_DEGRADATION", "EXPLORATION_FATIGUE", "RETRY_FREQUENCY"
+  frictionAccumulated Float         // 0.0 to 1.0
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+}
+
+model CognitiveTimelineEvent {
+  id                String          @id @default(uuid())
+  workflowSessionId String
+  stepIndex         Int
+  eventType         String          // "COGNITIVE_LOAD_SPIKE" | "EXPECTATION_FAIL" | "CONFIDENCE_DROP" | "ATTENTION_SHIFT" | "RISK_ESCALATION"
+  intensity         Float           // 0.0 to 1.0
+  associatedId      String?         // Polymorphic reference to the specific model ID
+  description       String
+  createdAt         DateTime        @default(now())
+
+  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }

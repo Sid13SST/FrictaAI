@@ -1,5 +1,5 @@
 {
-  "name": "@fricta/simulation-engine",
+  "name": "@fricta/cognitive-engine",
   "version": "0.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -14,8 +14,6 @@
   "dependencies": {
     "@fricta/db": "*",
     "@fricta/types": "*",
-    "@fricta/shared": "*",
-    "@fricta/realtime": "*",
-    "@fricta/cognitive-engine": "*"
+    "@fricta/realtime": "*"
   }
 }
