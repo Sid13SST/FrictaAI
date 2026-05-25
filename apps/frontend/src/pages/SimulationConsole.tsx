@@ -690,64 +690,221 @@ export const SimulationConsole: React.FC = () => {
                     <div className="w-8 shrink-0" />
                   </div>
 
-                  {/* Browser viewport elements absolute aligned to coordinate system */}
-                  <div className="absolute inset-0 top-7 pointer-events-none select-none">
-                    
-                    {/* Simulated website frame header */}
-                    <div 
-                      className="absolute bg-white/[0.01] border-b border-white/[0.02] px-3 py-1.5 flex items-center justify-between"
-                      style={{ left: '0px', top: '0px', width: '540px', height: '35px' }}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded bg-[#5ed29c]/10 border border-[#5ed29c]/30" />
-                        <span className="text-[7.5px] font-mono text-zinc-400 font-bold uppercase tracking-wider">Checkout Sandbox</span>
+                  {(() => {
+                    const getActiveLayout = (url: string) => {
+                      const normalized = url.toLowerCase();
+                      if (normalized.includes('login')) return 'login';
+                      if (normalized.includes('pricing') || normalized.includes('plan')) return 'pricing';
+                      if (normalized.includes('checkout') || normalized.includes('cart')) return 'checkout';
+                      return 'landing';
+                    };
+
+                    const layout = getActiveLayout(targetUrl);
+
+                    return (
+                      <div className="absolute inset-0 top-7 pointer-events-none select-none">
+                        {/* Simulated website frame header */}
+                        <div 
+                          className="absolute bg-white/[0.01] border-b border-white/[0.03] px-3 py-1.5 flex items-center justify-between"
+                          style={{ left: '0px', top: '0px', width: '540px', height: '35px' }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded bg-[#5ed29c]/10 border border-[#5ed29c]/30 flex items-center justify-center">
+                              <Compass className="w-1.5 h-1.5 text-[#5ed29c]" />
+                            </div>
+                            <span className="text-[7.5px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
+                              {layout === 'login' && 'Identity Secure Access Portal'}
+                              {layout === 'pricing' && 'Pricing Tiers Selector'}
+                              {layout === 'checkout' && 'Secure Billing Gateway'}
+                              {layout === 'landing' && 'SaaS Platform Home'}
+                            </span>
+                          </div>
+                          <span className="text-[7px] font-mono text-zinc-600">COORDINATE MONITOR LAYER</span>
+                        </div>
+
+                        {layout === 'login' && (
+                          <>
+                            {/* Username Input (left: 80px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[6.5px] uppercase tracking-wider text-zinc-500 font-bold">Username</span>
+                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-[#5ed29c] overflow-hidden truncate">
+                                {selectedSessionId || running ? 'admin@domain.com' : ''}
+                              </div>
+                              <span className="text-[5.5px] text-zinc-600">[input#username]</span>
+                            </div>
+
+                            {/* Password Input (left: 175px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[6.5px] uppercase tracking-wider text-zinc-500 font-bold">Password</span>
+                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-zinc-600 overflow-hidden">
+                                ••••••••
+                              </div>
+                              <span className="text-[5.5px] text-zinc-600">[input#password]</span>
+                            </div>
+
+                            {/* Forgot Password Link (left: 270px) */}
+                            <div 
+                              className="absolute bg-[#111215]/50 border border-white/[0.02] rounded-lg p-2 flex flex-col justify-center items-center text-center"
+                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] text-[#5ed29c] font-bold underline cursor-pointer hover:text-emerald-400">Reset Password</span>
+                              <span className="text-[5px] text-zinc-500 uppercase mt-1">forgot-link</span>
+                            </div>
+
+                            {/* Log In Button (left: 365px) */}
+                            <div 
+                              className="absolute bg-[#12241b] border border-[#5ed29c]/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(16,185,129,0.05)]"
+                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                            >
+                              <span className="text-[7.5px] font-black text-[#5ed29c] uppercase tracking-wider">Sign In</span>
+                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[button.login-btn]</span>
+                            </div>
+                          </>
+                        )}
+
+                        {layout === 'pricing' && (
+                          <>
+                            {/* Starter Card Description (left: 80px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] font-black text-white uppercase">Starter Plan</span>
+                              <span className="text-[9px] font-black text-[#5ed29c]">$19<span className="text-[5px] text-zinc-500 font-normal">/mo</span></span>
+                              <span className="text-[5px] text-zinc-600 uppercase">starter-card</span>
+                            </div>
+
+                            {/* Select Starter CTA (left: 175px) */}
+                            <div 
+                              className="absolute bg-[#12241b]/60 border border-[#5ed29c]/15 rounded-lg p-2 flex flex-col justify-center items-center text-center"
+                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] font-bold text-[#5ed29c] uppercase">Get Starter</span>
+                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[btn.starter]</span>
+                            </div>
+
+                            {/* Pro Card Description (left: 270px) */}
+                            <div 
+                              className="absolute bg-[#1c121e]/80 border border-purple-500/20 rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(168,85,247,0.05)]"
+                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-[7px] font-black text-white uppercase">Pro Plan</span>
+                                <Sparkles className="w-2 h-2 text-purple-400 shrink-0" />
+                              </div>
+                              <span className="text-[9px] font-black text-purple-400">$49<span className="text-[5px] text-zinc-500 font-normal">/mo</span></span>
+                              <span className="text-[5px] text-zinc-600 uppercase">pro-card</span>
+                            </div>
+
+                            {/* Select Pro CTA (left: 365px) */}
+                            <div 
+                              className="absolute bg-[#281534] border border-purple-500/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(168,85,247,0.05)]"
+                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                            >
+                              <span className="text-[7.5px] font-black text-purple-400 uppercase tracking-wider">Try Pro</span>
+                              <span className="text-[5px] text-purple-400/60 mt-0.5">[btn.pro]</span>
+                            </div>
+                          </>
+                        )}
+
+                        {layout === 'checkout' && (
+                          <>
+                            {/* Email Field (left: 80px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold">Email</span>
+                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-[#5ed29c] overflow-hidden truncate">
+                                {selectedSessionId || running ? 'user@fricta.ai' : ''}
+                              </div>
+                              <span className="text-[5.5px] text-zinc-600">[input#email]</span>
+                            </div>
+
+                            {/* Password Field (left: 175px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] uppercase tracking-wider text-zinc-500 font-bold">Password</span>
+                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-zinc-600 overflow-hidden">
+                                ••••••••••••
+                              </div>
+                              <span className="text-[5.5px] text-zinc-600">[input#pass]</span>
+                            </div>
+
+                            {/* Help Link (left: 270px) */}
+                            <div 
+                              className="absolute bg-[#111215]/50 border border-white/[0.02] rounded-lg p-2 flex flex-col justify-center items-center text-center"
+                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7.5px] text-[#5ed29c] font-bold underline cursor-pointer">Get Help</span>
+                              <span className="text-[5px] text-zinc-500 uppercase mt-1">help-link</span>
+                            </div>
+
+                            {/* Submit Button (left: 365px) */}
+                            <div 
+                              className="absolute bg-[#12241b] border border-[#5ed29c]/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(16,185,129,0.05)]"
+                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                            >
+                              <span className="text-[7.5px] font-black text-[#5ed29c] uppercase tracking-wider">Pay Now</span>
+                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[button#submit]</span>
+                            </div>
+                          </>
+                        )}
+
+                        {layout === 'landing' && (
+                          <>
+                            {/* Hero Header Description (left: 80px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] font-black text-white uppercase">Home Hero</span>
+                              <span className="text-[6px] text-zinc-500 leading-normal">Welcome to SaaS</span>
+                              <span className="text-[5px] text-zinc-600 uppercase">hero-text</span>
+                            </div>
+
+                            {/* Get Started CTA (left: 175px) */}
+                            <div 
+                              className="absolute bg-[#12241b] border border-[#5ed29c]/25 rounded-lg p-2 flex flex-col justify-center items-center text-center shadow-[0_4px_12px_rgba(16,185,129,0.05)]"
+                              style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] font-bold text-[#5ed29c] uppercase">Get Started</span>
+                              <span className="text-[5px] text-[#5ed29c]/60 mt-0.5">[cta.started]</span>
+                            </div>
+
+                            {/* Learn More Link (left: 270px) */}
+                            <div 
+                              className="absolute bg-[#111215]/50 border border-white/[0.02] rounded-lg p-2 flex flex-col justify-center items-center text-center"
+                              style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
+                            >
+                              <span className="text-[7px] text-[#5ed29c] font-bold underline cursor-pointer">Learn More</span>
+                              <span className="text-[5px] text-zinc-500 uppercase mt-1">more-link</span>
+                            </div>
+
+                            {/* Newsletter Input (left: 365px) */}
+                            <div 
+                              className="absolute bg-[#111215] border border-white/[0.04] rounded-lg p-2 flex flex-col justify-between shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                              style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
+                            >
+                              <span className="text-[6.5px] uppercase tracking-wider text-zinc-500 font-bold">Newsletter</span>
+                              <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 flex items-center px-1 text-[7px] text-[#5ed29c] overflow-hidden truncate">
+                                {selectedSessionId || running ? 'sub@email.com' : ''}
+                              </div>
+                              <span className="text-[5px] text-zinc-600">[input.news]</span>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <span className="text-[7px] font-mono text-zinc-600">COORDINATE MONITOR LAYER</span>
-                    </div>
-
-                    {/* Visual mockup of the Email Field */}
-                    <div 
-                      className="absolute bg-[#121214]/90 border border-white/[0.04] rounded p-2 flex flex-col justify-between"
-                      style={{ left: '80px', top: '140px', width: '80px', height: '55px' }}
-                    >
-                      <span className="text-[7px] uppercase tracking-wider text-zinc-500">Email Field</span>
-                      <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 px-1 flex items-center text-[7.5px] text-[#5ed29c] overflow-hidden truncate">
-                        {selectedSessionId || running ? 'user@fricta.ai' : ''}
-                      </div>
-                      <div className="text-[6.5px] text-zinc-600 truncate">Selector: [email]</div>
-                    </div>
-
-                    {/* Visual mockup of the Password Field */}
-                    <div 
-                      className="absolute bg-[#121214]/90 border border-white/[0.04] rounded p-2 flex flex-col justify-between"
-                      style={{ left: '175px', top: '140px', width: '80px', height: '55px' }}
-                    >
-                      <span className="text-[7px] uppercase tracking-wider text-zinc-500">Password</span>
-                      <div className="bg-[#18181b] border border-white/[0.03] rounded h-4 px-1 flex items-center text-[7.5px] text-zinc-600 overflow-hidden truncate">
-                        ••••••••••••
-                      </div>
-                      <div className="text-[6.5px] text-zinc-600 truncate">Selector: [pass]</div>
-                    </div>
-
-                    {/* Visual mockup of the Help Link */}
-                    <div 
-                      className="absolute bg-[#121214]/40 border border-white/[0.03] rounded p-2 flex flex-col justify-center items-center text-center"
-                      style={{ left: '270px', top: '140px', width: '80px', height: '55px' }}
-                    >
-                      <span className="text-[7.5px] text-[#5ed29c] font-bold underline">Get Help</span>
-                      <span className="text-[6.5px] text-zinc-600 block mt-1 uppercase">Support doc</span>
-                    </div>
-
-                    {/* Visual mockup of the Submit Button */}
-                    <div 
-                      className="absolute bg-[#1a2d24]/80 border border-[#5ed29c]/20 rounded p-2 flex flex-col justify-center items-center text-center"
-                      style={{ left: '365px', top: '140px', width: '90px', height: '55px' }}
-                    >
-                      <span className="text-[7.5px] font-black text-[#5ed29c] uppercase tracking-wider">Submit Checkout</span>
-                      <span className="text-[6px] text-zinc-600 mt-1 uppercase">CTA Button</span>
-                    </div>
-
-                  </div>
+                    );
+                  })()}
 
                   {/* SVG Overlay representing cursor path */}
                   {replayEvents.length > 0 && (() => {

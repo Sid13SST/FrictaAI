@@ -45,14 +45,45 @@ export class SimulationRunner {
       },
     });
 
-    // Mock website elements
-    const mockElements: VisualElement[] = [
-      { selector: 'input[name="email"]', type: 'INPUT', text: 'Email Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
-      { selector: 'input[name="password"]', type: 'INPUT', text: 'Password Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
-      { selector: 'button[type="submit"]', type: 'BUTTON', text: 'Submit Form', ctaProminence: 0.9, contrastStrength: 0.9, interactionDensity: 0.4 },
-      { selector: 'a.help-link', type: 'LINK', text: 'Get Help', ctaProminence: 0.1, contrastStrength: 0.5, interactionDensity: 0.2 },
-      { selector: 'div.sidebar-banner', type: 'TEXT_BLOCK', text: 'Ad Banner', ctaProminence: 0.7, contrastStrength: 0.4, interactionDensity: 0.8 },
-    ];
+    const isLogin = startUrl.toLowerCase().includes('login');
+    const isPricing = startUrl.toLowerCase().includes('pricing') || startUrl.toLowerCase().includes('plan');
+    const isCheckout = startUrl.toLowerCase().includes('checkout') || startUrl.toLowerCase().includes('cart');
+
+    let mockElements: VisualElement[] = [];
+
+    if (isLogin) {
+      mockElements = [
+        { selector: 'input[name="username"]', type: 'INPUT', text: 'Username Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
+        { selector: 'input[name="password"]', type: 'INPUT', text: 'Password Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
+        { selector: 'a.forgot-password', type: 'LINK', text: 'Reset Password', ctaProminence: 0.1, contrastStrength: 0.6, interactionDensity: 0.2 },
+        { selector: 'button.login-btn', type: 'BUTTON', text: 'Log In', ctaProminence: 0.9, contrastStrength: 0.9, interactionDensity: 0.4 },
+        { selector: 'div.security-badge', type: 'TEXT_BLOCK', text: 'Shield Info', ctaProminence: 0.3, contrastStrength: 0.4, interactionDensity: 0.1 },
+      ];
+    } else if (isPricing) {
+      mockElements = [
+        { selector: 'div.starter-card', type: 'TEXT_BLOCK', text: 'Starter Plan Card', ctaProminence: 0.4, contrastStrength: 0.7, interactionDensity: 0.5 },
+        { selector: 'button.select-starter', type: 'BUTTON', text: 'Select Starter', ctaProminence: 0.7, contrastStrength: 0.8, interactionDensity: 0.4 },
+        { selector: 'div.pro-card', type: 'TEXT_BLOCK', text: 'Pro Plan Card', ctaProminence: 0.6, contrastStrength: 0.9, interactionDensity: 0.6 },
+        { selector: 'button.select-pro', type: 'BUTTON', text: 'Select Pro Plan', ctaProminence: 0.95, contrastStrength: 0.95, interactionDensity: 0.4 },
+        { selector: 'a.compare-link', type: 'LINK', text: 'Compare Plans', ctaProminence: 0.2, contrastStrength: 0.6, interactionDensity: 0.2 },
+      ];
+    } else if (isCheckout) {
+      mockElements = [
+        { selector: 'input[name="email"]', type: 'INPUT', text: 'Email Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
+        { selector: 'input[name="password"]', type: 'INPUT', text: 'Password Input', ctaProminence: 0.2, contrastStrength: 0.8, interactionDensity: 0.3 },
+        { selector: 'a.help-link', type: 'LINK', text: 'Get Help', ctaProminence: 0.1, contrastStrength: 0.5, interactionDensity: 0.2 },
+        { selector: 'button[type="submit"]', type: 'BUTTON', text: 'Submit Form', ctaProminence: 0.9, contrastStrength: 0.9, interactionDensity: 0.4 },
+        { selector: 'div.sidebar-banner', type: 'TEXT_BLOCK', text: 'Ad Banner', ctaProminence: 0.7, contrastStrength: 0.4, interactionDensity: 0.8 },
+      ];
+    } else {
+      mockElements = [
+        { selector: 'div.hero-header', type: 'TEXT_BLOCK', text: 'Hero Header Text', ctaProminence: 0.3, contrastStrength: 0.8, interactionDensity: 0.4 },
+        { selector: 'button.get-started', type: 'BUTTON', text: 'Get Started CTA', ctaProminence: 0.95, contrastStrength: 0.95, interactionDensity: 0.3 },
+        { selector: 'a.read-more', type: 'LINK', text: 'Learn More Link', ctaProminence: 0.2, contrastStrength: 0.6, interactionDensity: 0.2 },
+        { selector: 'input.newsletter-email', type: 'INPUT', text: 'Newsletter Input', ctaProminence: 0.4, contrastStrength: 0.7, interactionDensity: 0.4 },
+        { selector: 'button.subscribe', type: 'BUTTON', text: 'Subscribe Button', ctaProminence: 0.8, contrastStrength: 0.8, interactionDensity: 0.4 },
+      ];
+    }
 
     let currentIntent: UserIntent = 'BROWSE_NAVIGATION';
     let failuresCount = 0;
