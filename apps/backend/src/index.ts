@@ -29,6 +29,7 @@ import { simulationRoutes } from './routes/simulation';
 import { cognitionRoutes } from './routes/cognition';
 import { swarmRoutes } from './routes/swarm';
 import { predictiveRoutes } from './routes/predictive';
+import { workspaceCoreRoutes } from './routes/workspaceCore';
 import { startWorker } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
@@ -69,6 +70,8 @@ app.route('/api/swarm', swarmRoutes);
 app.route('/swarm', swarmRoutes);
 app.route('/api/predictive', predictiveRoutes);
 app.route('/predictive', predictiveRoutes);
+app.route('/api', workspaceCoreRoutes);
+app.route('/', workspaceCoreRoutes);
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 
