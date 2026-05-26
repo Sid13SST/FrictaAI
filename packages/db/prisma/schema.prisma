@@ -20,6 +20,10 @@ model User {
   comments        EvidenceComment[]
   shares          SharedLink[]
   activities      ActivityEvent[]
+  sentInvites           WorkspaceInvite[]      @relation("Inviter")
+  sharedInvestigations  SharedInvestigation[]
+  investigationComments InvestigationComment[]
+  workspaceActivities   WorkspaceActivity[]
 }
 
 model Project {
@@ -46,6 +50,7 @@ model Project {
   workflowForecasts      WorkflowForecast[]
   historicalBaselines    HistoricalBaseline[]
   regressionEvents       RegressionEvent[]
+  workspaceProjects     WorkspaceProject[]
 }
 
 model WorkflowSession {
@@ -93,6 +98,7 @@ model WorkflowSession {
   abandonmentRiskSignals  AbandonmentRiskSignal[]
   cognitiveTimelineEvents CognitiveTimelineEvent[]
   personaExecutions      PersonaExecution[]
+  sharedInvestigations  SharedInvestigation[]
 }
 
 model AgentThought {
@@ -552,6 +558,10 @@ model Workspace {
   organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members        WorkspaceMember[]
   projects       Project[]
+  invites               WorkspaceInvite[]
+  sharedInvestigations  SharedInvestigation[]
+  workspaceProjects     WorkspaceProject[]
+  workspaceActivities   WorkspaceActivity[]
 }
 
 model Team {
@@ -1073,6 +1083,66 @@ model PredictiveTimelineEvent {
   predictedIntensity Float            // 0.0 to 1.0
   description        String
   createdAt          DateTime         @default(now())
+}
+
+model WorkspaceInvite {
+  id          String    @id @default(uuid())
+  email       String
+  role        String    // OWNER, ADMIN, UX_LEAD, INVESTIGATOR, REVIEWER, VIEWER
+  token       String    @unique
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviterId   String
+  inviter     User      @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  status      String    @default("PENDING") // PENDING, ACCEPTED, DECLINED, EXPIRED
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+model SharedInvestigation {
+  id                String                 @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workflowSessionId String
+  workflowSession   WorkflowSession        @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  createdById       String
+  createdBy         User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt         DateTime               @default(now())
+  
+  comments          InvestigationComment[]
+}
+
+model InvestigationComment {
+  id                    String              @id @default(uuid())
+  sharedInvestigationId String
+  sharedInvestigation   SharedInvestigation @relation(fields: [sharedInvestigationId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content               String
+  createdAt             DateTime            @default(now())
+}
+
+model WorkspaceProject {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+model WorkspaceActivity {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionType  String    // e.g. "INVITE_SENT", "MEMBER_JOINED", "PROJECT_ADDED", "INVESTIGATION_SHARED"
+  description String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
 }
 
 
