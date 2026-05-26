@@ -19,7 +19,12 @@ import {
   Eye,
   Link,
   Copy,
-  Info
+  Info,
+  Sparkles,
+  TrendingUp,
+  Percent,
+  Shield,
+  Building
 } from 'lucide-react';
 
 interface Organization {
@@ -45,6 +50,46 @@ interface WorkspaceMember {
   role: string;
   user: {
     id: string;
+    name: string | null;
+    email: string;
+  };
+}
+
+interface WorkspaceInvite {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: string;
+  inviter: {
+    name: string | null;
+    email: string;
+  };
+}
+
+interface SharedInvestigation {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  createdBy: {
+    name: string | null;
+    email: string;
+  };
+  workflowSession: {
+    id: string;
+    status: string;
+    stepCount: number;
+    createdAt: string;
+  };
+  comments: InvestigationComment[];
+}
+
+interface InvestigationComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: {
     name: string | null;
     email: string;
   };
@@ -91,10 +136,27 @@ interface ActivityItem {
   actionType: string;
   description: string;
   createdAt: string;
-  user: {
-    name: string | null;
-    email: string;
-  };
+  userName: string;
+  metadata?: any;
+}
+
+interface WorkspaceAnalytics {
+  stabilityScore: number;
+  completionRate: number;
+  averageFrictionScore: number;
+  activeProjectsCount: number;
+  totalSessionsRun: number;
+  recentRegressions: Array<{
+    id: string;
+    metric: string;
+    drift: number;
+    severity: string;
+    createdAt: string;
+  }>;
+  stabilityHistory: Array<{
+    date: string;
+    score: number;
+  }>;
 }
 
 export const WorkspaceConsole: React.FC = () => {
@@ -104,13 +166,26 @@ export const WorkspaceConsole: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   
-  // Members
+  // Members & Invites
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
   const [inviteEmail, setInviteEmail] = useState<string>('');
   const [inviteRole, setInviteRole] = useState<string>('INVESTIGATOR');
+  const [acceptToken, setAcceptToken] = useState<string>('');
   
+  // Shared Investigations
+  const [sharedInvestigations, setSharedInvestigations] = useState<SharedInvestigation[]>([]);
+  const [selectedInvestigationId, setSelectedInvestigationId] = useState<string>('');
+  const [newCommentContent, setNewCommentContent] = useState<string>('');
+  const [shareSessionId, setShareSessionId] = useState<string>('');
+  const [shareSessionName, setShareSessionName] = useState<string>('');
+  const [shareSessionDesc, setShareSessionDesc] = useState<string>('');
+
+  // Analytics
+  const [analytics, setAnalytics] = useState<WorkspaceAnalytics | null>(null);
+
   // Tabs
-  type Tab = 'reviews' | 'annotations' | 'activity' | 'members' | 'sharing';
+  type Tab = 'reviews' | 'shared-investigations' | 'annotations' | 'activity' | 'sharing' | 'members' | 'analytics';
   const [activeTab, setActiveTab] = useState<Tab>('reviews');
 
   // Sub data states
@@ -127,7 +202,7 @@ export const WorkspaceConsole: React.FC = () => {
   const [newAnnotationContent, setNewAnnotationContent] = useState<string>('');
   const [newAnnotationSeverity, setNewAnnotationSeverity] = useState<string>('MEDIUM');
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string>('');
-  const [newCommentContent, setNewCommentContent] = useState<string>('');
+  const [newAnnotationCommentContent, setNewAnnotationCommentContent] = useState<string>('');
   
   // Share link inputs
   const [shareTargetType, setShareTargetType] = useState<string>('REPLAY');
@@ -135,6 +210,11 @@ export const WorkspaceConsole: React.FC = () => {
   const [shareExpiry, setShareExpiry] = useState<number>(24);
   const [shareMaxUses, setShareMaxUses] = useState<number>(5);
   const [generatedLink, setGeneratedLink] = useState<string>('');
+
+  // Org branding states
+  const [newOrgName, setNewOrgName] = useState<string>('');
+  const [newWorkspaceName, setNewWorkspaceName] = useState<string>('');
+  const [newWorkspaceDesc, setNewWorkspaceDesc] = useState<string>('');
 
   // Loading/Error states
   const [loading, setLoading] = useState<boolean>(true);
@@ -149,7 +229,10 @@ export const WorkspaceConsole: React.FC = () => {
   useEffect(() => {
     if (selectedWorkspaceId) {
       fetchWorkspaceDetails(selectedWorkspaceId);
-      setupWorkspaceSSE(selectedWorkspaceId);
+      const closeSSE = setupWorkspaceSSE(selectedWorkspaceId);
+      return () => {
+        closeSSE();
+      };
     }
   }, [selectedWorkspaceId]);
 
@@ -159,12 +242,18 @@ export const WorkspaceConsole: React.FC = () => {
     }
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    if (selectedWorkspaceId && activeTab === 'analytics') {
+      fetchAnalytics(selectedWorkspaceId);
+    }
+  }, [selectedWorkspaceId, activeTab]);
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const res = await fetch(`${baseApiUrl}/workspace/organizations`);
+      const res = await fetch(`${baseApiUrl}/organizations`);
       if (!res.ok) throw new Error('Failed to load organizations');
       const data = await res.json();
       
@@ -184,19 +273,31 @@ export const WorkspaceConsole: React.FC = () => {
 
   const fetchWorkspaceDetails = async (workspaceId: string) => {
     try {
-      const [projRes, memberRes, actRes] = await Promise.all([
+      const [projRes, memberRes, actRes, inviteRes, sharedRes] = await Promise.all([
         fetch(`${baseApiUrl}/workspace/projects?workspaceId=${workspaceId}`),
         fetch(`${baseApiUrl}/workspace/members?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/workspace/activity?workspaceId=${workspaceId}`)
+        fetch(`${baseApiUrl}/workspace/activity?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/workspace/invites?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/workspace/investigations?workspaceId=${workspaceId}`)
       ]);
 
       const projData = await projRes.json();
       const memberData = await memberRes.json();
       const actData = await actRes.json();
+      const inviteData = await inviteRes.json();
+      const sharedData = await sharedRes.json();
 
       setProjects(projData.projects || []);
       setMembers(memberData.members || []);
       setActivities(actData.feed || []);
+      setInvites(inviteData.invites || []);
+      setSharedInvestigations(sharedData.investigations || []);
+
+      if (sharedData.investigations && sharedData.investigations.length > 0) {
+        setSelectedInvestigationId(sharedData.investigations[0].id);
+      } else {
+        setSelectedInvestigationId('');
+      }
 
       if (projData.projects && projData.projects.length > 0) {
         setSelectedProjectId(projData.projects[0].id);
@@ -206,7 +307,6 @@ export const WorkspaceConsole: React.FC = () => {
         setAnnotations([]);
       }
       
-      // Heartbeat presence
       sendPresenceHeartbeat(workspaceId);
     } catch (err: any) {
       console.error('Failed to load workspace parameters:', err);
@@ -228,17 +328,30 @@ export const WorkspaceConsole: React.FC = () => {
       setReviews(revData.queue || []);
       setAnnotations(annData.annotations || []);
       
-      if (revData.queue && revData.queue.length > 0 && !shareTargetId) {
+      if (revData.queue && revData.queue.length > 0) {
         setShareTargetId(revData.queue[0].workflowSessionId);
         setNewAnnotationTargetId(revData.queue[0].workflowSessionId);
+        setShareSessionId(revData.queue[0].workflowSessionId);
       }
     } catch (err) {
       console.error('Failed to load project parameters:', err);
     }
   };
 
+  const fetchAnalytics = async (workspaceId: string) => {
+    try {
+      const res = await fetch(`${baseApiUrl}/workspace/analytics?workspaceId=${workspaceId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalytics(data.analytics);
+      }
+    } catch (err) {
+      console.error('Failed to fetch workspace analytics:', err);
+    }
+  };
+
   const setupWorkspaceSSE = (workspaceId: string) => {
-    const sseUrl = `${baseApiUrl}/workspace/stream/${workspaceId}`;
+    const sseUrl = `${baseApiUrl}/stream/${workspaceId}`;
     const eventSource = new EventSource(sseUrl);
 
     eventSource.addEventListener('presence.sync', (e: any) => {
@@ -266,23 +379,92 @@ export const WorkspaceConsole: React.FC = () => {
       fetchWorkspaceDetails(workspaceId);
     });
 
+    eventSource.addEventListener('workspace.projects.updated', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.investigations.updated', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.comments.updated', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
     return () => {
       eventSource.close();
     };
   };
 
-  const sendPresenceHeartbeat = async (workspaceId: string) => {
+  const sendPresenceHeartbeat = async (workspaceId: string, screen = 'console') => {
     try {
       await fetch(`${baseApiUrl}/workspace/presence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           workspaceId,
-          activeScreen: `workspace:${workspaceId}`
+          activeScreen: `${screen}:${workspaceId}`
         })
       });
     } catch (err) {
       console.warn('Presence heartbeat failure', err);
+    }
+  };
+
+  const handleCreateOrg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrgName.trim()) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/organizations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newOrgName })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to create organization');
+      }
+
+      setNewOrgName('');
+      alert('Organization and main workspace created successfully!');
+      fetchInitialData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWorkspaceName.trim()) return;
+
+    const currentWorkspace = workspaces.find(w => w.id === selectedWorkspaceId);
+    if (!currentWorkspace) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/workspaces`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: currentWorkspace.organizationId,
+          name: newWorkspaceName,
+          description: newWorkspaceDesc
+        })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to create workspace');
+      }
+
+      const data = await res.json();
+      setNewWorkspaceName('');
+      setNewWorkspaceDesc('');
+      alert('Workspace created successfully!');
+      setSelectedWorkspaceId(data.workspace.id);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
@@ -291,26 +473,97 @@ export const WorkspaceConsole: React.FC = () => {
     if (!inviteEmail) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/members`, {
+      const res = await fetch(`${baseApiUrl}/workspace/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           workspaceId: selectedWorkspaceId,
-          targetEmail: inviteEmail,
+          email: inviteEmail,
           role: inviteRole
         })
       });
 
       if (!res.ok) {
         const body = await res.json();
-        throw new Error(body.error || 'Failed to assign workspace member');
+        throw new Error(body.error || 'Failed to send invite');
       }
 
       setInviteEmail('');
-      alert('Workspace member added/updated successfully!');
-      if (selectedWorkspaceId) {
-        fetchWorkspaceDetails(selectedWorkspaceId);
+      alert('Workspace invitation sent successfully!');
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleAcceptInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acceptToken.trim()) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/workspace/invites/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: acceptToken })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to accept invitation');
       }
+
+      setAcceptToken('');
+      alert('Successfully joined workspace!');
+      fetchInitialData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleShareInvestigation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shareSessionId || !shareSessionName.trim()) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/workspace/investigations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          workflowSessionId: shareSessionId,
+          name: shareSessionName,
+          description: shareSessionDesc
+        })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to share investigation');
+      }
+
+      setShareSessionName('');
+      setShareSessionDesc('');
+      alert('Investigation shared with the workspace team!');
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentContent.trim() || !selectedInvestigationId) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/workspace/investigations/${selectedInvestigationId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newCommentContent })
+      });
+
+      if (!res.ok) throw new Error('Failed to post comment');
+      setNewCommentContent('');
+      fetchWorkspaceDetails(selectedWorkspaceId);
     } catch (err: any) {
       alert(err.message);
     }
@@ -343,7 +596,7 @@ export const WorkspaceConsole: React.FC = () => {
         fetchProjectDetails(selectedProjectId);
       }
     } catch (err: any) {
-      alert(Muft(err.message));
+      alert(err.message);
     }
   };
 
@@ -363,19 +616,19 @@ export const WorkspaceConsole: React.FC = () => {
     }
   };
 
-  const handleAddComment = async (e: React.FormEvent) => {
+  const handleAddAnnotationComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCommentContent || !selectedAnnotationId) return;
+    if (!newAnnotationCommentContent || !selectedAnnotationId) return;
 
     try {
       const res = await fetch(`${baseApiUrl}/workspace/annotations/${selectedAnnotationId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newCommentContent })
+        body: JSON.stringify({ content: newAnnotationCommentContent })
       });
 
       if (!res.ok) throw new Error('Failed to submit comment');
-      setNewCommentContent('');
+      setNewAnnotationCommentContent('');
       if (selectedProjectId) {
         fetchProjectDetails(selectedProjectId);
       }
@@ -432,7 +685,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!shareTargetId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/sharing`, {
+      const res = await fetch(`${baseApiUrl}/sharing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -456,8 +709,6 @@ export const WorkspaceConsole: React.FC = () => {
     navigator.clipboard.writeText(text);
     alert('Copied link to clipboard!');
   };
-
-  const Muft = (s: string) => s; // helper
 
   if (loading) {
     return (
@@ -487,25 +738,23 @@ export const WorkspaceConsole: React.FC = () => {
           </p>
         </div>
 
-        {/* Workspace Switcher */}
+        {/* Workspace Switcher & Branding Details */}
         <div className="flex items-center gap-3">
           {presenceUsers.length > 0 && (
             <div className="flex items-center -space-x-1.5 bg-[#121214] border border-[#222226] px-2.5 py-1 rounded-full text-[9px] font-mono font-bold text-zinc-400">
-              <span className="mr-2 text-zinc-600 uppercase font-black tracking-wider">Active:</span>
-              {presenceUsers.slice(0, 3).map((user, idx) => (
+              <span className="mr-2 text-zinc-600 uppercase font-black tracking-wider">Active Presence:</span>
+              {presenceUsers.map((user, idx) => (
                 <div
                   key={idx}
                   title={`${user.name} viewing ${user.activeScreen}`}
-                  className="w-5 h-5 rounded-full bg-zinc-800 border border-[#222226] flex items-center justify-center font-bold text-white text-[9px]"
+                  className="w-5 h-5 rounded-full bg-[#1c1c20] border border-[#222226] flex items-center justify-center font-bold text-[#5ed29c] text-[9px] relative group"
                 >
                   {user.name.substring(0, 2).toUpperCase()}
+                  <span className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black border border-[#333] text-[9px] px-2 py-0.5 rounded text-white hidden group-hover:block whitespace-nowrap z-50">
+                    {user.name} ({user.activeScreen})
+                  </span>
                 </div>
               ))}
-              {presenceUsers.length > 3 && (
-                <div className="w-5 h-5 rounded-full bg-zinc-950 border border-[#222226] flex items-center justify-center font-bold text-zinc-500 text-[8px]">
-                  +{presenceUsers.length - 3}
-                </div>
-              )}
             </div>
           )}
 
@@ -547,6 +796,8 @@ export const WorkspaceConsole: React.FC = () => {
           </span>
           {[
             { key: 'reviews', label: 'Review Pipelines', icon: ClipboardList },
+            { key: 'shared-investigations', label: 'Shared Investigations', icon: Sparkles },
+            { key: 'analytics', label: 'Organization Analytics', icon: TrendingUp },
             { key: 'annotations', label: 'Evidence Annotations', icon: MessageSquare },
             { key: 'activity', label: 'Workspace Audit Logs', icon: Activity },
             { key: 'sharing', label: 'Controlled Link Sharing', icon: Share2 },
@@ -557,7 +808,12 @@ export const WorkspaceConsole: React.FC = () => {
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as Tab)}
+                onClick={() => {
+                  setActiveTab(tab.key as Tab);
+                  if (selectedWorkspaceId) {
+                    sendPresenceHeartbeat(selectedWorkspaceId, tab.key);
+                  }
+                }}
                 className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-mono font-bold border text-left transition-all ${
                   isActive
                     ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/20'
@@ -570,7 +826,55 @@ export const WorkspaceConsole: React.FC = () => {
             );
           })}
 
+          {/* Org & Workspace Creators */}
           <div className="bg-[#121214]/50 border border-[#222226]/50 rounded-xl p-4 mt-6">
+            <h4 className="text-[10px] font-black font-mono text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Building className="w-3 h-3 text-[#5ed29c]" /> Organization Settings
+            </h4>
+            
+            <form onSubmit={handleCreateOrg} className="flex flex-col gap-2 mb-4 border-b border-[#222226] pb-4">
+              <span className="text-[9px] font-mono text-zinc-500 uppercase">Create Organization</span>
+              <input
+                type="text"
+                placeholder="New Org Name"
+                value={newOrgName}
+                onChange={(e) => setNewOrgName(e.target.value)}
+                className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-xs font-mono text-white px-2 py-1.5 rounded-lg focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-[9px] font-black uppercase py-1.5 rounded-lg border border-[#333]"
+              >
+                Create Org
+              </button>
+            </form>
+
+            <form onSubmit={handleCreateWorkspace} className="flex flex-col gap-2">
+              <span className="text-[9px] font-mono text-zinc-500 uppercase">Create Workspace</span>
+              <input
+                type="text"
+                placeholder="Workspace Name"
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-xs font-mono text-white px-2 py-1.5 rounded-lg focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Description"
+                value={newWorkspaceDesc}
+                onChange={(e) => setNewWorkspaceDesc(e.target.value)}
+                className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-xs font-mono text-white px-2 py-1.5 rounded-lg focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-[9px] font-black uppercase py-1.5 rounded-lg border border-[#333]"
+              >
+                Create Workspace
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-[#121214]/50 border border-[#222226]/50 rounded-xl p-4 mt-4">
             <h4 className="text-[10px] font-black font-mono text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Info className="w-3 h-3 text-[#5ed29c]" /> Active Scoped Project
             </h4>
@@ -647,7 +951,6 @@ export const WorkspaceConsole: React.FC = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          {/* Assignee Selector */}
                           <div className="flex items-center gap-1.5">
                             <UserCheck className="w-3.5 h-3.5 text-zinc-500" />
                             <select
@@ -664,7 +967,6 @@ export const WorkspaceConsole: React.FC = () => {
                             </select>
                           </div>
 
-                          {/* Action Buttons */}
                           <button
                             onClick={() => handleReviewAction(item.workflowSessionId, 'APPROVED')}
                             className="bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/20 text-[#5ed29c] text-[10px] font-mono font-black px-2.5 py-1 rounded-lg uppercase transition-all"
@@ -692,10 +994,402 @@ export const WorkspaceConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: EVIDENCE ANNOTATIONS */}
+          {/* TAB 2: SHARED INVESTIGATIONS */}
+          {activeTab === 'shared-investigations' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+              {/* Share list */}
+              <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-1 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#5ed29c]" /> Shared Team Investigations
+                    </h3>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase">
+                      Shared agent workflow reviews under team-wide discussion
+                    </p>
+                  </div>
+                </div>
+
+                {sharedInvestigations.length === 0 ? (
+                  <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic border border-dashed border-[#222226] rounded-xl">
+                    No investigations shared with this workspace yet.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {sharedInvestigations.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => setSelectedInvestigationId(item.id)}
+                        className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                          selectedInvestigationId === item.id
+                            ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
+                            : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold text-white font-mono">{item.name}</h4>
+                          <span className="text-[8px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 px-2 py-0.5 rounded border border-[#5ed29c]/10">
+                            SESSION {item.workflowSession.id.substring(0, 8)}
+                          </span>
+                        </div>
+                        {item.description && (
+                          <p className="text-xs text-zinc-400 font-mono mb-3">{item.description}</p>
+                        )}
+                        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 border-t border-[#222226]/50 pt-2.5">
+                          <span>Owner: {item.createdBy.name || item.createdBy.email}</span>
+                          <span>{item.comments.length} Comments • {item.workflowSession.stepCount} Steps</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Shared Details & Comments */}
+              <div className="lg:col-span-1 flex flex-col gap-6">
+                {/* Share input */}
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-3">
+                    Share a Run Session
+                  </h4>
+                  <form onSubmit={handleShareInvestigation} className="flex flex-col gap-3 font-mono text-xs">
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Session Reference</label>
+                      <select
+                        value={shareSessionId}
+                        onChange={(e) => setShareSessionId(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                      >
+                        <option value="">Choose session...</option>
+                        {reviews.map((r) => (
+                          <option key={r.workflowSessionId} value={r.workflowSessionId}>
+                            {r.workflowSession.goal || 'General Run'} ({r.workflowSessionId.substring(0, 8)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Title</label>
+                      <input
+                        type="text"
+                        placeholder="Investigation Name"
+                        value={shareSessionName}
+                        onChange={(e) => setShareSessionName(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Review Context</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Instructions for reviews..."
+                        value={shareSessionDesc}
+                        onChange={(e) => setShareSessionDesc(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!shareSessionId || !shareSessionName}
+                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      Share with Workspace
+                    </button>
+                  </form>
+                </div>
+
+                {/* Threaded comments */}
+                {selectedInvestigationId && (() => {
+                  const activeInv = sharedInvestigations.find(s => s.id === selectedInvestigationId);
+                  if (!activeInv) return null;
+                  return (
+                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col min-h-[300px]">
+                      <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-2">
+                        Collaborative Notes
+                      </h4>
+                      <div className="flex-1 overflow-y-auto max-h-60 mb-4 flex flex-col gap-2.5 border-b border-[#222226] pb-3 pr-1">
+                        {activeInv.comments.length === 0 ? (
+                          <div className="text-center py-8 text-zinc-600 font-mono text-[10px] italic">
+                            No team notes. Share comments below.
+                          </div>
+                        ) : (
+                          activeInv.comments.map((c) => (
+                            <div key={c.id} className="bg-[#18181b] border border-[#2d2d30] p-2.5 rounded-lg">
+                              <div className="flex justify-between items-center mb-1 text-[8.5px] font-mono font-bold text-zinc-500">
+                                <span>{c.user.name || c.user.email}</span>
+                                <span>{new Date(c.createdAt).toLocaleTimeString()}</span>
+                              </div>
+                              <p className="text-[11px] text-zinc-300 font-mono">{c.content}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <form onSubmit={handlePostComment} className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Comment context..."
+                          value={newCommentContent}
+                          onChange={(e) => setNewCommentContent(e.target.value)}
+                          className="flex-1 bg-[#1c1c1f] border border-[#2d2d30] text-xs font-mono text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] px-3 py-1.5 rounded-lg transition-all"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      </form>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: ORGANIZATION ANALYTICS */}
+          {activeTab === 'analytics' && (
+            <div className="flex flex-col gap-6 animate-fadeIn">
+              {analytics ? (
+                <>
+                  {/* Gauge Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Gauge 1: Stability Index */}
+                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col items-center text-center relative overflow-hidden">
+                      <div className="absolute top-3 right-3 text-zinc-600">
+                        <Shield className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-[10px] font-black font-mono text-zinc-500 uppercase tracking-widest mb-4">
+                        Workspace Stability Index
+                      </h4>
+                      <div className="relative w-28 h-28 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="40" stroke="#1c1c1f" strokeWidth="8" fill="transparent" />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            stroke="#5ed29c"
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={251.2}
+                            strokeDashoffset={251.2 - (251.2 * analytics.stabilityScore) / 100}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute flex flex-col items-center">
+                          <span className="text-2xl font-black text-white font-mono">{analytics.stabilityScore}%</span>
+                          <span className="text-[8px] font-mono text-zinc-500 uppercase">Stable</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-mono mt-4">
+                        Weighted health score across all workspace runs.
+                      </p>
+                    </div>
+
+                    {/* Gauge 2: Completion Rate */}
+                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col items-center text-center relative overflow-hidden">
+                      <div className="absolute top-3 right-3 text-zinc-600">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-[10px] font-black font-mono text-zinc-500 uppercase tracking-widest mb-4">
+                        Aggregate Completion Rate
+                      </h4>
+                      <div className="relative w-28 h-28 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="40" stroke="#1c1c1f" strokeWidth="8" fill="transparent" />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            stroke="#60a5fa"
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={251.2}
+                            strokeDashoffset={251.2 - (251.2 * analytics.completionRate) / 100}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute flex flex-col items-center">
+                          <span className="text-2xl font-black text-white font-mono">{analytics.completionRate}%</span>
+                          <span className="text-[8px] font-mono text-zinc-500 uppercase">Success</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-mono mt-4">
+                        Percentage of simulated sessions completing their targets.
+                      </p>
+                    </div>
+
+                    {/* Gauge 3: Friction Load */}
+                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col items-center text-center relative overflow-hidden">
+                      <div className="absolute top-3 right-3 text-zinc-600">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-[10px] font-black font-mono text-zinc-500 uppercase tracking-widest mb-4">
+                        Average Friction Load
+                      </h4>
+                      <div className="relative w-28 h-28 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="40" stroke="#1c1c1f" strokeWidth="8" fill="transparent" />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            stroke="#f87171"
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={251.2}
+                            strokeDashoffset={251.2 - (251.2 * analytics.averageFrictionScore) / 100}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute flex flex-col items-center">
+                          <span className="text-2xl font-black text-white font-mono">{analytics.averageFrictionScore}%</span>
+                          <span className="text-[8px] font-mono text-zinc-500 uppercase">Friction</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-mono mt-4">
+                        Aggregated cognitive & hesitation loads detected.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* SVG Longitudinal Trend Graph */}
+                  <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-4">
+                      Longitudinal Stability Drift Timeline
+                    </h3>
+                    <div className="w-full h-48 bg-[#18181b]/50 border border-[#222226] rounded-lg p-4 flex flex-col justify-end">
+                      {analytics.stabilityHistory && analytics.stabilityHistory.length > 0 ? (
+                        <div className="relative w-full h-full flex flex-col justify-between">
+                          <svg className="w-full h-full" viewBox="0 0 600 150">
+                            {/* Grid Lines */}
+                            <line x1="0" y1="37.5" x2="600" y2="37.5" stroke="#222" strokeDasharray="5,5" />
+                            <line x1="0" y1="75" x2="600" y2="75" stroke="#222" strokeDasharray="5,5" />
+                            <line x1="0" y1="112.5" x2="600" y2="112.5" stroke="#222" strokeDasharray="5,5" />
+
+                            {/* Chart Line */}
+                            <path
+                              d={
+                                "M " +
+                                analytics.stabilityHistory
+                                  .map((h, index) => {
+                                    const x = (index / Math.max(1, analytics.stabilityHistory.length - 1)) * 600;
+                                    const y = 150 - (h.score / 100) * 150;
+                                    return `${x} ${y}`;
+                                  })
+                                  .join(" L ")
+                              }
+                              fill="none"
+                              stroke="#5ed29c"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+
+                            {/* Points */}
+                            {analytics.stabilityHistory.map((h, index) => {
+                              const x = (index / Math.max(1, analytics.stabilityHistory.length - 1)) * 600;
+                              const y = 150 - (h.score / 100) * 150;
+                              return (
+                                <g key={index} className="group cursor-pointer">
+                                  <circle
+                                    cx={x}
+                                    cy={y}
+                                    r="5"
+                                    fill="#09090b"
+                                    stroke="#5ed29c"
+                                    strokeWidth="3"
+                                  />
+                                  <text
+                                    x={x}
+                                    y={y - 10}
+                                    fill="#fff"
+                                    fontSize="8"
+                                    fontFamily="monospace"
+                                    textAnchor="middle"
+                                    className="hidden group-hover:block"
+                                  >
+                                    {h.score}%
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </svg>
+                          <div className="flex justify-between mt-2 text-[9px] font-mono text-zinc-500 uppercase">
+                            <span>{analytics.stabilityHistory[0]?.date || 'Start'}</span>
+                            <span>LONGITUDINAL INTEGRITY INDEX</span>
+                            <span>{analytics.stabilityHistory[analytics.stabilityHistory.length - 1]?.date || 'End'}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center text-zinc-600 font-mono text-xs italic py-12">
+                          Insufficient historical runs to compute drift chart.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Regression Alerts Table */}
+                  <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-3">
+                      Active Workspace Drift & Regression Alerts
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse font-mono text-xs">
+                        <thead>
+                          <tr className="border-b border-[#222226] text-left text-zinc-500 text-[10px] uppercase font-black">
+                            <th className="py-2.5 pr-4">Metric</th>
+                            <th className="py-2.5 px-4">Severity</th>
+                            <th className="py-2.5 px-4">Drift Ratio</th>
+                            <th className="py-2.5 pl-4">Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#222226]/50">
+                          {analytics.recentRegressions.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="py-6 text-center text-zinc-600 italic">
+                                Zero workspace regressions registered in active timeline.
+                              </td>
+                            </tr>
+                          ) : (
+                            analytics.recentRegressions.map((reg) => (
+                              <tr key={reg.id} className="hover:bg-[#18181b]/30">
+                                <td className="py-3 pr-4 text-white font-bold">{reg.metric}</td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-0.5 rounded text-[9px] font-black ${
+                                    reg.severity === 'CRITICAL' ? 'bg-red-950/20 text-red-400 border border-red-500/20' :
+                                    reg.severity === 'HIGH' ? 'bg-amber-950/20 text-amber-400 border border-amber-500/20' :
+                                    'bg-zinc-800 text-zinc-400'
+                                  }`}>
+                                    {reg.severity}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-red-400 font-bold">+{reg.drift}% Drift</td>
+                                <td className="py-3 pl-4 text-zinc-500">
+                                  {new Date(reg.createdAt).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-20 text-zinc-500 font-mono text-xs italic">
+                  Compiling workspace statistics...
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: EVIDENCE ANNOTATIONS */}
           {activeTab === 'annotations' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Annotation List */}
               <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5">
                 <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#5ed29c]" /> Active Project Annotations
@@ -738,7 +1432,7 @@ export const WorkspaceConsole: React.FC = () => {
                         <p className="text-xs text-white font-mono mb-2">{item.content}</p>
                         
                         <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
-                          <span>By: {item.createdBy.name || item.createdBy.email}</span>
+                          <span>By: {item.createdBy?.name || item.createdBy?.email}</span>
                           <span className="flex items-center gap-1">
                             <MessageSquare className="w-3 h-3 text-[#5ed29c]" /> {item.comments.length} Comments
                           </span>
@@ -752,8 +1446,8 @@ export const WorkspaceConsole: React.FC = () => {
                             }}
                             className={`flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-2 py-1 rounded ${
                               item.resolved
-                                ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
-                                : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white'
+                                  ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
+                                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white'
                             }`}
                           >
                             {item.resolved ? 'RESOLVED' : 'MARK RESOLVED'}
@@ -767,7 +1461,6 @@ export const WorkspaceConsole: React.FC = () => {
 
               {/* Threaded Discussion Rail */}
               <div className="lg:col-span-1 flex flex-col gap-6">
-                {/* Manual annotation input */}
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                   <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4">
                     New Annotation
@@ -831,7 +1524,6 @@ export const WorkspaceConsole: React.FC = () => {
                   </form>
                 </div>
 
-                {/* Comment Thread */}
                 {selectedAnnotationId && (() => {
                   const activeAnn = annotations.find((a) => a.id === selectedAnnotationId);
                   if (!activeAnn) return null;
@@ -860,12 +1552,12 @@ export const WorkspaceConsole: React.FC = () => {
                         )}
                       </div>
 
-                      <form onSubmit={handleAddComment} className="flex gap-2">
+                      <form onSubmit={handleAddAnnotationComment} className="flex gap-2">
                         <input
                           type="text"
                           placeholder="Type message..."
-                          value={newCommentContent}
-                          onChange={(e) => setNewCommentContent(e.target.value)}
+                          value={newAnnotationCommentContent}
+                          onChange={(e) => setNewAnnotationCommentContent(e.target.value)}
                           className="flex-1 bg-[#1c1c1f] border border-[#2d2d30] text-xs font-mono text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
                         />
                         <button
@@ -882,7 +1574,7 @@ export const WorkspaceConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: WORKSPACE AUDIT LOGS */}
+          {/* TAB 5: WORKSPACE AUDIT LOGS */}
           {activeTab === 'activity' && (
             <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
               <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
@@ -911,7 +1603,7 @@ export const WorkspaceConsole: React.FC = () => {
                             <span className="text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/10 px-1 rounded">
                               {item.actionType}
                             </span>
-                            <span>Operator: {item.user.name || item.user.email}</span>
+                            <span>Operator: {item.userName}</span>
                           </div>
                         </div>
                       </div>
@@ -925,7 +1617,7 @@ export const WorkspaceConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 4: CONTROLLED SHARING */}
+          {/* TAB 6: CONTROLLED SHARING */}
           {activeTab === 'sharing' && (
             <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
               <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
@@ -1029,80 +1721,138 @@ export const WorkspaceConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 5: GOVERNANCE MEMBERS */}
+          {/* TAB 7: GOVERNANCE MEMBERS */}
           {activeTab === 'members' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Member List */}
-              <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5">
-                <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#5ed29c]" /> Workspace Role Directory
-                </h3>
-                <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
-                  Workspace members and RBAC authority levels
-                </p>
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#5ed29c]" /> Workspace Role Directory
+                  </h3>
+                  <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                    Workspace members and RBAC authority levels
+                  </p>
 
-                <div className="flex flex-col border border-[#222226] rounded-xl overflow-hidden divide-y divide-[#222226]">
-                  {members.map((m) => (
-                    <div
-                      key={m.id}
-                      className="bg-[#18181b]/55 p-4 flex items-center justify-between gap-4 font-mono text-xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-[#222226] flex items-center justify-center font-bold text-white text-xs">
-                          {m.user.name ? m.user.name.substring(0, 2).toUpperCase() : m.user.email.substring(0, 2).toUpperCase()}
+                  <div className="flex flex-col border border-[#222226] rounded-xl overflow-hidden divide-y divide-[#222226]">
+                    {members.map((m) => (
+                      <div
+                        key={m.id}
+                        className="bg-[#18181b]/55 p-4 flex items-center justify-between gap-4 font-mono text-xs"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-zinc-800 border border-[#222226] flex items-center justify-center font-bold text-white text-xs">
+                            {m.user.name ? m.user.name.substring(0, 2).toUpperCase() : m.user.email.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-white font-bold text-xs">{m.user.name || 'Invited User'}</h4>
+                            <span className="text-[10px] text-zinc-500">{m.user.email}</span>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-white font-bold text-xs">{m.user.name || 'Invited User'}</h4>
-                          <span className="text-[10px] text-zinc-500">{m.user.email}</span>
-                        </div>
+
+                        <span className="bg-[#5ed29c]/5 border border-[#5ed29c]/15 text-[#5ed29c] font-black text-[9px] px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                          {m.role}
+                        </span>
                       </div>
+                    ))}
+                  </div>
+                </div>
 
-                      <span className="bg-[#5ed29c]/5 border border-[#5ed29c]/15 text-[#5ed29c] font-black text-[9px] px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                        {m.role}
-                      </span>
+                {/* Pending Invites */}
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> Pending Workspace Invitations
+                  </h3>
+                  <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                    Outstanding team invitations awaiting acceptance
+                  </p>
+
+                  {invites.length === 0 ? (
+                    <div className="text-center py-6 text-zinc-600 font-mono text-[10px] italic">
+                      No pending workspace invitations.
                     </div>
-                  ))}
+                  ) : (
+                    <div className="flex flex-col gap-2.5">
+                      {invites.map((invite) => (
+                        <div key={invite.id} className="bg-[#18181b] border border-[#2d2d30] p-3 rounded-lg flex items-center justify-between text-xs font-mono">
+                          <div>
+                            <span className="text-white font-bold">{invite.email}</span>
+                            <div className="text-[9px] text-zinc-500 uppercase mt-0.5">
+                              Role: {invite.role} • Expires: {new Date(invite.expiresAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <span className="text-[#5ed29c] font-black text-[9px] bg-[#5ed29c]/5 border border-[#5ed29c]/15 px-2 py-0.5 rounded">
+                            PENDING
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Invite Form */}
-              <div className="lg:col-span-1 bg-[#121214] border border-[#222226] rounded-xl p-5">
-                <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4">
-                  Invite Governance Member
-                </h4>
-                <form onSubmit={handleInvite} className="flex flex-col gap-3.5 font-mono text-xs">
-                  <div>
-                    <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">User Email Address</label>
+              <div className="lg:col-span-1 flex flex-col gap-6">
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4">
+                    Invite Governance Member
+                  </h4>
+                  <form onSubmit={handleInvite} className="flex flex-col gap-3.5 font-mono text-xs">
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">User Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. member@company.com"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Workspace Authority Role</label>
+                      <select
+                        value={inviteRole}
+                        onChange={(e) => setInviteRole(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                      >
+                        <option value="UX_LEAD">UX Lead (Governance/Approvals)</option>
+                        <option value="INVESTIGATOR">Investigator (Runs/Annotations)</option>
+                        <option value="REVIEWER">Reviewer (Annotations/Verification)</option>
+                        <option value="VIEWER">Viewer (Read-Only)</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                    >
+                      Send Workspace Invitation
+                    </button>
+                  </form>
+                </div>
+
+                {/* Accept Invite */}
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-3">
+                    Redeem Invitation Token
+                  </h4>
+                  <form onSubmit={handleAcceptInvite} className="flex flex-col gap-3 font-mono text-xs">
                     <input
-                      type="email"
-                      placeholder="e.g. member@company.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
+                      type="text"
+                      placeholder="Enter invite token code"
+                      value={acceptToken}
+                      onChange={(e) => setAcceptToken(e.target.value)}
                       className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
                     />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Workspace Authority Role</label>
-                    <select
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value)}
-                      className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                    <button
+                      type="submit"
+                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
                     >
-                      <option value="UX_LEAD">UX Lead (Governance/Approvals)</option>
-                      <option value="INVESTIGATOR">Investigator (Runs/Annotations)</option>
-                      <option value="REVIEWER">Reviewer (Annotations/Verification)</option>
-                      <option value="VIEWER">Viewer (Read-Only)</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
-                  >
-                    Grant Workspace Access
-                  </button>
-                </form>
+                      Join Workspace
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           )}
