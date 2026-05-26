@@ -1258,72 +1258,185 @@ export const WorkspaceConsole: React.FC = () => {
                   </div>
 
                   {/* SVG Longitudinal Trend Graph */}
-                  <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
-                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-4">
-                      Longitudinal Stability Drift Timeline
-                    </h3>
-                    <div className="w-full h-48 bg-[#18181b]/50 border border-[#222226] rounded-lg p-4 flex flex-col justify-end">
+                  <div className="bg-[#121214] border border-[#222226] rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/25 to-transparent"></div>
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <h3 className="text-xs font-black font-mono uppercase tracking-widest text-white flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5 text-[#5ed29c] animate-pulse" /> Longitudinal Stability Drift Timeline
+                        </h3>
+                        <p className="text-[9px] font-mono text-zinc-500 uppercase mt-0.5">
+                          Continuous verification of UX performance and regressions over time
+                        </p>
+                      </div>
+                      <span className="text-[9px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/15 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                        Live Diagnostics
+                      </span>
+                    </div>
+
+                    <div className="w-full h-56 bg-[#161619]/40 border border-[#222226] rounded-xl p-4 flex flex-col justify-between">
                       {analytics.stabilityHistory && analytics.stabilityHistory.length > 0 ? (
-                        <div className="relative w-full h-full flex flex-col justify-between">
-                          <svg className="w-full h-full" viewBox="0 0 600 150">
-                            {/* Grid Lines */}
-                            <line x1="0" y1="37.5" x2="600" y2="37.5" stroke="#222" strokeDasharray="5,5" />
-                            <line x1="0" y1="75" x2="600" y2="75" stroke="#222" strokeDasharray="5,5" />
-                            <line x1="0" y1="112.5" x2="600" y2="112.5" stroke="#222" strokeDasharray="5,5" />
+                        (() => {
+                          const chartWidth = 530;
+                          const chartHeight = 150;
+                          const startX = 45;
+                          const startY = 15;
 
-                            {/* Chart Line */}
-                            <path
-                              d={
-                                "M " +
-                                analytics.stabilityHistory
-                                  .map((h, index) => {
-                                    const x = (index / Math.max(1, analytics.stabilityHistory.length - 1)) * 600;
-                                    const y = 150 - (h.score / 100) * 150;
-                                    return `${x} ${y}`;
-                                  })
-                                  .join(" L ")
-                              }
-                              fill="none"
-                              stroke="#5ed29c"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                            />
+                          const pts = analytics.stabilityHistory.map((h, index) => {
+                            const x = startX + (index / Math.max(1, analytics.stabilityHistory.length - 1)) * chartWidth;
+                            const y = startY + (1 - h.score / 100) * chartHeight;
+                            return { x, y, score: h.score, date: h.date };
+                          });
 
-                            {/* Points */}
-                            {analytics.stabilityHistory.map((h, index) => {
-                              const x = (index / Math.max(1, analytics.stabilityHistory.length - 1)) * 600;
-                              const y = 150 - (h.score / 100) * 150;
-                              return (
-                                <g key={index} className="group cursor-pointer">
-                                  <circle
-                                    cx={x}
-                                    cy={y}
-                                    r="5"
-                                    fill="#09090b"
-                                    stroke="#5ed29c"
-                                    strokeWidth="3"
+                          const getBezierPath = (points: typeof pts) => {
+                            if (points.length === 0) return '';
+                            if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+                            let d = `M ${points[0].x} ${points[0].y}`;
+                            for (let i = 0; i < points.length - 1; i++) {
+                              const curr = points[i];
+                              const next = points[i + 1];
+                              const cpX1 = curr.x + (next.x - curr.x) / 3;
+                              const cpY1 = curr.y;
+                              const cpX2 = curr.x + 2 * (next.x - curr.x) / 3;
+                              const cpY2 = next.y;
+                              d += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
+                            }
+                            return d;
+                          };
+
+                          const lineD = getBezierPath(pts);
+                          const areaD = pts.length > 0
+                            ? `${lineD} L ${pts[pts.length - 1].x} ${startY + chartHeight} L ${pts[0].x} ${startY + chartHeight} Z`
+                            : '';
+
+                          return (
+                            <div className="relative w-full h-full flex flex-col justify-between">
+                              <svg className="w-full h-full" viewBox="0 0 600 185">
+                                <defs>
+                                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.25" />
+                                    <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0" />
+                                  </linearGradient>
+                                  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="4" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                  </filter>
+                                </defs>
+
+                                {/* Y-Axis Grid Lines & Labels */}
+                                {[100, 75, 50, 25, 0].map((val, idx) => {
+                                  const y = startY + (1 - val / 100) * chartHeight;
+                                  return (
+                                    <g key={idx}>
+                                      <text
+                                        x={startX - 10}
+                                        y={y + 3}
+                                        fill="#71717a"
+                                        fontSize="9"
+                                        fontFamily="monospace"
+                                        textAnchor="end"
+                                      >
+                                        {val}%
+                                      </text>
+                                      <line
+                                        x1={startX}
+                                        y1={y}
+                                        x2={startX + chartWidth}
+                                        y2={y}
+                                        stroke="#1f1f23"
+                                        strokeWidth="1"
+                                        strokeDasharray={val === 0 ? 'none' : '4,4'}
+                                      />
+                                    </g>
+                                  );
+                                })}
+
+                                {/* Vertical Axis Dividers */}
+                                {pts.map((p, idx) => (
+                                  <line
+                                    key={idx}
+                                    x1={p.x}
+                                    y1={startY}
+                                    x2={p.x}
+                                    y2={startY + chartHeight}
+                                    stroke="#18181b"
+                                    strokeWidth="1"
+                                    strokeDasharray="2,2"
                                   />
-                                  <text
-                                    x={x}
-                                    y={y - 10}
-                                    fill="#fff"
-                                    fontSize="8"
-                                    fontFamily="monospace"
-                                    textAnchor="middle"
-                                    className="hidden group-hover:block"
-                                  >
-                                    {h.score}%
-                                  </text>
-                                </g>
-                              );
-                            })}
-                          </svg>
-                          <div className="flex justify-between mt-2 text-[9px] font-mono text-zinc-500 uppercase">
-                            <span>{analytics.stabilityHistory[0]?.date || 'Start'}</span>
-                            <span>LONGITUDINAL INTEGRITY INDEX</span>
-                            <span>{analytics.stabilityHistory[analytics.stabilityHistory.length - 1]?.date || 'End'}</span>
-                          </div>
-                        </div>
+                                ))}
+
+                                {/* Filled Gradient Area */}
+                                {areaD && (
+                                  <path d={areaD} fill="url(#chartGradient)" />
+                                )}
+
+                                {/* Smooth Bezier Line */}
+                                {lineD && (
+                                  <path
+                                    d={lineD}
+                                    fill="none"
+                                    stroke="#5ed29c"
+                                    strokeWidth="2.5"
+                                    filter="url(#glow)"
+                                    strokeLinecap="round"
+                                  />
+                                )}
+
+                                {/* Diagnostic Data Points with Custom Floating Tooltip Badges */}
+                                {pts.map((p, idx) => (
+                                  <g key={idx} className="group cursor-pointer">
+                                    {/* Outer glowing ring */}
+                                    <circle
+                                      cx={p.x}
+                                      cy={p.y}
+                                      r="6"
+                                      fill="rgba(94, 210, 156, 0.15)"
+                                      stroke="#5ed29c"
+                                      strokeWidth="1"
+                                    />
+                                    {/* Inner solid dot */}
+                                    <circle
+                                      cx={p.x}
+                                      cy={p.y}
+                                      r="3"
+                                      fill="#5ed29c"
+                                    />
+
+                                    {/* Floating Score Badge above the node */}
+                                    <g className="opacity-80 group-hover:opacity-100 transition-opacity">
+                                      <rect
+                                        x={p.x - 18}
+                                        y={p.y - 28}
+                                        width="36"
+                                        height="16"
+                                        rx="4"
+                                        fill="#09090b"
+                                        stroke="#5ed29c"
+                                        strokeWidth="1"
+                                      />
+                                      <text
+                                        x={p.x}
+                                        y={p.y - 17}
+                                        fill="#fff"
+                                        fontSize="8"
+                                        fontWeight="bold"
+                                        fontFamily="monospace"
+                                        textAnchor="middle"
+                                      >
+                                        {p.score}%
+                                      </text>
+                                    </g>
+                                  </g>
+                                ))}
+                              </svg>
+                              <div className="flex justify-between mt-2 text-[9px] font-mono text-zinc-500 uppercase px-1">
+                                <span>{analytics.stabilityHistory[0]?.date || 'Start'}</span>
+                                <span className="text-zinc-600 tracking-wider">LONGITUDINAL INTEGRITY INDEX</span>
+                                <span>{analytics.stabilityHistory[analytics.stabilityHistory.length - 1]?.date || 'End'}</span>
+                              </div>
+                            </div>
+                          );
+                        })()
                       ) : (
                         <div className="text-center text-zinc-600 font-mono text-xs italic py-12">
                           Insufficient historical runs to compute drift chart.
