@@ -30,7 +30,10 @@ export type RealtimeEventType =
   | 'workspace.policy.updated'
   | 'workspace.roles.updated'
   | 'workspace.access.revoked'
-  | 'workspace.replay-sync.updated';
+  | 'workspace.replay-sync.updated'
+  | 'workspace.reports.updated'
+  | 'workspace.exports.progress'
+  | 'workspace.digest.delivered';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
