@@ -33,7 +33,9 @@ export type RealtimeEventType =
   | 'workspace.replay-sync.updated'
   | 'workspace.reports.updated'
   | 'workspace.exports.progress'
-  | 'workspace.digest.delivered';
+  | 'workspace.digest.delivered'
+  | 'workspace.audit.updated'
+  | 'workspace.security.alert';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
