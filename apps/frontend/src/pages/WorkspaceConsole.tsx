@@ -30,7 +30,11 @@ import {
   Trash2,
   Settings,
   Key,
-  Check
+  Check,
+  FileText,
+  Layout,
+  Download,
+  Mail
 } from 'lucide-react';
 
 interface Organization {
@@ -253,6 +257,33 @@ export const WorkspaceConsole: React.FC = () => {
   // Analytics
   const [analytics, setAnalytics] = useState<WorkspaceAnalytics | null>(null);
 
+  // Enterprise Reporting States
+  const [reports, setReports] = useState<any[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string>('');
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [exports, setExports] = useState<any[]>([]);
+  const [shareTokens, setShareTokens] = useState<any[]>([]);
+  const [distributions, setDistributions] = useState<any[]>([]);
+  const [evidenceLinks, setEvidenceLinks] = useState<any[]>([]);
+  const [digests, setDigests] = useState<any[]>([]);
+  const [reportTitle, setReportTitle] = useState<string>('');
+  const [selectedTemplateType, setSelectedTemplateType] = useState<string>('RISK_REPORT');
+  
+  const [newShareExpiresHours, setNewShareExpiresHours] = useState<number>(24);
+  const [newShareMaxUses, setNewShareMaxUses] = useState<number>(10);
+  const [newShareEmail, setNewShareEmail] = useState<string>('');
+  const [newDistributionChannel, setNewDistributionChannel] = useState<string>('EMAIL');
+  const [newDistributionRecipient, setNewDistributionRecipient] = useState<string>('stakeholder@fricta.ai');
+  const [newDigestTitle, setNewDigestTitle] = useState<string>('Weekly Performance Overview');
+  const [newDigestPeriod, setNewDigestPeriod] = useState<string>('WEEKLY');
+
+  const [deckData, setDeckData] = useState<any | null>(null);
+  const [pdfLayout, setPdfLayout] = useState<any | null>(null);
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+  
+  const [reportBuilding, setReportBuilding] = useState<boolean>(false);
+  const [reportExporting, setReportExporting] = useState<boolean>(false);
+
   // Tabs
   type Tab =
     | 'reviews'
@@ -265,7 +296,8 @@ export const WorkspaceConsole: React.FC = () => {
     | 'roles-permissions'
     | 'policies'
     | 'replays'
-    | 'security';
+    | 'security'
+    | 'reporting';
 
   const [activeTab, setActiveTab] = useState<Tab>('reviews');
 
@@ -320,8 +352,23 @@ export const WorkspaceConsole: React.FC = () => {
   useEffect(() => {
     if (selectedProjectId) {
       fetchProjectDetails(selectedProjectId);
+      fetchReportingDetails(selectedWorkspaceId, selectedProjectId);
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, selectedWorkspaceId]);
+
+  useEffect(() => {
+    if (selectedReportId) {
+      fetchReportMetadata(selectedReportId);
+    } else {
+      setDeckData(null);
+      setPdfLayout(null);
+      setActiveSlideIndex(0);
+      setExports([]);
+      setShareTokens([]);
+      setDistributions([]);
+      setEvidenceLinks([]);
+    }
+  }, [selectedReportId]);
 
   useEffect(() => {
     if (selectedWorkspaceId && activeTab === 'analytics') {
@@ -510,6 +557,18 @@ export const WorkspaceConsole: React.FC = () => {
 
     eventSource.addEventListener('workspace.comments.updated', () => {
       fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.reports.updated', () => {
+      fetchReportingDetails(workspaceId, selectedProjectId);
+    });
+
+    eventSource.addEventListener('workspace.exports.progress', () => {
+      if (selectedReportId) fetchReportMetadata(selectedReportId);
+    });
+
+    eventSource.addEventListener('workspace.digest.delivered', () => {
+      fetchReportingDetails(workspaceId, selectedProjectId);
     });
 
     // RBAC Listeners
@@ -1053,6 +1112,222 @@ export const WorkspaceConsole: React.FC = () => {
     }
   };
 
+  const fetchReportingDetails = async (workspaceId: string, projectId: string) => {
+    try {
+      const workspaceParam = workspaceId ? `workspaceId=${workspaceId}` : '';
+      const projectParam = projectId ? `&projectId=${projectId}` : '';
+      const listRes = await fetch(`${baseApiUrl}/reports/executive/list?${workspaceParam}${projectParam}`);
+      const listData = await listRes.json();
+      setReports(listData.reports || []);
+
+      const tempRes = await fetch(`${baseApiUrl}/reports/templates?${workspaceParam}`);
+      const tempData = await tempRes.json();
+      setTemplates(tempData.templates || []);
+
+      if (workspaceId) {
+        const digRes = await fetch(`${baseApiUrl}/reports/analytics/digests?workspaceId=${workspaceId}`);
+        const digData = await digRes.json();
+        setDigests(digData.digests || []);
+      }
+    } catch (err) {
+      console.warn('Failed to load enterprise reporting elements', err);
+    }
+  };
+
+  const fetchReportMetadata = async (reportId: string) => {
+    try {
+      const [deckRes, pdfRes, expRes, shareRes, distRes, evRes] = await Promise.all([
+        fetch(`${baseApiUrl}/reports/executive/${reportId}/deck`),
+        fetch(`${baseApiUrl}/reports/executive/${reportId}/pdf-layout`),
+        fetch(`${baseApiUrl}/reports/exports?reportId=${reportId}`),
+        fetch(`${baseApiUrl}/reports/sharing?reportId=${reportId}`),
+        fetch(`${baseApiUrl}/reports/distribution?reportId=${reportId}`),
+        fetch(`${baseApiUrl}/reports/evidence?reportId=${reportId}`)
+      ]);
+
+      const deckData = await deckRes.json();
+      const pdfData = await pdfRes.json();
+      const expData = await expRes.json();
+      const shareData = await shareRes.json();
+      const distData = await distRes.json();
+      const evData = await evRes.json();
+
+      setDeckData(deckData.deck || null);
+      setPdfLayout(pdfData.pdfLayout || null);
+      setExports(expData.exports || []);
+      setShareTokens(shareData.shares || []);
+      setDistributions(distData.distributions || []);
+      setEvidenceLinks(evData.links || []);
+    } catch (err) {
+      console.warn('Failed to load report metadata details', err);
+    }
+  };
+
+  const handleCreateReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportTitle.trim() || !selectedProjectId) return;
+
+    try {
+      setReportBuilding(true);
+      const res = await fetch(`${baseApiUrl}/reports/executive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId || null,
+          projectId: selectedProjectId,
+          title: reportTitle
+        })
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || 'Failed to compile report');
+      }
+
+      const data = await res.json();
+      setReportTitle('');
+      alert('Executive report compiled successfully!');
+      setSelectedReportId(data.report.id);
+      fetchReportingDetails(selectedWorkspaceId, selectedProjectId);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setReportBuilding(false);
+    }
+  };
+
+  const handleCreateTemplate = async (name: string, description: string, layout: string) => {
+    try {
+      const res = await fetch(`${baseApiUrl}/reports/templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId || null,
+          name,
+          description,
+          layoutType: layout,
+          structure: {}
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to create template');
+      alert('Template created successfully!');
+      fetchReportingDetails(selectedWorkspaceId, selectedProjectId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleTriggerExport = async (format: string) => {
+    if (!selectedReportId) return;
+
+    try {
+      setReportExporting(true);
+      const res = await fetch(`${baseApiUrl}/reports/exports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId: selectedReportId,
+          format
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to start export');
+      fetchReportMetadata(selectedReportId);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setReportExporting(false);
+    }
+  };
+
+  const handleGenerateReportShare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReportId) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/reports/sharing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId: selectedReportId,
+          expiresHours: Number(newShareExpiresHours),
+          maxUses: Number(newShareMaxUses),
+          email: newShareEmail
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to generate shared link');
+      alert('Public shared link created!');
+      setNewShareEmail('');
+      fetchReportMetadata(selectedReportId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleRevokeReportShare = async (shareId: string) => {
+    try {
+      const res = await fetch(`${baseApiUrl}/reports/sharing/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareId })
+      });
+
+      if (!res.ok) throw new Error('Failed to revoke shared link');
+      alert('Shared link revoked.');
+      fetchReportMetadata(selectedReportId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleDistributeReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReportId) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/reports/distribution`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId: selectedReportId,
+          channel: newDistributionChannel,
+          recipient: newDistributionRecipient
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to deliver report');
+      alert('Report distributed successfully!');
+      fetchReportMetadata(selectedReportId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleGenerateDigest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorkspaceId) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/reports/analytics/digests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          title: newDigestTitle,
+          period: newDigestPeriod
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to compile digest');
+      alert('Workspace insight digest created!');
+      fetchReportingDetails(selectedWorkspaceId, selectedProjectId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#09090b] text-zinc-500 font-mono text-xs">
@@ -1149,6 +1424,7 @@ export const WorkspaceConsole: React.FC = () => {
             { key: 'policies', label: 'Governance Policies', icon: Settings },
             { key: 'replays', label: 'Replay Access Scopes', icon: Eye },
             { key: 'security', label: 'Security Overview', icon: Shield },
+            { key: 'reporting', label: 'Enterprise Reporting', icon: FileText },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -2857,6 +3133,471 @@ export const WorkspaceConsole: React.FC = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 12: ENTERPRISE REPORTING CONSOLE */}
+          {activeTab === 'reporting' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn font-mono text-xs text-zinc-300">
+              
+              {/* Left Column: Report List & Creators */}
+              <div className="lg:col-span-1 flex flex-col gap-6">
+                
+                {/* Executive Report List */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#5ed29c]" /> Compiled Reports
+                  </h3>
+                  
+                  {reports.length === 0 ? (
+                    <p className="text-[10px] text-zinc-500 italic uppercase">No compiled reports for project.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+                      {reports.map((rep) => (
+                        <button
+                          key={rep.id}
+                          onClick={() => setSelectedReportId(rep.id)}
+                          className={`w-full text-left p-3 rounded-lg border text-xs font-bold uppercase transition-all ${
+                            selectedReportId === rep.id
+                              ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/30'
+                              : 'bg-[#18181b] border-[#222226] text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-white truncate max-w-[150px]">{rep.title}</span>
+                            <span className={`text-[8px] px-1 py-0.5 rounded ${
+                              rep.riskLevel === 'CRITICAL' ? 'bg-red-950/20 text-red-400 border border-red-500/20' :
+                              rep.riskLevel === 'HIGH' ? 'bg-amber-950/20 text-amber-400 border border-amber-500/20' :
+                              'bg-emerald-950/20 text-emerald-400 border border-emerald-500/20'
+                            }`}>
+                              {rep.riskLevel}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-zinc-500">
+                            Score: {rep.stabilityScore}/100 • {new Date(rep.createdAt).toLocaleDateString()}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Compile New Report */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-[#5ed29c]" /> Compile Report
+                  </h3>
+                  <form onSubmit={handleCreateReport} className="flex flex-col gap-3">
+                    <div>
+                      <label className="text-[9px] text-zinc-500 uppercase block mb-1">Report Title</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Q3 Release Readiness Audit"
+                        value={reportTitle}
+                        onChange={(e) => setReportTitle(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={reportBuilding || !reportTitle.trim()}
+                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-2 rounded-lg font-black uppercase text-[10px] transition-all disabled:opacity-50"
+                    >
+                      {reportBuilding ? 'COMPILING INTELLIGENCE...' : 'GENERATE REPORT'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Templates Manager */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-1.5">
+                    <Layout className="w-3.5 h-3.5 text-[#5ed29c]" /> Report Templates
+                  </h3>
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto mb-3">
+                    {templates.map((temp) => (
+                      <div key={temp.id} className="bg-[#18181b] border border-[#222226] p-2.5 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white font-bold">{temp.name}</span>
+                          <span className="text-[8px] bg-zinc-800 text-zinc-500 px-1 py-0.5 rounded">{temp.layoutType}</span>
+                        </div>
+                        {temp.description && <p className="text-[9px] text-zinc-500 leading-normal">{temp.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="border-t border-[#222226] pt-3 flex flex-col gap-2">
+                    <span className="text-[9px] text-zinc-500 uppercase">Create Custom Template</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCreateTemplate('Standard UX Release Audit', 'Modular design layout tracking regressions and completion deltas.', 'PRODUCT_RELEASE')}
+                      className="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-1.5 rounded-lg border border-[#333] text-[9px] uppercase font-black"
+                    >
+                      Create Release Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Canvas: Report Details, Slides, PDF, Sharing */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                
+                {selectedReportId ? (() => {
+                  const activeReport = reports.find(r => r.id === selectedReportId);
+                  if (!activeReport) return null;
+
+                  return (
+                    <>
+                      {/* Report Executive Overview */}
+                      <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                        <div className="flex items-center justify-between border-b border-[#222226] pb-3 mb-4">
+                          <div>
+                            <h2 className="text-sm font-black text-white uppercase">{activeReport.title}</h2>
+                            <p className="text-[9px] text-zinc-500 uppercase mt-0.5">
+                              ID: {activeReport.id.substring(0, 8)}... • Created By: {activeReport.createdBy?.name || activeReport.createdById}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-zinc-500 uppercase">Risk Rating:</span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
+                              activeReport.riskLevel === 'CRITICAL' ? 'bg-red-950/20 text-red-400 border border-red-500/20' :
+                              activeReport.riskLevel === 'HIGH' ? 'bg-amber-950/20 text-amber-400 border border-amber-500/20' :
+                              'bg-emerald-950/20 text-emerald-400 border border-emerald-500/20'
+                            }`}>
+                              {activeReport.riskLevel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Metric Gauges */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                          <div className="bg-[#18181b] border border-[#222226] p-3 rounded-lg text-center">
+                            <span className="text-[8px] text-zinc-500 uppercase font-black block mb-1">Stability Rating</span>
+                            <span className="text-lg font-black text-white">{activeReport.stabilityScore}/100</span>
+                          </div>
+                          <div className="bg-[#18181b] border border-[#222226] p-3 rounded-lg text-center">
+                            <span className="text-[8px] text-zinc-500 uppercase font-black block mb-1">Completion Rate</span>
+                            <span className="text-lg font-black text-[#5ed29c]">{Math.round(activeReport.completionRate * 100)}%</span>
+                          </div>
+                          <div className="bg-[#18181b] border border-[#222226] p-3 rounded-lg text-center">
+                            <span className="text-[8px] text-zinc-500 uppercase font-black block mb-1">Friction Alerts</span>
+                            <span className="text-lg font-black text-amber-400">
+                              {Array.isArray(activeReport.sections) ? activeReport.sections.find((s: any) => s.type === 'RISK_OVERVIEW')?.metadata?.highCount || 0 : 0}
+                            </span>
+                          </div>
+                          <div className="bg-[#18181b] border border-[#222226] p-3 rounded-lg text-center">
+                            <span className="text-[8px] text-zinc-500 uppercase font-black block mb-1">Evidence Links</span>
+                            <span className="text-lg font-black text-sky-400">{evidenceLinks.length} Files</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-[#18181b] border border-[#222226] p-4 rounded-lg">
+                          <span className="text-[10px] text-zinc-500 uppercase font-black block mb-2">Executive Summary Narrative</span>
+                          <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">{activeReport.summary}</p>
+                        </div>
+                      </div>
+
+                      {/* Presentation slide-deck previewer */}
+                      {deckData && (
+                        <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                          <div className="flex items-center justify-between mb-3 border-b border-[#222226] pb-3">
+                            <h3 className="text-xs font-black uppercase text-white flex items-center gap-1.5">
+                              <Layout className="w-4 h-4 text-[#5ed29c]" /> Slide Presentation Reviewer
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setActiveSlideIndex(prev => Math.max(0, prev - 1))}
+                                disabled={activeSlideIndex === 0}
+                                className="bg-zinc-800 border border-[#333] hover:bg-zinc-700 text-white text-[9px] uppercase font-black px-2 py-1 rounded disabled:opacity-50"
+                              >
+                                Prev
+                              </button>
+                              <span className="text-[10px] text-zinc-500 font-bold">
+                                {activeSlideIndex + 1} / {deckData.slides.length}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setActiveSlideIndex(prev => Math.min(deckData.slides.length - 1, prev + 1))}
+                                disabled={activeSlideIndex === deckData.slides.length - 1}
+                                className="bg-zinc-800 border border-[#333] hover:bg-zinc-700 text-white text-[9px] uppercase font-black px-2 py-1 rounded disabled:opacity-50"
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Slide Panel Display */}
+                          <div className="bg-[#18181b] border border-[#2d2d30] aspect-[16/9] rounded-xl p-6 flex flex-col justify-between relative overflow-hidden">
+                            {/* Accent indicator */}
+                            <div className={`absolute top-0 left-0 right-0 h-1 ${deckData.theme === 'DARK_ALERT' ? 'bg-red-500' : 'bg-[#5ed29c]'}`}></div>
+                            
+                            <div>
+                              <span className="text-[9px] text-[#5ed29c] font-black tracking-widest uppercase block mb-1">
+                                {deckData.deckTitle}
+                              </span>
+                              <h4 className="text-base font-black text-white uppercase mb-4">
+                                {deckData.slides[activeSlideIndex]?.title}
+                              </h4>
+                              
+                              <div className="flex flex-col gap-2.5">
+                                {deckData.slides[activeSlideIndex]?.elements.map((el: any, elIdx: number) => {
+                                  if (el.type === 'METRICS_GRID') {
+                                    return (
+                                      <div key={elIdx} className="grid grid-cols-3 gap-3 border border-[#222226] p-3 rounded-lg bg-black/45 mt-2">
+                                        {Object.entries(el.content).map(([k, v]: any) => (
+                                          <div key={k} className="text-center">
+                                            <span className="text-[8px] text-zinc-500 uppercase font-black block">{k}</span>
+                                            <span className="text-xs font-black text-white">{v}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <p key={elIdx} className="text-xs text-zinc-300 leading-relaxed font-sans">
+                                      {el.content}
+                                    </p>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center text-[8px] text-zinc-600 font-bold uppercase tracking-wider">
+                              <span>Fricta board-level report builder</span>
+                              <span>Slide {activeSlideIndex + 1}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PDF layout preview */}
+                      {pdfLayout && (
+                        <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                          <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-1.5">
+                            <FileText className="w-4 h-4 text-[#5ed29c]" /> Boardroom PDF Blueprint
+                          </h3>
+                          <div className="flex flex-col gap-3 max-h-60 overflow-y-auto border border-[#222226] rounded-lg p-3">
+                            {pdfLayout.pages.map((p: any) => (
+                              <div key={p.pageNumber} className="bg-[#18181b] border border-[#2d2d30] p-4 rounded-lg flex flex-col justify-between min-h-[140px] relative">
+                                <div className="text-[8.5px] text-zinc-500 uppercase tracking-widest border-b border-[#222226]/50 pb-1.5 mb-2.5 flex justify-between">
+                                  <span>{p.header}</span>
+                                  <span>Page {p.pageNumber}</span>
+                                </div>
+                                <div className="flex-1 flex flex-col gap-2">
+                                  {p.elements.map((el: any, elIdx: number) => (
+                                    <div key={elIdx} className="text-zinc-300 font-mono text-[10.5px]">
+                                      {el.type === 'TITLE' && <span className="text-white font-black text-xs block">{el.value}</span>}
+                                      {el.type === 'SECTION_HEADER' && <span className="text-[#5ed29c] font-bold block mt-1">{el.value}</span>}
+                                      {el.type === 'PARAGRAPH' && <p className="font-sans text-[10px] text-zinc-400 mt-1">{el.value}</p>}
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="text-[8px] text-zinc-600 text-right mt-3 uppercase tracking-wider">{p.footer}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Export Options */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                          <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-[#5ed29c]" /> Document Exports
+                          </h3>
+                          <p className="text-[9.5px] text-zinc-500 uppercase mb-4">Export static snapshots</p>
+                          <div className="flex gap-2 mb-4">
+                            <button
+                              type="button"
+                              onClick={() => handleTriggerExport('PDF')}
+                              disabled={reportExporting}
+                              className="flex-1 bg-zinc-800 border border-[#333] hover:bg-zinc-700 text-white text-[9.5px] uppercase font-black py-2 rounded-lg"
+                            >
+                              Export PDF
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleTriggerExport('PRESENTATION')}
+                              disabled={reportExporting}
+                              className="flex-1 bg-zinc-800 border border-[#333] hover:bg-zinc-700 text-white text-[9.5px] uppercase font-black py-2 rounded-lg"
+                            >
+                              Export Slide Deck
+                            </button>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 max-h-36 overflow-y-auto border border-[#222226] p-2.5 rounded-lg">
+                            <span className="text-[8.5px] text-zinc-500 uppercase font-black">History</span>
+                            {exports.length === 0 ? (
+                              <span className="text-[9px] text-zinc-600 italic">No previous exports.</span>
+                            ) : (
+                              exports.map((e) => (
+                                <div key={e.id} className="flex justify-between items-center text-[10px] py-1 text-zinc-400 font-mono">
+                                  <span>{e.format} ({e.status})</span>
+                                  {e.status === 'COMPLETED' && e.filePath && (
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(e.filePath)}
+                                      className="text-[#5ed29c] hover:underline"
+                                    >
+                                      Copy Path
+                                    </button>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Public Link Sharing */}
+                        <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                          <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                            <Share2 className="w-3.5 h-3.5 text-[#5ed29c]" /> Token Share Links
+                          </h3>
+                          <p className="text-[9.5px] text-zinc-500 uppercase mb-3">Distribute secure public tokens</p>
+                          <form onSubmit={handleGenerateReportShare} className="flex flex-col gap-2 mb-4">
+                            <input
+                              type="email"
+                              placeholder="Recipient Email (optional)"
+                              value={newShareEmail}
+                              onChange={(e) => setNewShareEmail(e.target.value)}
+                              className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2 py-1 rounded text-[10px] focus:outline-none"
+                            />
+                            <button
+                              type="submit"
+                              className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase"
+                            >
+                              Generate Access Token
+                            </button>
+                          </form>
+                          
+                          <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+                            {shareTokens.map((st) => (
+                              <div key={st.id} className="bg-[#18181b] border border-[#222226] p-2 rounded flex items-center justify-between">
+                                <div className="truncate flex-1 pr-3">
+                                  <span className="text-white block font-bold truncate">Token: {st.token.substring(0, 12)}...</span>
+                                  <span className="text-[8px] text-zinc-500 uppercase">Uses: {st.useCount} {st.maxUses ? `/ ${st.maxUses}` : ''}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevokeReportShare(st.id)}
+                                  className="text-red-400 hover:text-red-300 font-bold uppercase text-[9px]"
+                                >
+                                  Revoke
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Delivery and Workspace digest compiler */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Report Webhook Distribution */}
+                        <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                          <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-[#5ed29c]" /> Webhook & Email Delivery
+                          </h3>
+                          <p className="text-[9.5px] text-zinc-500 uppercase mb-3">Distribute report via integrations</p>
+                          <form onSubmit={handleDistributeReport} className="flex flex-col gap-2">
+                            <select
+                              value={newDistributionChannel}
+                              onChange={(e) => setNewDistributionChannel(e.target.value)}
+                              className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2 py-1 rounded text-[10px] focus:outline-none"
+                            >
+                              <option value="EMAIL">Email Address</option>
+                              <option value="WEBHOOK">Slack Webhook URL</option>
+                            </select>
+                            <input
+                              type="text"
+                              placeholder="Webhook URL or Email"
+                              value={newDistributionRecipient}
+                              onChange={(e) => setNewDistributionRecipient(e.target.value)}
+                              className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2 py-1 rounded text-[10px] focus:outline-none"
+                            />
+                            <button
+                              type="submit"
+                              className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase"
+                            >
+                              Trigger Dispatch
+                            </button>
+                          </form>
+                          
+                          <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto mt-4 border border-[#222226] p-2.5 rounded-lg">
+                            <span className="text-[8.5px] text-zinc-500 uppercase font-black block mb-1">Delivered Events Log</span>
+                            {distributions.length === 0 ? (
+                              <span className="text-[9px] text-zinc-600 italic">No distribution events logged.</span>
+                            ) : (
+                              distributions.map((d) => (
+                                <div key={d.id} className="flex justify-between items-center text-[9px] text-zinc-400 font-mono">
+                                  <span>{d.channel}: {d.recipient.substring(0, 16)}...</span>
+                                  <span className={d.status === 'SENT' ? 'text-emerald-400' : 'text-red-400'}>{d.status}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Workspace Health Digests */}
+                        <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                          <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                            <Activity className="w-3.5 h-3.5 text-[#5ed29c]" /> Workspace Insight Digests
+                          </h3>
+                          <p className="text-[9.5px] text-zinc-500 uppercase mb-3">Compile cross-project stability metrics</p>
+                          
+                          {selectedWorkspaceId ? (
+                            <form onSubmit={handleGenerateDigest} className="flex flex-col gap-2 mb-4">
+                              <input
+                                type="text"
+                                placeholder="Digest Title"
+                                value={newDigestTitle}
+                                onChange={(e) => setNewDigestTitle(e.target.value)}
+                                className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2 py-1 rounded text-[10px] focus:outline-none"
+                              />
+                              <select
+                                value={newDigestPeriod}
+                                onChange={(e) => setNewDigestPeriod(e.target.value)}
+                                className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2 py-1 rounded text-[10px] focus:outline-none"
+                              >
+                                <option value="DAILY">Daily Audit</option>
+                                <option value="WEEKLY">Weekly Audit</option>
+                                <option value="MONTHLY">Monthly Audit</option>
+                              </select>
+                              <button
+                                type="submit"
+                                className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase"
+                              >
+                                Compile Workspace Digest
+                              </button>
+                            </form>
+                          ) : (
+                            <p className="text-[10px] text-zinc-600 italic mb-4">Select active workspace to generate Digests.</p>
+                          )}
+                          
+                          <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+                            {digests.map((d) => (
+                              <div key={d.id} className="bg-[#18181b] border border-[#222226] p-2.5 rounded-lg">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-white font-bold">{d.title}</span>
+                                  <span className="text-[8px] bg-zinc-800 text-[#5ed29c] px-1 py-0.5 rounded">{d.digestPeriod}</span>
+                                </div>
+                                <div className="text-[8.5px] text-zinc-500">
+                                  Avg Score: {d.metricsSummary?.averageStability || 80}/100 • Runs: {d.metricsSummary?.totalRunsThisPeriod || 0}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })() : (
+                  <div className="bg-[#121214] border border-[#222226] p-12 text-center text-zinc-500 italic uppercase">
+                    Select a compiled executive report from the list to view deck presentations, boardroom PDF layouts, export history, and sharing tokens.
+                  </div>
+                )}
+
+              </div>
             </div>
           )}
 
