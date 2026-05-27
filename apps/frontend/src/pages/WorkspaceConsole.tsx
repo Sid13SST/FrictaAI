@@ -24,7 +24,13 @@ import {
   TrendingUp,
   Percent,
   Shield,
-  Building
+  Building,
+  Lock,
+  Unlock,
+  Trash2,
+  Settings,
+  Key,
+  Check
 } from 'lucide-react';
 
 interface Organization {
@@ -159,6 +165,51 @@ interface WorkspaceAnalytics {
   }>;
 }
 
+interface RBACRole {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: Array<{
+    id: string;
+    domain: string;
+    action: string;
+    isAllowed: boolean;
+  }>;
+}
+
+interface WorkspacePolicy {
+  key: string;
+  value: string;
+}
+
+interface SecurityLogEvent {
+  id: string;
+  eventType: string;
+  severity: string;
+  description: string;
+  createdAt: string;
+  user: {
+    name: string | null;
+    email: string;
+  } | null;
+}
+
+interface ReplayAccessScope {
+  id: string;
+  workflowSessionId: string;
+  scopeType: string;
+  allowedRoles: string[];
+}
+
+interface SharedAccessGrant {
+  id: string;
+  resourceType: string;
+  resourceId: string;
+  granteeEmail: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 export const WorkspaceConsole: React.FC = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -181,11 +232,41 @@ export const WorkspaceConsole: React.FC = () => {
   const [shareSessionName, setShareSessionName] = useState<string>('');
   const [shareSessionDesc, setShareSessionDesc] = useState<string>('');
 
+  // RBAC & Governance States
+  const [roles, setRoles] = useState<RBACRole[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+  const [customRoleName, setCustomRoleName] = useState<string>('');
+  const [customRoleDesc, setCustomRoleDesc] = useState<string>('');
+  
+  const [policies, setPolicies] = useState<WorkspacePolicy[]>([]);
+  const [securityLogs, setSecurityLogs] = useState<SecurityLogEvent[]>([]);
+  const [replayScopes, setReplayScopes] = useState<ReplayAccessScope[]>([]);
+  const [sharedGrants, setSharedGrants] = useState<SharedAccessGrant[]>([]);
+  
+  // Active selected shared investigation access rules
+  const [investigationAccesses, setInvestigationAccesses] = useState<any[]>([]);
+  const [newAccessAccessorType, setNewAccessAccessorType] = useState<string>('ROLE');
+  const [newAccessAccessorId, setNewAccessAccessorId] = useState<string>('ANALYST');
+  const [newAccessCanRead, setNewAccessCanRead] = useState<boolean>(true);
+  const [newAccessCanWrite, setNewAccessCanWrite] = useState<boolean>(false);
+
   // Analytics
   const [analytics, setAnalytics] = useState<WorkspaceAnalytics | null>(null);
 
   // Tabs
-  type Tab = 'reviews' | 'shared-investigations' | 'annotations' | 'activity' | 'sharing' | 'members' | 'analytics';
+  type Tab =
+    | 'reviews'
+    | 'shared-investigations'
+    | 'analytics'
+    | 'annotations'
+    | 'activity'
+    | 'sharing'
+    | 'members'
+    | 'roles-permissions'
+    | 'policies'
+    | 'replays'
+    | 'security';
+
   const [activeTab, setActiveTab] = useState<Tab>('reviews');
 
   // Sub data states
@@ -248,6 +329,12 @@ export const WorkspaceConsole: React.FC = () => {
     }
   }, [selectedWorkspaceId, activeTab]);
 
+  useEffect(() => {
+    if (selectedWorkspaceId && selectedInvestigationId && activeTab === 'shared-investigations') {
+      fetchInvestigationAccesses(selectedWorkspaceId, selectedInvestigationId);
+    }
+  }, [selectedWorkspaceId, selectedInvestigationId, activeTab]);
+
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -273,12 +360,17 @@ export const WorkspaceConsole: React.FC = () => {
 
   const fetchWorkspaceDetails = async (workspaceId: string) => {
     try {
-      const [projRes, memberRes, actRes, inviteRes, sharedRes] = await Promise.all([
+      const [projRes, memberRes, actRes, inviteRes, sharedRes, roleRes, policyRes, securityRes, replayRes, accessRes] = await Promise.all([
         fetch(`${baseApiUrl}/workspace/projects?workspaceId=${workspaceId}`),
         fetch(`${baseApiUrl}/workspace/members?workspaceId=${workspaceId}`),
         fetch(`${baseApiUrl}/workspace/activity?workspaceId=${workspaceId}`),
         fetch(`${baseApiUrl}/workspace/invites?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/workspace/investigations?workspaceId=${workspaceId}`)
+        fetch(`${baseApiUrl}/workspace/investigations?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/rbac/roles?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/rbac/policies?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/rbac/security?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/rbac/replays?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/rbac/access?workspaceId=${workspaceId}`)
       ]);
 
       const projData = await projRes.json();
@@ -286,12 +378,27 @@ export const WorkspaceConsole: React.FC = () => {
       const actData = await actRes.json();
       const inviteData = await inviteRes.json();
       const sharedData = await sharedRes.json();
+      const roleData = await roleRes.json();
+      const policyData = await policyRes.json();
+      const securityData = await securityRes.json();
+      const replayData = await replayRes.json();
+      const accessData = await accessRes.json();
 
       setProjects(projData.projects || []);
       setMembers(memberData.members || []);
       setActivities(actData.feed || []);
       setInvites(inviteData.invites || []);
       setSharedInvestigations(sharedData.investigations || []);
+      
+      setRoles(roleData.roles || []);
+      setPolicies(policyData.policies || []);
+      setSecurityLogs(securityData.logs || []);
+      setReplayScopes(replayData.scopes || []);
+      setSharedGrants(accessData.grants || []);
+
+      if (roleData.roles && roleData.roles.length > 0) {
+        setSelectedRoleId(roleData.roles[0].id);
+      }
 
       if (sharedData.investigations && sharedData.investigations.length > 0) {
         setSelectedInvestigationId(sharedData.investigations[0].id);
@@ -350,6 +457,20 @@ export const WorkspaceConsole: React.FC = () => {
     }
   };
 
+  const fetchInvestigationAccesses = async (workspaceId: string, sharedInvestigationId: string) => {
+    try {
+      const res = await fetch(
+        `${baseApiUrl}/rbac/investigations?workspaceId=${workspaceId}&sharedInvestigationId=${sharedInvestigationId}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setInvestigationAccesses(data.accesses || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch investigation accesses:', err);
+    }
+  };
+
   const setupWorkspaceSSE = (workspaceId: string) => {
     const sseUrl = `${baseApiUrl}/stream/${workspaceId}`;
     const eventSource = new EventSource(sseUrl);
@@ -388,6 +509,23 @@ export const WorkspaceConsole: React.FC = () => {
     });
 
     eventSource.addEventListener('workspace.comments.updated', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
+    // RBAC Listeners
+    eventSource.addEventListener('workspace.policy.updated', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.roles.updated', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.access.revoked', () => {
+      fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.replay-sync.updated', () => {
       fetchWorkspaceDetails(workspaceId);
     });
 
@@ -710,6 +848,211 @@ export const WorkspaceConsole: React.FC = () => {
     alert('Copied link to clipboard!');
   };
 
+  // RBAC Custom handlers
+  const handleCreateCustomRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customRoleName.trim()) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/rbac/roles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          roleName: customRoleName,
+          description: customRoleDesc,
+          permissions: [] // Start with empty permissions
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create custom role');
+      }
+
+      setCustomRoleName('');
+      setCustomRoleDesc('');
+      alert('Custom role created successfully!');
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteCustomRole = async (roleId: string) => {
+    if (!confirm('Are you sure you want to delete this custom role? This will revoke membership roles assigned to it.')) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/rbac/roles/${roleId}?workspaceId=${selectedWorkspaceId}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete role');
+      }
+
+      alert('Role deleted successfully!');
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleUpdatePermissionOverride = async (
+    roleId: string,
+    domain: string,
+    action: string,
+    isAllowed: boolean
+  ) => {
+    const role = roles.find((r) => r.id === roleId);
+    if (!role) return;
+
+    // Check if role is custom. Built-in roles cannot be updated.
+    if (['OWNER', 'ADMIN', 'ANALYST', 'VIEWER', 'GUEST'].includes(role.name)) {
+      alert('Cannot update permissions on system default roles.');
+      return;
+    }
+
+    try {
+      // Find current permissions
+      const currentPerms = role.permissions.map((p) => ({
+        domain: p.domain,
+        action: p.action,
+        isAllowed: p.isAllowed
+      }));
+
+      // Update override
+      const idx = currentPerms.findIndex((p) => p.domain === domain && p.action === action);
+      if (idx !== -1) {
+        currentPerms[idx].isAllowed = isAllowed;
+      } else {
+        currentPerms.push({ domain, action, isAllowed });
+      }
+
+      const res = await fetch(`${baseApiUrl}/rbac/roles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          roleName: role.name,
+          description: role.description,
+          permissions: currentPerms
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update permissions');
+      }
+
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleUpdatePolicy = async (key: string, value: string) => {
+    try {
+      const res = await fetch(`${baseApiUrl}/rbac/policies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          key,
+          value
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update policy');
+      }
+
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleSetInvestigationAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInvestigationId) return;
+
+    try {
+      const res = await fetch(`${baseApiUrl}/rbac/investigations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          sharedInvestigationId: selectedInvestigationId,
+          accessorType: newAccessAccessorType,
+          accessorId: newAccessAccessorId === 'PUBLIC' ? null : newAccessAccessorId,
+          canRead: newAccessCanRead,
+          canWrite: newAccessCanWrite
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to set investigation access');
+      }
+
+      alert('Investigation access rule saved!');
+      fetchInvestigationAccesses(selectedWorkspaceId, selectedInvestigationId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleSetReplayScope = async (sessionId: string, scopeType: string, allowedRoles: string[]) => {
+    try {
+      const res = await fetch(`${baseApiUrl}/rbac/replays`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          workflowSessionId: sessionId,
+          scopeType,
+          allowedRoles
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to configure scope');
+      }
+
+      alert('Replay visibility scope configured!');
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleRevokeExternalAccess = async (grantId: string) => {
+    try {
+      const res = await fetch(`${baseApiUrl}/rbac/access/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          grantId
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to revoke shared grant');
+      }
+
+      alert('Access grant revoked successfully!');
+      fetchWorkspaceDetails(selectedWorkspaceId);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#09090b] text-zinc-500 font-mono text-xs">
@@ -802,6 +1145,10 @@ export const WorkspaceConsole: React.FC = () => {
             { key: 'activity', label: 'Workspace Audit Logs', icon: Activity },
             { key: 'sharing', label: 'Controlled Link Sharing', icon: Share2 },
             { key: 'members', label: 'Governance Members', icon: Users },
+            { key: 'roles-permissions', label: 'Roles & Permissions', icon: Key },
+            { key: 'policies', label: 'Governance Policies', icon: Settings },
+            { key: 'replays', label: 'Replay Access Scopes', icon: Eye },
+            { key: 'security', label: 'Security Overview', icon: Shield },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -998,49 +1345,156 @@ export const WorkspaceConsole: React.FC = () => {
           {activeTab === 'shared-investigations' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
               {/* Share list */}
-              <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-1 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#5ed29c]" /> Shared Team Investigations
-                    </h3>
-                    <p className="text-[10px] font-mono text-zinc-500 uppercase">
-                      Shared agent workflow reviews under team-wide discussion
-                    </p>
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-1 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-[#5ed29c]" /> Shared Team Investigations
+                      </h3>
+                      <p className="text-[10px] font-mono text-zinc-500 uppercase">
+                        Shared agent workflow reviews under team-wide discussion
+                      </p>
+                    </div>
                   </div>
+
+                  {sharedInvestigations.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic border border-dashed border-[#222226] rounded-xl">
+                      No investigations shared with this workspace yet.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {sharedInvestigations.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedInvestigationId(item.id)}
+                          className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                            selectedInvestigationId === item.id
+                              ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
+                              : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-xs font-bold text-white font-mono">{item.name}</h4>
+                            <span className="text-[8px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 px-2 py-0.5 rounded border border-[#5ed29c]/10">
+                              SESSION {item.workflowSession.id.substring(0, 8)}
+                            </span>
+                          </div>
+                          {item.description && (
+                            <p className="text-xs text-zinc-400 font-mono mb-3">{item.description}</p>
+                          )}
+                          <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 border-t border-[#222226]/50 pt-2.5">
+                            <span>Owner: {item.createdBy.name || item.createdBy.email}</span>
+                            <span>{item.comments.length} Comments • {item.workflowSession.stepCount} Steps</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {sharedInvestigations.length === 0 ? (
-                  <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic border border-dashed border-[#222226] rounded-xl">
-                    No investigations shared with this workspace yet.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {sharedInvestigations.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelectedInvestigationId(item.id)}
-                        className={`border rounded-xl p-4 cursor-pointer transition-all ${
-                          selectedInvestigationId === item.id
-                            ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
-                            : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-xs font-bold text-white font-mono">{item.name}</h4>
-                          <span className="text-[8px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 px-2 py-0.5 rounded border border-[#5ed29c]/10">
-                            SESSION {item.workflowSession.id.substring(0, 8)}
-                          </span>
+                {/* Scoped investigation visibility controls */}
+                {selectedInvestigationId && (
+                  <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                    <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-[#5ed29c]" /> Granular Investigation Access Rules
+                    </h3>
+                    <p className="text-[10px] font-mono text-zinc-500 uppercase mb-4">
+                      Control which roles or specific users can view or comment on this shared investigation
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                      <form onSubmit={handleSetInvestigationAccess} className="flex flex-col gap-3 font-mono text-xs">
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Accessor Type</label>
+                          <select
+                            value={newAccessAccessorType}
+                            onChange={(e) => setNewAccessAccessorType(e.target.value)}
+                            className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                          >
+                            <option value="ROLE">Workspace Role</option>
+                            <option value="MEMBER">Specific Team Member</option>
+                            <option value="PUBLIC">Workspace Public (Anyone)</option>
+                          </select>
                         </div>
-                        {item.description && (
-                          <p className="text-xs text-zinc-400 font-mono mb-3">{item.description}</p>
+
+                        {newAccessAccessorType !== 'PUBLIC' && (
+                          <div>
+                            <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Target Name</label>
+                            <select
+                              value={newAccessAccessorId}
+                              onChange={(e) => setNewAccessAccessorId(e.target.value)}
+                              className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                            >
+                              {newAccessAccessorType === 'ROLE' ? (
+                                <>
+                                  <option value="ANALYST">Analyst</option>
+                                  <option value="VIEWER">Viewer</option>
+                                  <option value="GUEST">Guest</option>
+                                  {roles.filter(r => !['OWNER', 'ADMIN', 'ANALYST', 'VIEWER', 'GUEST'].includes(r.name)).map(r => (
+                                    <option key={r.id} value={r.name}>{r.name}</option>
+                                  ))}
+                                </>
+                              ) : (
+                                members.map(m => (
+                                  <option key={m.id} value={m.id}>{m.user.name || m.user.email}</option>
+                                ))
+                              )}
+                            </select>
+                          </div>
                         )}
-                        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 border-t border-[#222226]/50 pt-2.5">
-                          <span>Owner: {item.createdBy.name || item.createdBy.email}</span>
-                          <span>{item.comments.length} Comments • {item.workflowSession.stepCount} Steps</span>
+
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={newAccessCanRead}
+                              onChange={(e) => setNewAccessCanRead(e.target.checked)}
+                              className="accent-[#5ed29c]"
+                            />
+                            <span>Can Read</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={newAccessCanWrite}
+                              onChange={(e) => setNewAccessCanWrite(e.target.checked)}
+                              className="accent-[#5ed29c]"
+                            />
+                            <span>Can Write/Comment</span>
+                          </label>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-1.5 rounded-xl transition-all"
+                        >
+                          Save Access Rule
+                        </button>
+                      </form>
+
+                      <div>
+                        <span className="text-[10px] text-zinc-500 uppercase font-black block mb-2">Active Rules Ledger</span>
+                        <div className="flex flex-col gap-2 max-h-48 overflow-y-auto border border-[#222226] rounded-xl p-3 divide-y divide-[#222226]">
+                          {investigationAccesses.length === 0 ? (
+                            <div className="text-zinc-600 text-[10px] italic">No overrides. Shared workspace default visibility active.</div>
+                          ) : (
+                            investigationAccesses.map((rule: any) => (
+                              <div key={rule.id} className="text-[11px] py-2 flex items-center justify-between text-zinc-400">
+                                <div>
+                                  <span className="text-white font-bold">{rule.accessorType}</span>
+                                  {rule.accessorId && <span className="text-[9px] text-[#5ed29c] ml-1 bg-[#5ed29c]/5 border border-[#5ed29c]/15 px-1 rounded">{rule.accessorId}</span>}
+                                </div>
+                                <div className="flex gap-2">
+                                  {rule.canRead && <span className="text-emerald-400">READ</span>}
+                                  {rule.canWrite && <span className="text-sky-400">WRITE</span>}
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1559,8 +2013,8 @@ export const WorkspaceConsole: React.FC = () => {
                             }}
                             className={`flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-2 py-1 rounded ${
                               item.resolved
-                                  ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
-                                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white'
+                                ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
+                                : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white'
                             }`}
                           >
                             {item.resolved ? 'RESOLVED' : 'MARK RESOLVED'}
@@ -1732,103 +2186,155 @@ export const WorkspaceConsole: React.FC = () => {
 
           {/* TAB 6: CONTROLLED SHARING */}
           {activeTab === 'sharing' && (
-            <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
-              <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-[#5ed29c]" /> Access-Controlled Link Sharing
-              </h3>
-              <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
-                Generate secure sharing URLs for external stakeholders with automatic time-based or usage-limit expiration
-              </p>
+            <div className="flex flex-col gap-6">
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                  <Share2 className="w-4 h-4 text-[#5ed29c]" /> Access-Controlled Link Sharing
+                </h3>
+                <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                  Generate secure sharing URLs for external stakeholders with automatic time-based or usage-limit expiration
+                </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <form onSubmit={handleGenerateLink} className="flex flex-col gap-4 font-mono text-xs">
-                    <div>
-                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Target Type</label>
-                      <select
-                        value={shareTargetType}
-                        onChange={(e) => setShareTargetType(e.target.value)}
-                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
-                      >
-                        <option value="REPLAY">Session Visual Replay</option>
-                        <option value="REPORT">Executive UX Report</option>
-                        <option value="SUMMARY">Executive Summary Summary</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Target ID</label>
-                      <input
-                        type="text"
-                        placeholder="Session ID or Report ID"
-                        value={shareTargetId}
-                        onChange={(e) => setShareTargetId(e.target.value)}
-                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <form onSubmit={handleGenerateLink} className="flex flex-col gap-4 font-mono text-xs">
                       <div>
-                        <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Expiry (Hours)</label>
+                        <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Target Type</label>
                         <select
-                          value={shareExpiry}
-                          onChange={(e) => setShareExpiry(Number(e.target.value))}
+                          value={shareTargetType}
+                          onChange={(e) => setShareTargetType(e.target.value)}
                           className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
                         >
-                          <option value="1">1 Hour</option>
-                          <option value="2">2 Hours</option>
-                          <option value="12">12 Hours</option>
-                          <option value="24">24 Hours</option>
-                          <option value="168">7 Days</option>
+                          <option value="REPLAY">Session Visual Replay</option>
+                          <option value="REPORT">Executive UX Report</option>
+                          <option value="SUMMARY">Executive Summary Summary</option>
                         </select>
                       </div>
 
                       <div>
-                        <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Max Uses</label>
+                        <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Target ID</label>
                         <input
-                          type="number"
-                          min={1}
-                          value={shareMaxUses}
-                          onChange={(e) => setShareMaxUses(Number(e.target.value))}
+                          type="text"
+                          placeholder="Session ID or Report ID"
+                          value={shareTargetId}
+                          onChange={(e) => setShareTargetId(e.target.value)}
                           className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
                         />
                       </div>
-                    </div>
 
-                    <button
-                      type="submit"
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
-                    >
-                      Generate Secured Link
-                    </button>
-                  </form>
-                </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Expiry (Hours)</label>
+                          <select
+                            value={shareExpiry}
+                            onChange={(e) => setShareExpiry(Number(e.target.value))}
+                            className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                          >
+                            <option value="1">1 Hour</option>
+                            <option value="2">2 Hours</option>
+                            <option value="12">12 Hours</option>
+                            <option value="24">24 Hours</option>
+                            <option value="168">7 Days</option>
+                          </select>
+                        </div>
 
-                <div className="flex flex-col justify-center items-center bg-[#18181b]/50 border border-[#2d2d30]/50 rounded-xl p-6 text-center">
-                  <Link className="w-10 h-10 text-zinc-500 mb-3" />
-                  {generatedLink ? (
-                    <div className="w-full">
-                      <p className="text-[10px] font-mono text-zinc-500 uppercase mb-2">Share Link Token Active</p>
-                      <div className="bg-[#121214] border border-[#222226] p-3 rounded-lg flex items-center justify-between gap-3 text-left mb-3">
-                        <span className="font-mono text-xs text-white truncate flex-1 pr-2 select-all">
-                          {generatedLink}
-                        </span>
-                        <button
-                          onClick={() => copyToClipboard(generatedLink)}
-                          className="text-[#5ed29c] hover:bg-[#5ed29c]/5 p-1.5 rounded border border-[#5ed29c]/10 transition-all shrink-0"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Max Uses</label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={shareMaxUses}
+                            onChange={(e) => setShareMaxUses(Number(e.target.value))}
+                            className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                          />
+                        </div>
                       </div>
-                      <p className="text-[9.5px] font-mono text-zinc-500 uppercase">
-                        Token will auto-expire in {shareExpiry} hours or after {shareMaxUses} clicks.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="font-mono text-xs text-zinc-500 italic max-w-xs">
-                      Enter target reference details on the left and click generate to publish an access link.
-                    </div>
-                  )}
+
+                      <button
+                        type="submit"
+                        className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                      >
+                        Generate Secured Link
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="flex flex-col justify-center items-center bg-[#18181b]/50 border border-[#2d2d30]/50 rounded-xl p-6 text-center">
+                    <Link className="w-10 h-10 text-zinc-500 mb-3" />
+                    {generatedLink ? (
+                      <div className="w-full">
+                        <p className="text-[10px] font-mono text-zinc-500 uppercase mb-2">Share Link Token Active</p>
+                        <div className="bg-[#121214] border border-[#222226] p-3 rounded-lg flex items-center justify-between gap-3 text-left mb-3">
+                          <span className="font-mono text-xs text-white truncate flex-1 pr-2 select-all">
+                            {generatedLink}
+                          </span>
+                          <button
+                            onClick={() => copyToClipboard(generatedLink)}
+                            className="text-[#5ed29c] hover:bg-[#5ed29c]/5 p-1.5 rounded border border-[#5ed29c]/10 transition-all shrink-0"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-[9.5px] font-mono text-zinc-500 uppercase">
+                          Token will auto-expire in {shareExpiry} hours or after {shareMaxUses} clicks.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="font-mono text-xs text-zinc-500 italic max-w-xs">
+                        Enter target reference details on the left and click generate to publish an access link.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Shared Access Grants Table */}
+              <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> Active External Shared Grants
+                </h3>
+                <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                  Verify or revoke external stakeholder sharing permissions
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse font-mono text-xs">
+                    <thead>
+                      <tr className="border-b border-[#222226] text-left text-zinc-500 text-[10px] uppercase font-black">
+                        <th className="py-2 pr-4">Resource</th>
+                        <th className="py-2 px-4">Grantee Email</th>
+                        <th className="py-2 px-4">Expires At</th>
+                        <th className="py-2 pl-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#222226]/50">
+                      {sharedGrants.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-6 text-center text-zinc-600 italic">
+                            Zero active external grants.
+                          </td>
+                        </tr>
+                      ) : (
+                        sharedGrants.map((g) => (
+                          <tr key={g.id} className="hover:bg-[#18181b]/30">
+                            <td className="py-3 pr-4 text-white font-bold">{g.resourceType} ({g.resourceId.substring(0, 8)})</td>
+                            <td className="py-3 px-4 text-[#5ed29c] font-bold">{g.granteeEmail || 'Anonymous Link'}</td>
+                            <td className="py-3 px-4 text-zinc-500">
+                              {g.expiresAt ? new Date(g.expiresAt).toLocaleString() : 'Never'}
+                            </td>
+                            <td className="py-3 pl-4 text-right">
+                              <button
+                                onClick={() => handleRevokeExternalAccess(g.id)}
+                                className="text-red-400 hover:bg-red-950/20 border border-red-500/10 px-2 py-1 rounded transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1967,6 +2473,390 @@ export const WorkspaceConsole: React.FC = () => {
                   </form>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 8: ROLES & PERMISSIONS */}
+          {activeTab === 'roles-permissions' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+              {/* Roles Directory */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#5ed29c]" /> Permission Console
+                  </h3>
+                  <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                    Configure granular permissions checklist across custom roles
+                  </p>
+
+                  <div className="flex flex-col gap-4">
+                    {roles.map((r) => (
+                      <div
+                        key={r.id}
+                        onClick={() => setSelectedRoleId(r.id)}
+                        className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                          selectedRoleId === r.id
+                            ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
+                            : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-xs font-bold text-white font-mono">{r.name}</h4>
+                          {!['OWNER', 'ADMIN', 'ANALYST', 'VIEWER', 'GUEST'].includes(r.name) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCustomRole(r.id);
+                              }}
+                              className="text-red-400 hover:text-red-300 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-400 font-mono">{r.description || 'System-defined default workspace role.'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Edit Selected Role Permissions Overrides */}
+                {selectedRoleId && (() => {
+                  const role = roles.find((r) => r.id === selectedRoleId);
+                  if (!role) return null;
+                  const isSystemDefault = ['OWNER', 'ADMIN', 'ANALYST', 'VIEWER', 'GUEST'].includes(role.name);
+
+                  return (
+                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                      <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> Permissions Matrix override: <span className="text-[#5ed29c] font-black">{role.name}</span>
+                      </h3>
+                      <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                        {isSystemDefault ? 'System role permissions are read-only' : 'Grant or revoke domain abilities using checkboxes below'}
+                      </p>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse font-mono text-xs">
+                          <thead>
+                            <tr className="border-b border-[#222226] text-left text-zinc-500 text-[10px] uppercase font-black">
+                              <th className="py-2 pr-4">Domain Area</th>
+                              <th className="py-2 px-4 text-center">READ</th>
+                              <th className="py-2 px-4 text-center">WRITE</th>
+                              <th className="py-2 px-4 text-center">EXECUTE</th>
+                              <th className="py-2 px-4 text-center">MANAGE</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#222226]/50">
+                            {(['WORKSPACE', 'PROJECT', 'INVESTIGATION', 'REPLAY', 'ANALYTICS', 'SWARM', 'EXPORT', 'TEAM'] as const).map((domain) => {
+                              return (
+                                <tr key={domain} className="hover:bg-[#18181b]/30">
+                                  <td className="py-3 pr-4 text-white font-bold">{domain}</td>
+                                  {(['READ', 'WRITE', 'EXECUTE', 'MANAGE'] as const).map((action) => {
+                                    let isAllowed = false;
+                                    if (role.name === 'OWNER' || role.name === 'ADMIN') {
+                                      isAllowed = true;
+                                    } else if (role.name === 'VIEWER') {
+                                      isAllowed = action === 'READ';
+                                    } else if (role.name === 'ANALYST') {
+                                      isAllowed = !(domain === 'TEAM' || domain === 'WORKSPACE' ? action !== 'READ' : false);
+                                    } else if (role.name === 'GUEST') {
+                                      isAllowed = domain === 'INVESTIGATION' ? (action === 'READ' || action === 'WRITE') : (domain === 'REPLAY' && action === 'READ');
+                                    } else {
+                                      const override = role.permissions.find(p => p.domain === domain && p.action === action);
+                                      isAllowed = override ? override.isAllowed : false;
+                                    }
+
+                                    return (
+                                      <td key={action} className="py-3 px-4 text-center">
+                                        <input
+                                          type="checkbox"
+                                          disabled={isSystemDefault}
+                                          checked={isAllowed}
+                                          onChange={(e) => handleUpdatePermissionOverride(role.id, domain, action, e.target.checked)}
+                                          className="accent-[#5ed29c] cursor-pointer disabled:cursor-not-allowed"
+                                        />
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Create Custom Role form */}
+              <div className="lg:col-span-1 flex flex-col gap-6">
+                <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
+                  <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <Plus className="w-4 h-4 text-[#5ed29c]" /> Create Custom Role
+                  </h4>
+                  <form onSubmit={handleCreateCustomRole} className="flex flex-col gap-4 font-mono text-xs">
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Role Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SPECIALIST"
+                        value={customRoleName}
+                        onChange={(e) => setCustomRoleName(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase font-black block mb-1">Description</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Purpose of this custom role..."
+                        value={customRoleDesc}
+                        onChange={(e) => setCustomRoleDesc(e.target.value)}
+                        className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-white px-2.5 py-1.5 rounded-lg focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                    >
+                      Publish Custom Role
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: GOVERNANCE POLICIES */}
+          {activeTab === 'policies' && (
+            <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 animate-fadeIn">
+              <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#5ed29c]" /> Workspace Policy Settings
+              </h3>
+              <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                Configure organization-level access policy boundaries
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {[
+                  {
+                    key: 'inviteRestrictions',
+                    title: 'Workspace Invite Controls',
+                    desc: 'Restricts who can invite new team members into the workspace',
+                    options: [
+                      { value: 'OWNER_ONLY', label: 'Owner Only' },
+                      { value: 'ADMIN_ONLY', label: 'Owner & Admin Only' },
+                      { value: 'ENABLED', label: 'All Members' }
+                    ]
+                  },
+                  {
+                    key: 'externalSharing',
+                    title: 'External Sharing Rules',
+                    desc: 'Allows or disallows generating public URLs to share UX visual replays externally',
+                    options: [
+                      { value: 'ENABLED', label: 'Allow External Links' },
+                      { value: 'DISABLED', label: 'Disable External Links' }
+                    ]
+                  },
+                  {
+                    key: 'guestAccess',
+                    title: 'Guest Workspace Access',
+                    desc: 'Enables or restricts inviting external Guest users with scoped visibility permissions',
+                    options: [
+                      { value: 'ENABLED', label: 'Guest Access Allowed' },
+                      { value: 'DISABLED', label: 'No Guests Allowed' }
+                    ]
+                  },
+                  {
+                    key: 'replaySharing',
+                    title: 'Replay Session Sharing',
+                    desc: 'Defines visibility constraints of recorded visual sessions by default',
+                    options: [
+                      { value: 'PUBLIC', label: 'Workspace Public' },
+                      { value: 'WORKSPACE', label: 'Workspace Only' },
+                      { value: 'PRIVATE', label: 'Private (Owner/Admin Only)' }
+                    ]
+                  },
+                  {
+                    key: 'exportRestrictions',
+                    title: 'PDF & Data Exports',
+                    desc: 'Grants export rights of UX insights and stability drift metrics to members',
+                    options: [
+                      { value: 'ENABLED', label: 'All roles can export' },
+                      { value: 'ADMIN_ONLY', label: 'Admins & Owners only' }
+                    ]
+                  },
+                  {
+                    key: 'workspaceVisibility',
+                    title: 'Workspace Discovery',
+                    desc: 'Limits workspace searchability to internal organization members',
+                    options: [
+                      { value: 'PRIVATE', label: 'Private Workspace' },
+                      { value: 'PUBLIC', label: 'Searchable Org Hub' }
+                    ]
+                  }
+                ].map((policy) => {
+                  const activePolicy = policies.find(p => p.key === policy.key);
+                  const activeVal = activePolicy ? activePolicy.value : '';
+
+                  return (
+                    <div key={policy.key} className="bg-[#18181b] border border-[#2d2d30] p-4 rounded-xl flex flex-col justify-between">
+                      <div className="mb-4">
+                        <h4 className="text-xs font-bold text-white font-mono mb-1">{policy.title}</h4>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">{policy.desc}</p>
+                      </div>
+
+                      <div className="flex gap-2 font-mono text-[9px] font-black uppercase">
+                        {policy.options.map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => handleUpdatePolicy(policy.key, opt.value)}
+                            className={`px-3 py-1.5 rounded-lg border transition-all ${
+                              activeVal === opt.value
+                                ? 'bg-[#5ed29c]/15 text-[#5ed29c] border-[#5ed29c]/25'
+                                : 'bg-[#121214] text-zinc-500 border-transparent hover:text-white'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 10: REPLAY ACCESS RULES */}
+          {activeTab === 'replays' && (
+            <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 animate-fadeIn">
+              <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#5ed29c]" /> Replay Sensitivity Controls
+              </h3>
+              <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                Audit visual replay access scopes to secure sensitive transaction paths
+              </p>
+
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full border-collapse font-mono text-xs">
+                  <thead>
+                    <tr className="border-b border-[#222226] text-left text-zinc-500 text-[10px] uppercase font-black">
+                      <th className="py-2.5 pr-4">Replay Session</th>
+                      <th className="py-2.5 px-4">Active Scope</th>
+                      <th className="py-2.5 px-4">Allowed Roles</th>
+                      <th className="py-2.5 pl-4 text-right">Configure Scope</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#222226]/50">
+                    {reviews.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-6 text-center text-zinc-600 italic">
+                          No replay sessions available in current workspace.
+                        </td>
+                      </tr>
+                    ) : (
+                      reviews.map((r) => {
+                        const scope = replayScopes.find(s => s.workflowSessionId === r.workflowSessionId);
+                        const activeScopeType = scope ? scope.scopeType : 'WORKSPACE';
+                        const allowedRoles = scope ? scope.allowedRoles : ['OWNER', 'ADMIN', 'ANALYST'];
+
+                        return (
+                          <tr key={r.id} className="hover:bg-[#18181b]/30">
+                            <td className="py-3 pr-4">
+                              <span className="text-white font-bold block">{r.workflowSession.goal || 'General Run'}</span>
+                              <span className="text-[9.5px] text-zinc-500">ID: {r.workflowSessionId.substring(0, 8)}...</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-0.5 rounded text-[9.5px] font-black ${
+                                activeScopeType === 'PRIVATE' ? 'bg-red-950/20 text-red-400 border border-red-500/20' :
+                                activeScopeType === 'PROJECT' ? 'bg-sky-950/20 text-sky-400 border border-sky-500/20' :
+                                activeScopeType === 'PUBLIC' ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/20' :
+                                'bg-zinc-800 text-zinc-400'
+                              }`}>
+                                {activeScopeType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-zinc-400">
+                              {allowedRoles.join(', ')}
+                            </td>
+                            <td className="py-3 pl-4 text-right">
+                              <div className="flex justify-end gap-1.5">
+                                {(['WORKSPACE', 'PRIVATE', 'PUBLIC'] as const).map((scopeType) => (
+                                  <button
+                                    key={scopeType}
+                                    onClick={() => handleSetReplayScope(r.workflowSessionId, scopeType, allowedRoles)}
+                                    className={`px-2 py-1 rounded text-[9px] uppercase font-black border transition-all ${
+                                      activeScopeType === scopeType
+                                        ? 'bg-[#5ed29c]/15 text-[#5ed29c] border-[#5ed29c]/25'
+                                        : 'bg-[#1c1c1f] text-zinc-500 border-transparent hover:text-white'
+                                    }`}
+                                  >
+                                    {scopeType}
+                                  </button>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 11: SECURITY AUDIT EVENTS OVERVIEW */}
+          {activeTab === 'security' && (
+            <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 animate-fadeIn">
+              <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-[#5ed29c]" /> Workspace Security Audit Feed
+              </h3>
+              <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
+                Immutable chronological log of roles, permissions, external sharing and access grants
+              </p>
+
+              {securityLogs.length === 0 ? (
+                <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic border border-dashed border-[#222226] rounded-xl">
+                  Security log is empty. No security events registered.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 mt-4">
+                  {securityLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="bg-[#18181b] border border-[#2d2d30] p-4 rounded-xl flex items-start gap-4 hover:border-zinc-700 transition-all"
+                    >
+                      <div className="mt-1">
+                        {log.severity === 'CRITICAL' ? (
+                          <span className="w-2 h-2 rounded-full bg-red-500 block animate-pulse"></span>
+                        ) : log.severity === 'WARNING' ? (
+                          <span className="w-2 h-2 rounded-full bg-amber-500 block"></span>
+                        ) : (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 block"></span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 font-mono text-xs">
+                        <div className="flex justify-between items-center mb-1 text-[9.5px] text-zinc-500 uppercase font-black">
+                          <span className="text-white bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded">
+                            {log.eventType}
+                          </span>
+                          <span>{new Date(log.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p className="text-zinc-300 font-bold mb-1">{log.description}</p>
+                        {log.user && (
+                          <span className="text-[9.5px] text-zinc-500 uppercase">Actor: {log.user.name || log.user.email}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
