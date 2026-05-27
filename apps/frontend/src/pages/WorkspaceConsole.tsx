@@ -280,9 +280,21 @@ export const WorkspaceConsole: React.FC = () => {
   const [deckData, setDeckData] = useState<any | null>(null);
   const [pdfLayout, setPdfLayout] = useState<any | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
-  
   const [reportBuilding, setReportBuilding] = useState<boolean>(false);
   const [reportExporting, setReportExporting] = useState<boolean>(false);
+
+  // Security Core states
+  const [auditEvents, setAuditEvents] = useState<any[]>([]);
+  const [securityEvents, setSecurityEvents] = useState<any[]>([]);
+  const [securityAlerts, setSecurityAlerts] = useState<any[]>([]);
+  const [complianceReport, setComplianceReport] = useState<any | null>(null);
+  const [retentionRecords, setRetentionRecords] = useState<any[]>([]);
+  const [retentionResourceType, setRetentionResourceType] = useState<string>('REPLAY');
+  const [retentionResourceId, setRetentionResourceId] = useState<string>('');
+  const [retentionDays, setRetentionDays] = useState<number>(90);
+  const [retentionNotes, setRetentionNotes] = useState<string>('');
+  const [isResolvingAlert, setIsResolvingAlert] = useState<boolean>(false);
+  const [isApplyingRetention, setIsApplyingRetention] = useState<boolean>(false);
 
   // Tabs
   type Tab =
@@ -462,10 +474,87 @@ export const WorkspaceConsole: React.FC = () => {
       }
       
       sendPresenceHeartbeat(workspaceId);
+      fetchSecurityCoreDetails(workspaceId);
     } catch (err: any) {
       console.error('Failed to load workspace parameters:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSecurityCoreDetails = async (workspaceId: string) => {
+    try {
+      const [auditRes, eventRes, alertRes, complianceRes] = await Promise.all([
+        fetch(`${baseApiUrl}/security/audit?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/security/events?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/security/alerts?workspaceId=${workspaceId}`),
+        fetch(`${baseApiUrl}/security/compliance?workspaceId=${workspaceId}`)
+      ]);
+
+      if (auditRes.ok) {
+        const auditData = await auditRes.json();
+        setAuditEvents(auditData.logs || []);
+      }
+      if (eventRes.ok) {
+        const eventData = await eventRes.json();
+        setSecurityEvents(eventData.events || []);
+      }
+      if (alertRes.ok) {
+        const alertData = await alertRes.json();
+        setSecurityAlerts(alertData.alerts || []);
+      }
+      if (complianceRes.ok) {
+        const complianceData = await complianceRes.json();
+        setComplianceReport(complianceData.report || null);
+      }
+    } catch (err) {
+      console.error('Failed to load security core parameters:', err);
+    }
+  };
+
+  const handleResolveAlert = async (alertId: string) => {
+    try {
+      setIsResolvingAlert(true);
+      const res = await fetch(`${baseApiUrl}/security/alerts/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertId, workspaceId: selectedWorkspaceId })
+      });
+      if (res.ok) {
+        fetchSecurityCoreDetails(selectedWorkspaceId);
+      }
+    } catch (err) {
+      console.error('Failed to resolve security alert:', err);
+    } finally {
+      setIsResolvingAlert(false);
+    }
+  };
+
+  const handleApplyRetention = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!retentionResourceId) return;
+    try {
+      setIsApplyingRetention(true);
+      const res = await fetch(`${baseApiUrl}/security/compliance/retention`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: selectedWorkspaceId,
+          resourceType: retentionResourceType,
+          resourceId: retentionResourceId,
+          retentionDays,
+          notes: retentionNotes
+        })
+      });
+      if (res.ok) {
+        setRetentionResourceId('');
+        setRetentionNotes('');
+        fetchSecurityCoreDetails(selectedWorkspaceId);
+      }
+    } catch (err) {
+      console.error('Failed to apply retention policy:', err);
+    } finally {
+      setIsApplyingRetention(false);
     }
   };
 
@@ -586,6 +675,14 @@ export const WorkspaceConsole: React.FC = () => {
 
     eventSource.addEventListener('workspace.replay-sync.updated', () => {
       fetchWorkspaceDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.audit.updated', () => {
+      fetchSecurityCoreDetails(workspaceId);
+    });
+
+    eventSource.addEventListener('workspace.security.alert', () => {
+      fetchSecurityCoreDetails(workspaceId);
     });
 
     return () => {
@@ -3086,53 +3183,239 @@ export const WorkspaceConsole: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 11: SECURITY AUDIT EVENTS OVERVIEW */}
+          {/* TAB 11: SECURITY & COMPLIANCE OPERATIONS CONTROL CENTER */}
           {activeTab === 'security' && (
-            <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 animate-fadeIn">
-              <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#5ed29c]" /> Workspace Security Audit Feed
-              </h3>
-              <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
-                Immutable chronological log of roles, permissions, external sharing and access grants
-              </p>
-
-              {securityLogs.length === 0 ? (
-                <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic border border-dashed border-[#222226] rounded-xl">
-                  Security log is empty. No security events registered.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3 mt-4">
-                  {securityLogs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="bg-[#18181b] border border-[#2d2d30] p-4 rounded-xl flex items-start gap-4 hover:border-zinc-700 transition-all"
-                    >
-                      <div className="mt-1">
-                        {log.severity === 'CRITICAL' ? (
-                          <span className="w-2 h-2 rounded-full bg-red-500 block animate-pulse"></span>
-                        ) : log.severity === 'WARNING' ? (
-                          <span className="w-2 h-2 rounded-full bg-amber-500 block"></span>
-                        ) : (
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 block"></span>
-                        )}
-                      </div>
-
-                      <div className="flex-1 font-mono text-xs">
-                        <div className="flex justify-between items-center mb-1 text-[9.5px] text-zinc-500 uppercase font-black">
-                          <span className="text-white bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded">
-                            {log.eventType}
-                          </span>
-                          <span>{new Date(log.createdAt).toLocaleString()}</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn font-mono text-xs text-zinc-300">
+              
+              {/* Left Column: Compliance Score & Policy Controls */}
+              <div className="lg:col-span-1 flex flex-col gap-6">
+                
+                {/* SOC2 Compliance Readiness Gauge */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> SOC2 Readiness Index
+                  </h3>
+                  <p className="text-[9px] text-zinc-500 uppercase mb-4">Continuous security standards checkpoint</p>
+                  
+                  {complianceReport ? (
+                    <div className="flex flex-col items-center py-4 border-b border-[#222226] mb-4">
+                      <div className="relative w-28 h-28 flex items-center justify-center rounded-full border-4 border-[#222226]">
+                        <div className="absolute inset-2 rounded-full border border-[#222226] border-dashed"></div>
+                        <div className="flex flex-col items-center justify-center">
+                          <span className="text-3xl font-black text-[#5ed29c] tracking-tight">{complianceReport.score}%</span>
+                          <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-widest mt-0.5">Compliant</span>
                         </div>
-                        <p className="text-zinc-300 font-bold mb-1">{log.description}</p>
-                        {log.user && (
-                          <span className="text-[9.5px] text-zinc-500 uppercase">Actor: {log.user.name || log.user.email}</span>
-                        )}
+                      </div>
+                      
+                      <div className="w-full mt-4 flex flex-col gap-1.5">
+                        {complianceReport.items.map((item: any) => (
+                          <div key={item.key} className="flex items-start justify-between gap-3 bg-[#18181b] border border-[#222226] p-2 rounded-lg">
+                            <div>
+                              <span className="text-[9.5px] text-white font-bold block">{item.name}</span>
+                              <span className="text-[8.5px] text-zinc-500 block leading-tight mt-0.5">{item.description}</span>
+                              {item.actionRequired && (
+                                <span className="text-[8px] text-amber-500 block mt-1 leading-normal bg-amber-950/20 border border-amber-500/20 px-1 py-0.5 rounded">
+                                  {item.actionRequired}
+                                </span>
+                              )}
+                            </div>
+                            <span className={`text-[8.5px] font-black uppercase px-1 py-0.5 rounded shrink-0 border mt-0.5 ${
+                              item.status === 'COMPLIANT'
+                                ? 'bg-emerald-950/20 text-[#5ed29c] border-[#5ed29c]/20'
+                                : 'bg-amber-950/20 text-amber-500 border-amber-500/20'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  ) : (
+                    <p className="text-[10px] text-zinc-600 italic">No compliance checkpoints run.</p>
+                  )}
+                  
+                  <span className="text-[8px] text-zinc-600 uppercase block text-center">
+                    Checked: {complianceReport ? new Date(complianceReport.checkedAt).toLocaleString() : 'N/A'}
+                  </span>
                 </div>
-              )}
+
+                {/* Compliance Data Retention Policies */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#5ed29c]" /> Data Retention Controls
+                  </h3>
+                  <p className="text-[9px] text-zinc-500 uppercase mb-3">Schedule archival scopes for workflow intelligence</p>
+                  
+                  <form onSubmit={handleApplyRetention} className="flex flex-col gap-2 mb-4">
+                    <div className="flex gap-2">
+                      <select
+                        value={retentionResourceType}
+                        onChange={(e) => setRetentionResourceType(e.target.value)}
+                        className="flex-1 bg-[#1c1c1f] border border-[#2d2d30] text-[10px] text-white px-2 py-1.5 rounded focus:outline-none"
+                      >
+                        <option value="REPLAY">Session Replay</option>
+                        <option value="REPORT">Compiled Report</option>
+                      </select>
+                      <input
+                        type="number"
+                        placeholder="Days"
+                        value={retentionDays}
+                        onChange={(e) => setRetentionDays(parseInt(e.target.value) || 90)}
+                        className="w-16 bg-[#1c1c1f] border border-[#2d2d30] text-[10px] text-white px-2 py-1.5 rounded focus:outline-none text-center"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Resource Target ID"
+                      value={retentionResourceId}
+                      onChange={(e) => setRetentionResourceId(e.target.value)}
+                      className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-[10px] text-white px-2 py-1.5 rounded focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Retention Notes / Rationale"
+                      value={retentionNotes}
+                      onChange={(e) => setRetentionNotes(e.target.value)}
+                      className="w-full bg-[#1c1c1f] border border-[#2d2d30] text-[10px] text-white px-2 py-1.5 rounded focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isApplyingRetention}
+                      className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase transition-all"
+                    >
+                      {isApplyingRetention ? 'Applying...' : 'Apply Retention Rule'}
+                    </button>
+                  </form>
+
+                  <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto mt-3">
+                    <span className="text-[8.5px] text-zinc-500 uppercase font-black">Retention Schedules</span>
+                    {retentionRecords.length === 0 ? (
+                      <span className="text-[9px] text-zinc-600 italic">No retention overrides configured.</span>
+                    ) : (
+                      retentionRecords.map((rec) => (
+                        <div key={rec.id} className="bg-[#18181b] border border-[#222226] p-2 rounded-lg text-[9px] text-zinc-400">
+                          <div className="flex justify-between items-center font-bold">
+                            <span>{rec.resourceType}: {rec.resourceId.substring(0, 8)}...</span>
+                            <span className="text-[#5ed29c]">{rec.retentionDays}d</span>
+                          </div>
+                          <span className="text-[8px] text-zinc-500 block mt-0.5">Expires: {new Date(rec.expiresAt).toLocaleDateString()}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Middle/Right Column: Operational Logs & Security Alerts */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                
+                {/* Active Alerts Mitigation Panel */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-red-500" /> Active Security Alerts
+                  </h3>
+                  <p className="text-[9px] text-zinc-500 uppercase mb-3">Mitigation required for threat signals</p>
+                  
+                  {securityAlerts.filter(a => !a.resolved).length === 0 ? (
+                    <div className="text-center py-6 text-zinc-500 font-mono text-[10px] italic border border-dashed border-[#222226] rounded-xl">
+                      No active unresolved security incidents logged.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {securityAlerts.filter(a => !a.resolved).map((alert) => (
+                        <div key={alert.id} className="bg-[#18181b] border border-red-500/20 p-4 rounded-xl flex items-start gap-4 hover:border-red-500/40 transition-all">
+                          <div className="mt-1">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 block animate-pulse"></span>
+                          </div>
+                          
+                          <div className="flex-1 font-mono text-xs">
+                            <div className="flex justify-between items-center mb-1 text-[9px] text-zinc-500 font-black uppercase">
+                              <span className="text-red-400 bg-red-950/20 border border-red-500/20 px-1.5 py-0.5 rounded">
+                                {alert.alertType}
+                              </span>
+                              <span>{new Date(alert.createdAt).toLocaleString()}</span>
+                            </div>
+                            <p className="text-zinc-200 font-bold mb-2">{alert.description}</p>
+                            <button
+                              type="button"
+                              onClick={() => handleResolveAlert(alert.id)}
+                              disabled={isResolvingAlert}
+                              className="bg-emerald-950/30 hover:bg-emerald-900/40 text-[#5ed29c] border border-[#5ed29c]/20 px-2 py-1 rounded text-[9px] uppercase font-black transition-all"
+                            >
+                              Resolve Incident
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Audit Timeline Viewer */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                    <Activity className="w-4 h-4 text-[#5ed29c]" /> Workspace Audit Timeline
+                  </h3>
+                  <p className="text-[9px] text-zinc-500 uppercase mb-3">Chronological operational audit log</p>
+                  
+                  {auditEvents.length === 0 ? (
+                    <p className="text-[10px] text-zinc-500 italic uppercase">No audit logs registered.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto border border-[#222226] p-3 rounded-lg bg-[#18181b]/50">
+                      {auditEvents.map((evt) => (
+                        <div key={evt.id} className="border-b border-[#222226] pb-2 last:border-b-0 last:pb-0 text-[10.5px]">
+                          <div className="flex justify-between items-center mb-1 text-[8.5px] text-zinc-500 uppercase">
+                            <span className="font-bold text-white bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded">
+                              {evt.action}
+                            </span>
+                            <span>{new Date(evt.createdAt).toLocaleString()}</span>
+                          </div>
+                          <p className="text-zinc-300 font-sans mt-0.5">{evt.description}</p>
+                          {evt.user && (
+                            <span className="text-[8.5px] text-zinc-500 uppercase tracking-wider block mt-1 font-mono">
+                              Actor: {evt.user.name || evt.user.email}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Access Traceability Log */}
+                <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
+                  <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-[#5ed29c]" /> Access Trace accountability
+                  </h3>
+                  <p className="text-[9px] text-zinc-500 uppercase mb-3">Replay read & export trace details</p>
+                  
+                  {sharedGrants.length === 0 ? (
+                    <p className="text-[10px] text-zinc-500 italic uppercase">No access grants generated.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+                      {sharedGrants.map((grant) => (
+                        <div key={grant.id} className="bg-[#18181b] border border-[#2d2d30] p-3 rounded-lg text-[9.5px]">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-white bg-zinc-800 px-1.5 py-0.5 rounded text-[8.5px] uppercase">
+                              {grant.resourceType} Shared Token
+                            </span>
+                            <span className="text-zinc-500 font-mono text-[8px]">
+                              Created: {new Date(grant.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-zinc-400 font-mono">Resource ID: {grant.resourceId.substring(0, 16)}...</p>
+                          {grant.granteeEmail && (
+                            <span className="text-[9.5px] text-[#5ed29c] font-bold block mt-1">Recipient: {grant.granteeEmail}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
             </div>
           )}
 
