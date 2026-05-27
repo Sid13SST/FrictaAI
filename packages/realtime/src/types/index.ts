@@ -26,7 +26,11 @@ export type RealtimeEventType =
   | 'swarm.step'
   | 'predictive.forecast'
   | 'predictive.risk'
-  | 'predictive.regression';
+  | 'predictive.regression'
+  | 'workspace.policy.updated'
+  | 'workspace.roles.updated'
+  | 'workspace.access.revoked'
+  | 'workspace.replay-sync.updated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
