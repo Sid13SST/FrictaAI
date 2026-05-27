@@ -8,37 +8,44 @@ datasource db {
 }
 
 model User {
-  id              String            @id @default(uuid())
-  email           String            @unique
-  name            String?
-  createdAt       DateTime          @default(now())
-  projects        Project[]
-  platformUsage   PlatformUsage?
-  memberships     WorkspaceMember[]
-  assignedReviews InvestigationReview[]
-  annotations     Annotation[]
-  comments        EvidenceComment[]
-  shares          SharedLink[]
-  activities      ActivityEvent[]
-  sentInvites           WorkspaceInvite[]      @relation("Inviter")
-  sharedInvestigations  SharedInvestigation[]
-  investigationComments InvestigationComment[]
-  workspaceActivities   WorkspaceActivity[]
-  securityEvents        WorkspaceSecurityEvent[]
-  reportsCreated        ExecutiveReport[]
-  exportsCreated        ReportExport[]
-  sharesCreated         SharedReport[]
-  distributionsSent     ReportDistributionEvent[]
+  id                     String                    @id @default(uuid())
+  email                  String                    @unique
+  name                   String?
+  createdAt              DateTime                  @default(now())
+  projects               Project[]
+  platformUsage          PlatformUsage?
+  memberships            WorkspaceMember[]
+  assignedReviews        InvestigationReview[]
+  annotations            Annotation[]
+  comments               EvidenceComment[]
+  shares                 SharedLink[]
+  activities             ActivityEvent[]
+  sentInvites            WorkspaceInvite[]         @relation("Inviter")
+  sharedInvestigations   SharedInvestigation[]
+  investigationComments  InvestigationComment[]
+  workspaceActivities    WorkspaceActivity[]
+  securityEvents         WorkspaceSecurityEvent[]
+  reportsCreated         ExecutiveReport[]
+  exportsCreated         ReportExport[]
+  sharesCreated          SharedReport[]
+  distributionsSent      ReportDistributionEvent[]
+  auditEvents            AuditEvent[]
+  securityEventsLog      SecurityEvent[]
+  replayAuditLogs        ReplayAuditLog[]
+  investigationAuditLogs InvestigationAuditLog[]
+  governancePolicyEvents GovernancePolicyEvent[]
+  accessTraceRecords     AccessTraceRecord[]
+  securityAlerts         WorkspaceSecurityAlert[]
 }
 
 model Project {
-  id                     String                  @id @default(uuid())
-  userId                 String
-  workspaceId            String?
-  projectName            String
-  websiteUrl             String
-  createdAt              DateTime                @default(now())
-  
+  id          String   @id @default(uuid())
+  userId      String
+  workspaceId String?
+  projectName String
+  websiteUrl  String
+  createdAt   DateTime @default(now())
+
   user                   User                    @relation(fields: [userId], references: [id])
   workspace              Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   sessions               WorkflowSession[]
@@ -60,52 +67,53 @@ model Project {
 }
 
 model WorkflowSession {
-  id           String   @id @default(uuid())
-  projectId    String
-  goal         String?
-  persona      String?
-  status       String   @default("PENDING")
-  queueJobId   String?
-  stepCount    Int      @default(0)
-  model        String?
-  startedAt    DateTime?
-  endedAt      DateTime?
-  createdAt    DateTime @default(now())
+  id         String    @id @default(uuid())
+  projectId  String
+  goal       String?
+  persona    String?
+  status     String    @default("PENDING")
+  queueJobId String?
+  stepCount  Int       @default(0)
+  model      String?
+  startedAt  DateTime?
+  endedAt    DateTime?
+  createdAt  DateTime  @default(now())
 
-  project      Project            @relation(fields: [projectId], references: [id])
-  reports      UXReport[]
-  interactions InteractionEvent[]
-  screenshots  Screenshot[]
-  workflowScreenshots WorkflowScreenshot[]
-  timelineEvents      ScreenshotTimelineEvent[]
-  thoughts     AgentThought[]
-  actions      AgentAction[]
-  signals      UXSignal[]
-  recommendations UXRecommendation[]
-  scores       UXScore[]
-  metrics      WorkflowMetrics?
-  visualFindings VisualFinding[]
-  visualScores   VisualScore[]
-  uxFindings     UXFinding[]
-  cognitiveSignals CognitiveSignal[]
-  orchestrationSessions OrchestrationSession[]
-  reviews      InvestigationReview[]
-  simulationDecisions    BehavioralDecision[]
-  simulationPaths        ExplorationPath[]
-  hesitationSignals      HesitationSignal[]
-  confidenceEvents       NavigationConfidenceEvent[]
-  frictionReactions      FrictionReaction[]
-  behavioralReplayEvents BehavioralReplayEvent[]
-  cognitiveStates         CognitiveState[]
-  confidenceSignals       ConfidenceSignal[]
-  attentionEvents         AttentionEvent[]
-  expectationMismatches   ExpectationMismatch[]
+  project                  Project                     @relation(fields: [projectId], references: [id])
+  reports                  UXReport[]
+  interactions             InteractionEvent[]
+  screenshots              Screenshot[]
+  workflowScreenshots      WorkflowScreenshot[]
+  timelineEvents           ScreenshotTimelineEvent[]
+  thoughts                 AgentThought[]
+  actions                  AgentAction[]
+  signals                  UXSignal[]
+  recommendations          UXRecommendation[]
+  scores                   UXScore[]
+  metrics                  WorkflowMetrics?
+  visualFindings           VisualFinding[]
+  visualScores             VisualScore[]
+  uxFindings               UXFinding[]
+  cognitiveSignals         CognitiveSignal[]
+  orchestrationSessions    OrchestrationSession[]
+  reviews                  InvestigationReview[]
+  simulationDecisions      BehavioralDecision[]
+  simulationPaths          ExplorationPath[]
+  hesitationSignals        HesitationSignal[]
+  confidenceEvents         NavigationConfidenceEvent[]
+  frictionReactions        FrictionReaction[]
+  behavioralReplayEvents   BehavioralReplayEvent[]
+  cognitiveStates          CognitiveState[]
+  confidenceSignals        ConfidenceSignal[]
+  attentionEvents          AttentionEvent[]
+  expectationMismatches    ExpectationMismatch[]
   decisionComplexityEvents DecisionComplexityEvent[]
-  abandonmentRiskSignals  AbandonmentRiskSignal[]
-  cognitiveTimelineEvents CognitiveTimelineEvent[]
-  personaExecutions      PersonaExecution[]
-  sharedInvestigations  SharedInvestigation[]
-  replayAccessScopes    ReplayAccessScope[]
+  abandonmentRiskSignals   AbandonmentRiskSignal[]
+  cognitiveTimelineEvents  CognitiveTimelineEvent[]
+  personaExecutions        PersonaExecution[]
+  sharedInvestigations     SharedInvestigation[]
+  replayAccessScopes       ReplayAccessScope[]
+  ReplayAuditLog           ReplayAuditLog[]
 }
 
 model AgentThought {
@@ -115,7 +123,7 @@ model AgentThought {
   stepNumber        Int
   timestamp         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id])
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id])
 }
 
 model AgentAction {
@@ -129,7 +137,7 @@ model AgentAction {
   errorMessage      String?
   timestamp         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id])
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id])
 }
 
 model InteractionEvent {
@@ -140,7 +148,7 @@ model InteractionEvent {
   metadata  Json?
   timestamp DateTime @default(now())
 
-  session   WorkflowSession @relation(fields: [sessionId], references: [id])
+  session WorkflowSession @relation(fields: [sessionId], references: [id])
 }
 
 model Screenshot {
@@ -149,13 +157,13 @@ model Screenshot {
   path      String
   timestamp DateTime @default(now())
 
-  session   WorkflowSession @relation(fields: [sessionId], references: [id])
+  session WorkflowSession @relation(fields: [sessionId], references: [id])
 }
 
 model WorkflowScreenshot {
   id                String   @id @default(uuid())
   workflowSessionId String
-  screenshotType    String   // "step" | "error" | "full" | "viewport"
+  screenshotType    String // "step" | "error" | "full" | "viewport"
   filePath          String
   thumbnailPath     String
   timestamp         DateTime @default(now())
@@ -167,9 +175,9 @@ model WorkflowScreenshot {
   fileSize          Int
   metadata          Json?
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
-  timelineEvents    ScreenshotTimelineEvent[]
-  visualFindings    VisualFinding[]
+  session        WorkflowSession           @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  timelineEvents ScreenshotTimelineEvent[]
+  visualFindings VisualFinding[]
 }
 
 model ScreenshotTimelineEvent {
@@ -179,20 +187,20 @@ model ScreenshotTimelineEvent {
   actionId          String?
   thoughtId         String?
   timestamp         DateTime @default(now())
-  eventType         String   // "action" | "thought" | "signal" | "error"
+  eventType         String // "action" | "thought" | "signal" | "error"
 
-  session           WorkflowSession    @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
-  screenshot        WorkflowScreenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+  session    WorkflowSession    @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  screenshot WorkflowScreenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
 }
 
 model UXReport {
-  id         String   @id @default(uuid())
-  sessionId  String
-  summary    String
-  score      Int
-  createdAt  DateTime @default(now())
-  
-  session    WorkflowSession @relation(fields: [sessionId], references: [id])
+  id        String   @id @default(uuid())
+  sessionId String
+  summary   String
+  score     Int
+  createdAt DateTime @default(now())
+
+  session WorkflowSession @relation(fields: [sessionId], references: [id])
 }
 
 model UXSignal {
@@ -203,176 +211,176 @@ model UXSignal {
   metadata          Json?
   timestamp         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model UXRecommendation {
-  id                String   @id @default(uuid())
+  id                String @id @default(uuid())
   workflowSessionId String
   title             String
   description       String
   evidence          String
   severity          String
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model UXScore {
-  id                String   @id @default(uuid())
+  id                String @id @default(uuid())
   workflowSessionId String
   clarityScore      Float
   efficiencyScore   Float
   smoothnessScore   Float
   overallScore      Float
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model WorkflowMetrics {
-  id                String   @id @default(uuid())
-  workflowSessionId String   @unique
+  id                String @id @default(uuid())
+  workflowSessionId String @unique
   duration          Int?
-  retryCount        Int      @default(0)
-  tokenUsage        Int      @default(0)
+  retryCount        Int    @default(0)
+  tokenUsage        Int    @default(0)
   completionStatus  String
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model PlatformUsage {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  workflowsRun  Int      @default(0)
-  totalTokens   Int      @default(0)
-  createdAt     DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  workflowsRun Int      @default(0)
+  totalTokens  Int      @default(0)
+  createdAt    DateTime @default(now())
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VisualFinding {
-  id                String             @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   screenshotId      String
   findingType       String
   severity          String
   title             String
   description       String
-  boundingBoxes     Json               // list of { x, y, width, height, label }
+  boundingBoxes     Json // list of { x, y, width, height, label }
   metadata          Json
-  timestamp         DateTime           @default(now())
+  timestamp         DateTime @default(now())
 
-  session           WorkflowSession    @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
-  screenshot        WorkflowScreenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+  session    WorkflowSession    @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  screenshot WorkflowScreenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
 }
 
 model VisualScore {
-  id                    String          @id @default(uuid())
-  workflowSessionId     String
-  clarityScore          Float
-  discoverabilityScore  Float
-  layoutBalanceScore    Float
-  navigationScore       Float
-  overallScore          Float
-  createdAt             DateTime        @default(now())
+  id                   String   @id @default(uuid())
+  workflowSessionId    String
+  clarityScore         Float
+  discoverabilityScore Float
+  layoutBalanceScore   Float
+  navigationScore      Float
+  overallScore         Float
+  createdAt            DateTime @default(now())
 
-  session               WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model UXFinding {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
-  findingType       String          // e.g., "HESITATION", "NAVIGATION_LOOP", "CTA_AMBIGUITY", "ONBOARDING_FRICTION", "FORM_FRICTION", "COMPLEXITY", "IA_CONFUSION"
-  severity          String          // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-  personaType       String          // "BEGINNER" | "POWER_USER" | "FIRST_TIME_USER" | "DISTRACTED_USER" | "STANDARD"
+  findingType       String // e.g., "HESITATION", "NAVIGATION_LOOP", "CTA_AMBIGUITY", "ONBOARDING_FRICTION", "FORM_FRICTION", "COMPLEXITY", "IA_CONFUSION"
+  severity          String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  personaType       String // "BEGINNER" | "POWER_USER" | "FIRST_TIME_USER" | "DISTRACTED_USER" | "STANDARD"
   title             String
   description       String
-  evidence          String          // Evidence details/steps where it occurred
-  recommendation    String          // Actionable UX improvement
-  timestamp         DateTime        @default(now())
+  evidence          String // Evidence details/steps where it occurred
+  recommendation    String // Actionable UX improvement
+  timestamp         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model CognitiveSignal {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
-  signalType        String          // "COGNITIVE_OVERLOAD" | "DECISION_FATIGUE" | "WORKFLOW_DENSITY" | "DISCOVERABILITY_FRICTION" | "BRANCHING_DEPTH"
-  intensity         Float           // Value from 0.0 to 1.0 representing signal intensity
+  signalType        String // "COGNITIVE_OVERLOAD" | "DECISION_FATIGUE" | "WORKFLOW_DENSITY" | "DISCOVERABILITY_FRICTION" | "BRANCHING_DEPTH"
+  intensity         Float // Value from 0.0 to 1.0 representing signal intensity
   metadata          Json?
-  timestamp         DateTime        @default(now())
+  timestamp         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model PersonaProfile {
-  id                String   @id @default(uuid())
-  name              String   // e.g., "Beginner Teacher", "Power User", "First-Time User"
+  id                String @id @default(uuid())
+  name              String // e.g., "Beginner Teacher", "Power User", "First-Time User"
   description       String
-  traits            Json     // List of traits
-  behaviorModifiers Json     // Numerical thresholds/weights
+  traits            Json // List of traits
+  behaviorModifiers Json // Numerical thresholds/weights
 }
 
 model OrchestrationSession {
-  id                  String               @id @default(uuid())
-  workflowSessionId   String
-  status              String               @default("PENDING")
-  startedAt           DateTime?
-  completedAt         DateTime?
-  metadata            Json?
-  createdAt           DateTime             @default(now())
+  id                String    @id @default(uuid())
+  workflowSessionId String
+  status            String    @default("PENDING")
+  startedAt         DateTime?
+  completedAt       DateTime?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
 
-  workflowSession     WorkflowSession      @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
-  agentExecutions     AgentExecution[]
-  delegationEvents    DelegationEvent[]
-  sharedContextEvents SharedContextEvent[]
-  sharedMemoryEvents  SharedMemoryEvent[]
-  correlatedFindings  CorrelatedFinding[]
+  workflowSession       WorkflowSession        @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  agentExecutions       AgentExecution[]
+  delegationEvents      DelegationEvent[]
+  sharedContextEvents   SharedContextEvent[]
+  sharedMemoryEvents    SharedMemoryEvent[]
+  correlatedFindings    CorrelatedFinding[]
   collaborativeInsights CollaborativeInsight[]
-  memorySnapshots     MemorySnapshot[]
+  memorySnapshots       MemorySnapshot[]
 }
 
 model AgentExecution {
-  id                     String               @id @default(uuid())
+  id                     String    @id @default(uuid())
   orchestrationSessionId String
   agentType              String
-  status                 String               @default("IDLE") // IDLE, QUEUED, RUNNING, WAITING, COMPLETED, FAILED, CANCELLED
+  status                 String    @default("IDLE") // IDLE, QUEUED, RUNNING, WAITING, COMPLETED, FAILED, CANCELLED
   task                   String
   result                 Json?
   startedAt              DateTime?
   completedAt            DateTime?
   metadata               Json?
-  createdAt              DateTime             @default(now())
+  createdAt              DateTime  @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
-  findings               AgentFinding[]
-  signals                AgentSignal[]
-  reasoningTraces        AgentReasoningTrace[]
+  orchestrationSession OrchestrationSession  @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  findings             AgentFinding[]
+  signals              AgentSignal[]
+  reasoningTraces      AgentReasoningTrace[]
 }
 
 model DelegationEvent {
-  id                     String               @id @default(uuid())
+  id                     String   @id @default(uuid())
   orchestrationSessionId String
   fromAgent              String
   toAgent                String
   eventType              String
   payload                Json?
-  timestamp              DateTime             @default(now())
+  timestamp              DateTime @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  orchestrationSession OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }
 
 model SharedContextEvent {
-  id                     String               @id @default(uuid())
+  id                     String   @id @default(uuid())
   orchestrationSessionId String
   eventType              String
   payload                Json?
-  timestamp              DateTime             @default(now())
+  timestamp              DateTime @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  orchestrationSession OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }
 
 model AgentFinding {
-  id                 String          @id @default(uuid())
+  id                 String   @id @default(uuid())
   agentExecutionId   String
   agentType          String
   findingType        String
@@ -381,282 +389,290 @@ model AgentFinding {
   description        String
   evidence           String
   correlatedFindings Json?
-  timestamp          DateTime        @default(now())
+  timestamp          DateTime @default(now())
 
-  agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
+  agentExecution AgentExecution @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
 }
 
 model AgentSignal {
-  id                 String          @id @default(uuid())
-  agentExecutionId   String
-  signalType         String
-  intensity          Float
-  metadata           Json?
-  timestamp          DateTime        @default(now())
+  id               String   @id @default(uuid())
+  agentExecutionId String
+  signalType       String
+  intensity        Float
+  metadata         Json?
+  timestamp        DateTime @default(now())
 
-  agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
+  agentExecution AgentExecution @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
 }
 
 model AgentReasoningTrace {
-  id                 String          @id @default(uuid())
-  agentExecutionId   String
-  stepType           String
-  summary            String
-  evidence           String?
-  timestamp          DateTime        @default(now())
+  id               String   @id @default(uuid())
+  agentExecutionId String
+  stepType         String
+  summary          String
+  evidence         String?
+  timestamp        DateTime @default(now())
 
-  agentExecution     AgentExecution  @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
+  agentExecution AgentExecution @relation(fields: [agentExecutionId], references: [id], onDelete: Cascade)
 }
 
 model SharedMemoryEvent {
-  id                     String               @id @default(uuid())
+  id                     String   @id @default(uuid())
   orchestrationSessionId String
   eventType              String
   sourceAgent            String
   payload                Json
-  timestamp              DateTime             @default(now())
+  timestamp              DateTime @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  orchestrationSession OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }
 
 model CorrelatedFinding {
-  id                     String               @id @default(uuid())
+  id                     String   @id @default(uuid())
   orchestrationSessionId String
   findingIds             Json
   correlationType        String
   summary                String
   confidence             Float
   metadata               Json?
-  timestamp              DateTime             @default(now())
+  timestamp              DateTime @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  orchestrationSession OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }
 
 model CollaborativeInsight {
-  id                     String               @id @default(uuid())
+  id                     String   @id @default(uuid())
   orchestrationSessionId String
   title                  String
   summary                String
   supportingEvidence     String
   severity               String
   confidence             Float
-  timestamp              DateTime             @default(now())
+  timestamp              DateTime @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  orchestrationSession OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }
 
 model MemorySnapshot {
-  id                     String               @id @default(uuid())
+  id                     String   @id @default(uuid())
   orchestrationSessionId String
   snapshotType           String
   payload                Json
-  createdAt              DateTime             @default(now())
+  createdAt              DateTime @default(now())
 
-  orchestrationSession   OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
+  orchestrationSession OrchestrationSession @relation(fields: [orchestrationSessionId], references: [id], onDelete: Cascade)
 }
 
 model HistoricalPattern {
-  id               String      @id @default(uuid())
+  id               String   @id @default(uuid())
   projectId        String
-  patternType      String      // "NAVIGATION_CONFUSION" | "ONBOARDING_FRICTION" | "CTA_DISCOVERABILITY" | etc.
+  patternType      String // "NAVIGATION_CONFUSION" | "ONBOARDING_FRICTION" | "CTA_DISCOVERABILITY" | etc.
   name             String
   description      String
-  severity         String      // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  severity         String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
   confidence       Float
-  frequency        Int         // How many times this pattern has been detected
-  affectedSessions Json        // List of session IDs (JSON array of strings)
+  frequency        Int // How many times this pattern has been detected
+  affectedSessions Json // List of session IDs (JSON array of strings)
   evidenceSummary  String
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model WorkflowRegression {
-  id                  String      @id @default(uuid())
-  projectId           String
-  workflowPath        String      // e.g., "/onboarding"
-  metricName          String      // "COGNITIVE_LOAD" | "STEPS_TO_COMPLETE" | "SUCCESS_RATE" | etc.
-  baseValue           Float
-  currentValue        Float
-  deltaPercentage     Float
-  severity            String      // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-  explanation         String
-  evidenceSessionId   String      // The session where the regression was caught
-  baseSessionId       String      // The baseline session compared against
-  createdAt           DateTime    @default(now())
+  id                String   @id @default(uuid())
+  projectId         String
+  workflowPath      String // e.g., "/onboarding"
+  metricName        String // "COGNITIVE_LOAD" | "STEPS_TO_COMPLETE" | "SUCCESS_RATE" | etc.
+  baseValue         Float
+  currentValue      Float
+  deltaPercentage   Float
+  severity          String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  explanation       String
+  evidenceSessionId String // The session where the regression was caught
+  baseSessionId     String // The baseline session compared against
+  createdAt         DateTime @default(now())
 
-  project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model PersonaTrend {
-  id             String      @id @default(uuid())
+  id             String   @id @default(uuid())
   projectId      String
-  personaType    String      // "BEGINNER" | "POWER_USER" | etc.
-  metricName     String      // "SUCCESS_RATE" | "DECISION_DELAY" | etc.
-  trendDirection String      // "IMPROVING" | "STABLE" | "DEGRADING"
+  personaType    String // "BEGINNER" | "POWER_USER" | etc.
+  metricName     String // "SUCCESS_RATE" | "DECISION_DELAY" | etc.
+  trendDirection String // "IMPROVING" | "STABLE" | "DEGRADING"
   averageValue   Float
   observation    String
   sampleCount    Int
-  createdAt      DateTime    @default(now())
+  createdAt      DateTime @default(now())
 
-  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model OrganizationalInsight {
-  id              String      @id @default(uuid())
+  id              String   @id @default(uuid())
   projectId       String
   title           String
   summary         String
-  insightCategory String      // "STABILITY" | "IMPROVEMENT" | "RECURRING_DEFECT" | etc.
-  metrics         Json?       // Structured data/charts
-  impactScore     Float       // 0.0 to 1.0 representing severity/impact
-  createdAt       DateTime    @default(now())
+  insightCategory String // "STABILITY" | "IMPROVEMENT" | "RECURRING_DEFECT" | etc.
+  metrics         Json? // Structured data/charts
+  impactScore     Float // 0.0 to 1.0 representing severity/impact
+  createdAt       DateTime @default(now())
 
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model HistoricalCorrelation {
-  id                  String      @id @default(uuid())
-  projectId           String
-  findingType         String
-  summary             String
-  sessionCount        Int
-  correlatedFindingIds Json       // List of finding IDs across different sessions
-  confidence          Float
-  createdAt           DateTime    @default(now())
+  id                   String   @id @default(uuid())
+  projectId            String
+  findingType          String
+  summary              String
+  sessionCount         Int
+  correlatedFindingIds Json // List of finding IDs across different sessions
+  confidence           Float
+  createdAt            DateTime @default(now())
 
-  project             Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model AdaptiveSignalProfile {
-  id             String      @id @default(uuid())
+  id             String   @id @default(uuid())
   projectId      String
-  agentType      String      // e.g., "ONBOARDING_AGENT"
-  targetPriority String      // "HIGH" | "CRITICAL" | "NORMAL"
-  reasonTrigger  String      // "Historical onboarding regression detected on step X"
-  isActive       Boolean     @default(true)
-  metadata       Json?       // prioritization overrides, parameters, thresholds
-  updatedAt      DateTime    @updatedAt
-  createdAt      DateTime    @default(now())
+  agentType      String // e.g., "ONBOARDING_AGENT"
+  targetPriority String // "HIGH" | "CRITICAL" | "NORMAL"
+  reasonTrigger  String // "Historical onboarding regression detected on step X"
+  isActive       Boolean  @default(true)
+  metadata       Json? // prioritization overrides, parameters, thresholds
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
 
-  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model Organization {
-  id        String            @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   workspaces Workspace[]
   members    WorkspaceMember[]
   teams      Team[]
 }
 
 model Workspace {
-  id             String            @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   name           String
   description    String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members        WorkspaceMember[]
-  projects       Project[]
-  invites               WorkspaceInvite[]
-  sharedInvestigations  SharedInvestigation[]
-  workspaceProjects     WorkspaceProject[]
-  workspaceActivities   WorkspaceActivity[]
-  workspacePolicies     WorkspacePolicy[]
-  investigationAccesses InvestigationAccess[]
-  replayAccessScopes    ReplayAccessScope[]
-  sharedAccessGrants    SharedAccessGrant[]
-  securityEvents        WorkspaceSecurityEvent[]
-  executiveReports      ExecutiveReport[]
-  reportTemplates       ReportTemplate[]
-  workspaceInsightDigests WorkspaceInsightDigest[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization               Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members                    WorkspaceMember[]
+  projects                   Project[]
+  invites                    WorkspaceInvite[]
+  sharedInvestigations       SharedInvestigation[]
+  workspaceProjects          WorkspaceProject[]
+  workspaceActivities        WorkspaceActivity[]
+  workspacePolicies          WorkspacePolicy[]
+  investigationAccesses      InvestigationAccess[]
+  replayAccessScopes         ReplayAccessScope[]
+  sharedAccessGrants         SharedAccessGrant[]
+  securityEvents             WorkspaceSecurityEvent[]
+  executiveReports           ExecutiveReport[]
+  reportTemplates            ReportTemplate[]
+  workspaceInsightDigests    WorkspaceInsightDigest[]
+  auditEvents                AuditEvent[]
+  securityEventsLog          SecurityEvent[]
+  replayAuditLogs            ReplayAuditLog[]
+  investigationAuditLogs     InvestigationAuditLog[]
+  governancePolicyEvents     GovernancePolicyEvent[]
+  complianceRetentionRecords ComplianceRetentionRecord[]
+  accessTraceRecords         AccessTraceRecord[]
+  securityAlerts             WorkspaceSecurityAlert[]
 }
 
 model Team {
-  id             String            @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   name           String
   description    String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members        WorkspaceMember[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      WorkspaceMember[]
 }
 
 model WorkspaceMember {
-  id             String            @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String
   workspaceId    String?
   teamId         String?
   userId         String
-  role           String            // "OWNER" | "ADMIN" | "UX_LEAD" | "INVESTIGATOR" | "REVIEWER" | "VIEWER"
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  workspace      Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  team           Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permissions    PermissionGrant[]
+  role           String // "OWNER" | "ADMIN" | "UX_LEAD" | "INVESTIGATOR" | "REVIEWER" | "VIEWER"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspace       Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  team            Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions     PermissionGrant[]
   workspaceRoleId String?
-  workspaceRole   WorkspaceRole? @relation(fields: [workspaceRoleId], references: [id], onDelete: SetNull)
+  workspaceRole   WorkspaceRole?    @relation(fields: [workspaceRoleId], references: [id], onDelete: SetNull)
 }
 
 model InvestigationReview {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
-  assignedToId      String?         // User ID of the assignee
-  status            String          // "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "RESOLVED"
+  assignedToId      String? // User ID of the assignee
+  status            String // "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "RESOLVED"
   approvalNotes     String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  
-  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
-  assignedTo        User?           @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  workflowSession WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  assignedTo      User?           @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 }
 
 model Annotation {
-  id           String           @id @default(uuid())
-  projectId    String
-  targetType   String           // "SCREENSHOT" | "TIMELINE_EVENT" | "FINDING" | "TREND" | "HEATMAP"
-  targetId     String           // ID of the target resource
-  title        String?
-  content      String
-  severity     String?          // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" (if mapping a friction overlay)
-  resolved     Boolean          @default(false)
-  createdById  String
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  
-  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy    User             @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  comments     EvidenceComment[]
+  id          String   @id @default(uuid())
+  projectId   String
+  targetType  String // "SCREENSHOT" | "TIMELINE_EVENT" | "FINDING" | "TREND" | "HEATMAP"
+  targetId    String // ID of the target resource
+  title       String?
+  content     String
+  severity    String? // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" (if mapping a friction overlay)
+  resolved    Boolean  @default(false)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  comments  EvidenceComment[]
 }
 
 model EvidenceComment {
-  id           String     @id @default(uuid())
+  id           String   @id @default(uuid())
   annotationId String
   content      String
   createdById  String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  
-  annotation   Annotation @relation(fields: [annotationId], references: [id], onDelete: Cascade)
-  createdBy    User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  annotation Annotation @relation(fields: [annotationId], references: [id], onDelete: Cascade)
+  createdBy  User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model SharedLink {
   id          String    @id @default(uuid())
   projectId   String
-  targetType  String    // "INVESTIGATION" | "REPORT" | "REPLAY" | "SUMMARY"
+  targetType  String // "INVESTIGATION" | "REPORT" | "REPLAY" | "SUMMARY"
   targetId    String
   token       String    @unique
   expiresAt   DateTime?
@@ -664,9 +680,9 @@ model SharedLink {
   useCount    Int       @default(0)
   createdById String
   createdAt   DateTime  @default(now())
-  
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model ActivityEvent {
@@ -674,233 +690,233 @@ model ActivityEvent {
   projectId   String?
   workspaceId String?
   userId      String
-  actionType  String   // "INVESTIGATION_RUN" | "ANNOTATION_CREATE" | "REVIEW_UPDATE" | "PERMISSION_GRANT" | "REPORT_EXPORT"
+  actionType  String // "INVESTIGATION_RUN" | "ANNOTATION_CREATE" | "REVIEW_UPDATE" | "PERMISSION_GRANT" | "REPORT_EXPORT"
   description String
   metadata    Json?
   createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PermissionGrant {
-  id          String          @id @default(uuid())
+  id          String   @id @default(uuid())
   workspaceId String?
   projectId   String?
-  memberId    String          // WorkspaceMember ID
-  action      String          // "READ_INVESTIGATION" | "WRITE_ANNOTATION" | "EXPORT_REPORT" | etc.
-  isAllowed   Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  
-  member      WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId    String // WorkspaceMember ID
+  action      String // "READ_INVESTIGATION" | "WRITE_ANNOTATION" | "EXPORT_REPORT" | etc.
+  isAllowed   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  member WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
 model SimulationProfile {
-  id          String                  @id @default(uuid())
+  id          String   @id @default(uuid())
   projectId   String
   name        String
-  personaType String                  // "BEGINNER" | "POWER_USER" | "FIRST_TIME_USER" | "DISTRACTED_USER"
+  personaType String // "BEGINNER" | "POWER_USER" | "FIRST_TIME_USER" | "DISTRACTED_USER"
   description String?
-  traits      Json                    // Configuration weights for confidence, patience, reading depth, etc.
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  
-  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  decisions   BehavioralDecision[]
-  paths       ExplorationPath[]
-  replays     BehavioralReplayEvent[]
+  traits      Json // Configuration weights for confidence, patience, reading depth, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  decisions BehavioralDecision[]
+  paths     ExplorationPath[]
+  replays   BehavioralReplayEvent[]
 }
 
 model BehavioralDecision {
-  id                  String             @id @default(uuid())
+  id                  String   @id @default(uuid())
   simulationProfileId String
   workflowSessionId   String?
   stepIndex           Int
-  actionType          String             // "CLICK" | "HOVER" | "SCAN" | "BACKTRACK" | "INPUT" | "PAUSE"
-  targetElement       String             // Selector or coordinate description
-  decisionReason      String             // Why this action was chosen (intent-driven)
-  confidenceBefore    Float              // Confidence metric before action (0.0 to 1.0)
-  confidenceAfter     Float              // Confidence metric after action (0.0 to 1.0)
-  latencyMs           Int                // Simulated pacing duration
-  createdAt           DateTime           @default(now())
-  
-  profile             SimulationProfile  @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
-  session             WorkflowSession?   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  actionType          String // "CLICK" | "HOVER" | "SCAN" | "BACKTRACK" | "INPUT" | "PAUSE"
+  targetElement       String // Selector or coordinate description
+  decisionReason      String // Why this action was chosen (intent-driven)
+  confidenceBefore    Float // Confidence metric before action (0.0 to 1.0)
+  confidenceAfter     Float // Confidence metric after action (0.0 to 1.0)
+  latencyMs           Int // Simulated pacing duration
+  createdAt           DateTime @default(now())
+
+  profile SimulationProfile @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
+  session WorkflowSession?  @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model ExplorationPath {
-  id                  String             @id @default(uuid())
+  id                  String   @id @default(uuid())
   simulationProfileId String
   workflowSessionId   String?
-  steps               Json               // List of { stepIndex, url, action, duration }
-  isSuccess           Boolean            @default(false)
-  totalFrictionScore  Float              // Aggregated friction during this run
-  createdAt           DateTime           @default(now())
-  
-  profile             SimulationProfile  @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
-  session             WorkflowSession?   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  steps               Json // List of { stepIndex, url, action, duration }
+  isSuccess           Boolean  @default(false)
+  totalFrictionScore  Float // Aggregated friction during this run
+  createdAt           DateTime @default(now())
+
+  profile SimulationProfile @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
+  session WorkflowSession?  @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model HesitationSignal {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  signalType        String          // "HOVER_HESITATION" | "REPEATED_SCANNING" | "DELAYED_CLICKING" | "CURSOR_DRIFT"
+  signalType        String // "HOVER_HESITATION" | "REPEATED_SCANNING" | "DELAYED_CLICKING" | "CURSOR_DRIFT"
   targetElement     String?
   durationMs        Int
-  severity          String          // "LOW" | "MEDIUM" | "HIGH"
+  severity          String // "LOW" | "MEDIUM" | "HIGH"
   description       String
-  createdAt         DateTime        @default(now())
-  
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model NavigationConfidenceEvent {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  confidenceValue   Float           // 0.0 to 1.0
+  confidenceValue   Float // 0.0 to 1.0
   contextualDetails String
-  createdAt         DateTime        @default(now())
-  
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model FrictionReaction {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  reactionType      String          // "ABANDONMENT_RISK" | "EXPLORATION_SLOWDOWN" | "RETRY_HESITATION"
-  triggerSource     String          // e.g. "CTA_AMBIGUITY"
-  intensity         Float           // 0.0 to 1.0
+  reactionType      String // "ABANDONMENT_RISK" | "EXPLORATION_SLOWDOWN" | "RETRY_HESITATION"
+  triggerSource     String // e.g. "CTA_AMBIGUITY"
+  intensity         Float // 0.0 to 1.0
   description       String
-  createdAt         DateTime        @default(now())
-  
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model BehavioralReplayEvent {
-  id                  String            @id @default(uuid())
+  id                  String   @id @default(uuid())
   simulationProfileId String
   workflowSessionId   String
   stepIndex           Int
-  eventType           String            // "HOVER" | "CLICK" | "INPUT" | "SCAN" | "SCROLL" | "BACKTRACK"
-  coordinates         Json?             // { x, y } target or path coordinates
+  eventType           String // "HOVER" | "CLICK" | "INPUT" | "SCAN" | "SCROLL" | "BACKTRACK"
+  coordinates         Json? // { x, y } target or path coordinates
   targetSelector      String?
   durationMs          Int
-  metaData            Json?             // Pacing/decision metadata
-  createdAt           DateTime          @default(now())
-  
-  profile             SimulationProfile @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
-  session             WorkflowSession   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  metaData            Json? // Pacing/decision metadata
+  createdAt           DateTime @default(now())
+
+  profile SimulationProfile @relation(fields: [simulationProfileId], references: [id], onDelete: Cascade)
+  session WorkflowSession   @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model CognitiveState {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  cognitiveLoad     Float           // 0.0 to 1.0 (overall load)
-  mentalEffort      Float           // 0.0 to 1.0 (interaction-driven)
-  informationLoad   Float           // 0.0 to 1.0 (visual/information density)
-  interactionLoad   Float           // 0.0 to 1.0 (clutter/input)
+  cognitiveLoad     Float // 0.0 to 1.0 (overall load)
+  mentalEffort      Float // 0.0 to 1.0 (interaction-driven)
+  informationLoad   Float // 0.0 to 1.0 (visual/information density)
+  interactionLoad   Float // 0.0 to 1.0 (clutter/input)
   description       String
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model ConfidenceSignal {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  confidenceScore   Float           // 0.0 to 1.0
-  certaintyLevel    String          // "HIGH" | "MEDIUM" | "LOW"
+  confidenceScore   Float // 0.0 to 1.0
+  certaintyLevel    String // "HIGH" | "MEDIUM" | "LOW"
   targetElement     String?
-  evidenceSource    String          // e.g., "CLICK_CERTAINTY", "CURSOR_DRIFT", "REPEATED_SCANNING", "BACKTRACKING"
+  evidenceSource    String // e.g., "CLICK_CERTAINTY", "CURSOR_DRIFT", "REPEATED_SCANNING", "BACKTRACKING"
   description       String
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model AttentionEvent {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
   targetElement     String?
-  visibilityWeight  Float           // 0.0 to 1.0 (CTA prominence / visual dominance)
-  focusHeat         Float           // 0.0 to 1.0 (computed visual focus weight)
-  overloadDetected  Boolean         @default(false)
+  visibilityWeight  Float // 0.0 to 1.0 (CTA prominence / visual dominance)
+  focusHeat         Float // 0.0 to 1.0 (computed visual focus weight)
+  overloadDetected  Boolean  @default(false)
   description       String
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model ExpectationMismatch {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  expectedAction    String          // E.g., "Navbar Settings"
-  actualAction      String          // E.g., "Hidden Settings in Avatar Dropdown"
-  mismatchSeverity  String          // "LOW" | "MEDIUM" | "HIGH"
-  mismatchCategory  String          // "NAV_MISPLACEMENT", "CTA_AMBIGUITY", "UI_CONVENTION_BREAK", "PROGRESS_DESYNC"
+  expectedAction    String // E.g., "Navbar Settings"
+  actualAction      String // E.g., "Hidden Settings in Avatar Dropdown"
+  mismatchSeverity  String // "LOW" | "MEDIUM" | "HIGH"
+  mismatchCategory  String // "NAV_MISPLACEMENT", "CTA_AMBIGUITY", "UI_CONVENTION_BREAK", "PROGRESS_DESYNC"
   description       String
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model DecisionComplexityEvent {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  choiceCount       Int             // Number of interactable choices
-  ambiguityScore    Float           // 0.0 to 1.0 (lack of focal CTA)
-  complexityLevel   String          // "LOW" | "MEDIUM" | "HIGH"
-  nextActionClarity Float           // 0.0 to 1.0
+  choiceCount       Int // Number of interactable choices
+  ambiguityScore    Float // 0.0 to 1.0 (lack of focal CTA)
+  complexityLevel   String // "LOW" | "MEDIUM" | "HIGH"
+  nextActionClarity Float // 0.0 to 1.0
   description       String
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model AbandonmentRiskSignal {
-  id                String          @id @default(uuid())
-  workflowSessionId String
-  stepIndex         Int
-  riskProbability   Float           // 0.0 to 1.0 (predictive likelihood of session abandon)
-  triggerSource     String          // E.g., "CONFIDENCE_DEGRADATION", "EXPLORATION_FATIGUE", "RETRY_FREQUENCY"
-  frictionAccumulated Float         // 0.0 to 1.0
-  description       String
-  createdAt         DateTime        @default(now())
+  id                  String   @id @default(uuid())
+  workflowSessionId   String
+  stepIndex           Int
+  riskProbability     Float // 0.0 to 1.0 (predictive likelihood of session abandon)
+  triggerSource       String // E.g., "CONFIDENCE_DEGRADATION", "EXPLORATION_FATIGUE", "RETRY_FREQUENCY"
+  frictionAccumulated Float // 0.0 to 1.0
+  description         String
+  createdAt           DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model CognitiveTimelineEvent {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   workflowSessionId String
   stepIndex         Int
-  eventType         String          // "COGNITIVE_LOAD_SPIKE" | "EXPECTATION_FAIL" | "CONFIDENCE_DROP" | "ATTENTION_SHIFT" | "RISK_ESCALATION"
-  intensity         Float           // 0.0 to 1.0
-  associatedId      String?         // Polymorphic reference to the specific model ID
+  eventType         String // "COGNITIVE_LOAD_SPIKE" | "EXPECTATION_FAIL" | "CONFIDENCE_DROP" | "ATTENTION_SHIFT" | "RISK_ESCALATION"
+  intensity         Float // 0.0 to 1.0
+  associatedId      String? // Polymorphic reference to the specific model ID
   description       String
-  createdAt         DateTime        @default(now())
+  createdAt         DateTime @default(now())
 
-  session           WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }
 
 model SwarmSession {
-  id                   String                        @id @default(uuid())
-  projectId            String
-  project              Project                       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name                 String
-  startUrl             String
-  goal                 String
-  status               String                        @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
-  startedAt            DateTime?
-  endedAt              DateTime?
-  createdAt            DateTime                      @default(now())
+  id        String    @id @default(uuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  startUrl  String
+  goal      String
+  status    String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
 
   executions           PersonaExecution[]
   comparisons          PersonaComparison[]
@@ -910,147 +926,147 @@ model SwarmSession {
 }
 
 model PersonaExecution {
-  id                String            @id @default(uuid())
+  id                String           @id @default(uuid())
   swarmSessionId    String
-  swarmSession      SwarmSession      @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
-  personaType       String            // "Beginner Teacher", "Distracted Student", etc.
+  swarmSession      SwarmSession     @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  personaType       String // "Beginner Teacher", "Distracted Student", etc.
   workflowSessionId String?
-  workflowSession   WorkflowSession?  @relation(fields: [workflowSessionId], references: [id], onDelete: SetNull)
-  status            String            @default("RUNNING") // RUNNING, COMPLETED, FAILED
-  completionRate    Float             @default(0.0) // 0 or 1
-  durationMs        Int               @default(0)
-  frictionScore     Float             @default(0.0)
-  stepsCompleted    Int               @default(0)
-  createdAt         DateTime          @default(now())
+  workflowSession   WorkflowSession? @relation(fields: [workflowSessionId], references: [id], onDelete: SetNull)
+  status            String           @default("RUNNING") // RUNNING, COMPLETED, FAILED
+  completionRate    Float            @default(0.0) // 0 or 1
+  durationMs        Int              @default(0)
+  frictionScore     Float            @default(0.0)
+  stepsCompleted    Int              @default(0)
+  createdAt         DateTime         @default(now())
 
-  replays           SwarmReplayEvent[]
+  replays SwarmReplayEvent[]
 }
 
 model PersonaComparison {
-  id                String          @id @default(uuid())
-  swarmSessionId    String
-  swarmSession      SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
-  personaA          String
-  personaB          String
-  similarityScore   Float
-  divergenceNotes   String
-  pathVariance      Float
-  cognitiveDelta    Float
-  createdAt         DateTime        @default(now())
+  id              String       @id @default(uuid())
+  swarmSessionId  String
+  swarmSession    SwarmSession @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  personaA        String
+  personaB        String
+  similarityScore Float
+  divergenceNotes String
+  pathVariance    Float
+  cognitiveDelta  Float
+  createdAt       DateTime     @default(now())
 }
 
 model DivergenceEvent {
-  id                String          @id @default(uuid())
-  swarmSessionId    String
-  swarmSession      SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
-  stepIndex         Int
-  eventType         String          // "PATH_DIVERGENCE" | "COGNITIVE_SPIKE" | "ABANDONMENT"
-  selector          String?
-  personaTypeA      String
-  actionA           String
-  personaTypeB      String
-  actionB           String
-  details           String
-  createdAt         DateTime        @default(now())
+  id             String       @id @default(uuid())
+  swarmSessionId String
+  swarmSession   SwarmSession @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  stepIndex      Int
+  eventType      String // "PATH_DIVERGENCE" | "COGNITIVE_SPIKE" | "ABANDONMENT"
+  selector       String?
+  personaTypeA   String
+  actionA        String
+  personaTypeB   String
+  actionB        String
+  details        String
+  createdAt      DateTime     @default(now())
 }
 
 model WorkflowSurvivabilityMetric {
-  id                    String          @id @default(uuid())
-  swarmSessionId        String
-  swarmSession          SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
-  workflowPath          String
-  overallCompletionRate Float
-  averageSteps          Float
-  failureClusterCount   Int
+  id                     String       @id @default(uuid())
+  swarmSessionId         String
+  swarmSession           SwarmSession @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  workflowPath           String
+  overallCompletionRate  Float
+  averageSteps           Float
+  failureClusterCount    Int
   abandonmentRiskAverage Float
-  failurePoints         Json            // list of selectors/elements where failure clustered
-  createdAt             DateTime        @default(now())
+  failurePoints          Json // list of selectors/elements where failure clustered
+  createdAt              DateTime     @default(now())
 }
 
 model PopulationHeatmap {
-  id                  String          @id @default(uuid())
-  swarmSessionId      String
-  swarmSession        SwarmSession    @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
-  pageUrl             String
-  selector            String
-  clickCount          Int             @default(0)
-  hoverCount          Int             @default(0)
-  averageHesitationMs Int             @default(0)
-  averageFrictionScore Float           @default(0.0)
-  attentionWeight     Float           @default(0.0)
-  cognitiveDensity    Float           @default(0.0)
-  createdAt           DateTime        @default(now())
+  id                   String       @id @default(uuid())
+  swarmSessionId       String
+  swarmSession         SwarmSession @relation(fields: [swarmSessionId], references: [id], onDelete: Cascade)
+  pageUrl              String
+  selector             String
+  clickCount           Int          @default(0)
+  hoverCount           Int          @default(0)
+  averageHesitationMs  Int          @default(0)
+  averageFrictionScore Float        @default(0.0)
+  attentionWeight      Float        @default(0.0)
+  cognitiveDensity     Float        @default(0.0)
+  createdAt            DateTime     @default(now())
 }
 
 model SwarmReplayEvent {
-  id                 String            @id @default(uuid())
+  id                 String           @id @default(uuid())
   personaExecutionId String
-  execution          PersonaExecution  @relation(fields: [personaExecutionId], references: [id], onDelete: Cascade)
+  execution          PersonaExecution @relation(fields: [personaExecutionId], references: [id], onDelete: Cascade)
   stepIndex          Int
   timestampMs        Int
-  eventType          String            // "HOVER", "CLICK", "INPUT", etc.
+  eventType          String // "HOVER", "CLICK", "INPUT", etc.
   targetSelector     String?
-  coordinates        Json?             // { x, y }
+  coordinates        Json? // { x, y }
   cognitiveLoad      Float
   confidence         Float
   description        String
-  createdAt          DateTime          @default(now())
-}
-
-model WorkflowForecast {
-  id                    String                   @id @default(uuid())
-  projectId             String
-  project               Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  workflowPath          String
-  status                String                   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
-  stabilityScore        Float                    @default(0.0) // 0.0 to 1.0 (overall workflow health prediction)
-  completionRate        Float                    @default(0.0) // predicted completion rate
-  averageFriction       Float                    @default(0.0) // predicted average friction
-  failureClusterPoints  Json                     // Array of selectors where failures are expected
-  riskLevel             String                   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
-  createdAt             DateTime                 @default(now())
-
-  riskSignals           PredictiveRiskSignal[]
-  survivabilityForecasts SurvivabilityForecast[]
-  abandonmentPredictions AbandonmentPrediction[]
-  timelineEvents        PredictiveTimelineEvent[]
-}
-
-model PredictiveRiskSignal {
-  id                 String           @id @default(uuid())
-  workflowForecastId String
-  forecast           WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
-  stepIndex          Int
-  riskType           String           // "WORKFLOW_COLLAPSE", "ONBOARDING_FAILURE", "CTA_WEAKNESS", "NAVIGATION_FAILURE", "FRICTION_ESCALATION", "COGNITIVE_OVERLOAD", "MOBILE_FAILURE", "PERSONA_FAILURE"
-  confidenceScore    Float            // 0.0 to 1.0
-  severity           String           // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-  targetSelector     String?
-  contributingSignals Json            // list of strings
-  evidenceNotes      String
-  historicalBasis    String
   createdAt          DateTime         @default(now())
 }
 
+model WorkflowForecast {
+  id                   String   @id @default(uuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath         String
+  status               String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  stabilityScore       Float    @default(0.0) // 0.0 to 1.0 (overall workflow health prediction)
+  completionRate       Float    @default(0.0) // predicted completion rate
+  averageFriction      Float    @default(0.0) // predicted average friction
+  failureClusterPoints Json // Array of selectors where failures are expected
+  riskLevel            String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  createdAt            DateTime @default(now())
+
+  riskSignals            PredictiveRiskSignal[]
+  survivabilityForecasts SurvivabilityForecast[]
+  abandonmentPredictions AbandonmentPrediction[]
+  timelineEvents         PredictiveTimelineEvent[]
+}
+
+model PredictiveRiskSignal {
+  id                  String           @id @default(uuid())
+  workflowForecastId  String
+  forecast            WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
+  stepIndex           Int
+  riskType            String // "WORKFLOW_COLLAPSE", "ONBOARDING_FAILURE", "CTA_WEAKNESS", "NAVIGATION_FAILURE", "FRICTION_ESCALATION", "COGNITIVE_OVERLOAD", "MOBILE_FAILURE", "PERSONA_FAILURE"
+  confidenceScore     Float // 0.0 to 1.0
+  severity            String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  targetSelector      String?
+  contributingSignals Json // list of strings
+  evidenceNotes       String
+  historicalBasis     String
+  createdAt           DateTime         @default(now())
+}
+
 model RegressionEvent {
-  id                  String              @id @default(uuid())
-  projectId           String
-  project             Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  workflowPath        String
-  metricName          String              // "COMPLETION_RATE" | "FRICTION_SCORE" | "COGNITIVE_LOAD" | "STEPS_TO_COMPLETE"
-  baseValue           Float
-  forecastedValue     Float
-  driftPercentage     Float
-  severity            String              // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-  contributingFactors Json                // list of factors
+  id                   String              @id @default(uuid())
+  projectId            String
+  project              Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath         String
+  metricName           String // "COMPLETION_RATE" | "FRICTION_SCORE" | "COGNITIVE_LOAD" | "STEPS_TO_COMPLETE"
+  baseValue            Float
+  forecastedValue      Float
+  driftPercentage      Float
+  severity             String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  contributingFactors  Json // list of factors
   historicalBaselineId String?
-  baseline            HistoricalBaseline? @relation(fields: [historicalBaselineId], references: [id], onDelete: SetNull)
+  baseline             HistoricalBaseline? @relation(fields: [historicalBaselineId], references: [id], onDelete: SetNull)
   createdAt            DateTime            @default(now())
 }
 
 model HistoricalBaseline {
-  id                   String            @id @default(uuid())
+  id                   String   @id @default(uuid())
   projectId            String
-  project              Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name                 String
   workflowPath         String
   averageSteps         Float
@@ -1058,21 +1074,21 @@ model HistoricalBaseline {
   successRate          Float
   cognitiveLoadAverage Float
   sampleSize           Int
-  createdAt            DateTime          @default(now())
+  createdAt            DateTime @default(now())
 
-  regressionEvents     RegressionEvent[]
+  regressionEvents RegressionEvent[]
 }
 
 model SurvivabilityForecast {
-  id                   String           @id @default(uuid())
-  workflowForecastId   String
-  forecast             WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
-  personaType          String           // "Beginner Teacher", "Power User", etc.
-  predictedSurvivalRate Float
-  estimatedStepsToAbandon Float
+  id                        String           @id @default(uuid())
+  workflowForecastId        String
+  forecast                  WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
+  personaType               String // "Beginner Teacher", "Power User", etc.
+  predictedSurvivalRate     Float
+  estimatedStepsToAbandon   Float
   primaryAbandonmentTrigger String
-  riskFactors          Json             // list of factors/signals
-  createdAt            DateTime         @default(now())
+  riskFactors               Json // list of factors/signals
+  createdAt                 DateTime         @default(now())
 }
 
 model AbandonmentPrediction {
@@ -1080,8 +1096,8 @@ model AbandonmentPrediction {
   workflowForecastId            String
   forecast                      WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
   stepIndex                     Int
-  abandonmentProbability        Float            // 0.0 to 1.0
-  triggerSource                 String           // e.g. "CONFIDENCE_DEGRADATION"
+  abandonmentProbability        Float // 0.0 to 1.0
+  triggerSource                 String // e.g. "CONFIDENCE_DEGRADATION"
   cognitiveLoadEscalation       Float
   confidenceCollapseProbability Float
   retryDensityImpact            Float
@@ -1095,9 +1111,9 @@ model PredictiveTimelineEvent {
   workflowForecastId String
   forecast           WorkflowForecast @relation(fields: [workflowForecastId], references: [id], onDelete: Cascade)
   stepIndex          Int
-  eventType          String           // "FRICTION_ESCALATION" | "CONFIDENCE_COLLAPSE" | "ABANDONMENT_TREND" | "REGRESSION_RISK" | "COGNITIVE_OVERLOAD"
+  eventType          String // "FRICTION_ESCALATION" | "CONFIDENCE_COLLAPSE" | "ABANDONMENT_TREND" | "REGRESSION_RISK" | "COGNITIVE_OVERLOAD"
   timeOffsetMs       Int
-  predictedIntensity Float            // 0.0 to 1.0
+  predictedIntensity Float // 0.0 to 1.0
   description        String
   createdAt          DateTime         @default(now())
 }
@@ -1105,7 +1121,7 @@ model PredictiveTimelineEvent {
 model WorkspaceInvite {
   id          String    @id @default(uuid())
   email       String
-  role        String    // OWNER, ADMIN, UX_LEAD, INVESTIGATOR, REVIEWER, VIEWER
+  role        String // OWNER, ADMIN, UX_LEAD, INVESTIGATOR, REVIEWER, VIEWER
   token       String    @unique
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1117,19 +1133,20 @@ model WorkspaceInvite {
 }
 
 model SharedInvestigation {
-  id                String                 @id @default(uuid())
+  id                String          @id @default(uuid())
   workspaceId       String
-  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   workflowSessionId String
-  workflowSession   WorkflowSession        @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
   name              String
   description       String?
   createdById       String
-  createdBy         User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt         DateTime               @default(now())
-  
+  createdBy         User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+
   comments              InvestigationComment[]
   investigationAccesses InvestigationAccess[]
+  InvestigationAuditLog InvestigationAuditLog[]
 }
 
 model InvestigationComment {
@@ -1157,38 +1174,38 @@ model WorkspaceActivity {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  actionType  String    // e.g. "INVITE_SENT", "MEMBER_JOINED", "PROJECT_ADDED", "INVESTIGATION_SHARED"
+  actionType  String // e.g. "INVITE_SENT", "MEMBER_JOINED", "PROJECT_ADDED", "INVESTIGATION_SHARED"
   description String
   metadata    Json?
   createdAt   DateTime  @default(now())
 }
 
 model WorkspaceRole {
-  id             String                @id @default(uuid())
-  workspaceId    String?               // null for global/system-wide default roles
-  name           String                // OWNER, ADMIN, ANALYST, VIEWER, GUEST, or custom
-  description    String?
-  permissions    WorkspacePermission[]
-  members        WorkspaceMember[]
-  createdAt      DateTime              @default(now())
+  id          String                @id @default(uuid())
+  workspaceId String? // null for global/system-wide default roles
+  name        String // OWNER, ADMIN, ANALYST, VIEWER, GUEST, or custom
+  description String?
+  permissions WorkspacePermission[]
+  members     WorkspaceMember[]
+  createdAt   DateTime              @default(now())
 }
 
 model WorkspacePermission {
-  id          String         @id @default(uuid())
-  roleId      String
-  role        WorkspaceRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  domain      String         // WORKSPACE, PROJECT, INVESTIGATION, REPLAY, ANALYTICS, SWARM, EXPORT, TEAM
-  action      String         // READ, WRITE, EXECUTE, MANAGE
-  isAllowed   Boolean        @default(true)
-  createdAt   DateTime       @default(now())
+  id        String        @id @default(uuid())
+  roleId    String
+  role      WorkspaceRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  domain    String // WORKSPACE, PROJECT, INVESTIGATION, REPLAY, ANALYTICS, SWARM, EXPORT, TEAM
+  action    String // READ, WRITE, EXECUTE, MANAGE
+  isAllowed Boolean       @default(true)
+  createdAt DateTime      @default(now())
 }
 
 model WorkspacePolicy {
   id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  key         String    // inviteRestrictions, externalSharing, guestAccess, replaySharing, exportRestrictions, workspaceVisibility
-  value       String    // e.g. OWNER_ONLY, ADMIN_ONLY, ENABLED, DISABLED
+  key         String // inviteRestrictions, externalSharing, guestAccess, replaySharing, exportRestrictions, workspaceVisibility
+  value       String // e.g. OWNER_ONLY, ADMIN_ONLY, ENABLED, DISABLED
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -1199,80 +1216,80 @@ model InvestigationAccess {
   workspace             Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   sharedInvestigationId String
   sharedInvestigation   SharedInvestigation @relation(fields: [sharedInvestigationId], references: [id], onDelete: Cascade)
-  accessorType          String              // ROLE | MEMBER | PUBLIC
-  accessorId            String?             // WorkspaceRole ID or WorkspaceMember ID or null if public
+  accessorType          String // ROLE | MEMBER | PUBLIC
+  accessorId            String? // WorkspaceRole ID or WorkspaceMember ID or null if public
   canRead               Boolean             @default(true)
   canWrite              Boolean             @default(false)
   createdAt             DateTime            @default(now())
 }
 
 model ReplayAccessScope {
-  id                  String          @id @default(uuid())
-  workspaceId         String
-  workspace           Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  workflowSessionId   String          // References WorkflowSession
-  workflowSession     WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
-  scopeType           String          // WORKSPACE | PROJECT | PRIVATE | PUBLIC
-  allowedRoles        Json?           // JSON array of role names allowed to access, e.g. ["OWNER", "ADMIN", "ANALYST"]
-  createdAt           DateTime        @default(now())
+  id                String          @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workflowSessionId String // References WorkflowSession
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  scopeType         String // WORKSPACE | PROJECT | PRIVATE | PUBLIC
+  allowedRoles      Json? // JSON array of role names allowed to access, e.g. ["OWNER", "ADMIN", "ANALYST"]
+  createdAt         DateTime        @default(now())
 }
 
 model SharedAccessGrant {
-  id                  String    @id @default(uuid())
-  workspaceId         String
-  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  resourceType        String    // INVESTIGATION | REPLAY | ANALYTICS
-  resourceId          String    // ID of the target resource
-  granteeId           String?   // WorkspaceMember ID (if shared with specific team member)
-  granteeEmail        String?   // External email (if shared externally)
-  expiresAt           DateTime?
-  createdAt           DateTime  @default(now())
+  id           String    @id @default(uuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  resourceType String // INVESTIGATION | REPLAY | ANALYTICS
+  resourceId   String // ID of the target resource
+  granteeId    String? // WorkspaceMember ID (if shared with specific team member)
+  granteeEmail String? // External email (if shared externally)
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
 }
 
 model WorkspaceSecurityEvent {
   id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  userId      String?   // Actor user ID
+  userId      String? // Actor user ID
   user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  eventType   String    // ROLE_CHANGE, POLICY_UPDATE, UNAUTHORIZED_ACCESS, EXTERNAL_SHARE, REVOCATION
-  severity    String    // INFO, WARNING, CRITICAL
+  eventType   String // ROLE_CHANGE, POLICY_UPDATE, UNAUTHORIZED_ACCESS, EXTERNAL_SHARE, REVOCATION
+  severity    String // INFO, WARNING, CRITICAL
   description String
   metadata    Json?
   createdAt   DateTime  @default(now())
 }
 
 model ExecutiveReport {
-  id             String                  @id @default(uuid())
-  workspaceId    String?                 // null in Solo Mode
-  workspace      Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   projectId      String
-  project        Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title          String
-  summary        String                  // Executive Summary text block
+  summary        String // Executive Summary text block
   stabilityScore Float
   completionRate Float
-  riskLevel      String                  // LOW | MEDIUM | HIGH | CRITICAL
-  sections       Json                    // Structured layout sections
+  riskLevel      String // LOW | MEDIUM | HIGH | CRITICAL
+  sections       Json // Structured layout sections
   createdById    String
-  createdBy      User                    @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
+  createdBy      User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  exports        ReportExport[]
-  shares         SharedReport[]
-  evidenceLinks  ReportEvidenceLink[]
-  distributions  ReportDistributionEvent[]
+  exports       ReportExport[]
+  shares        SharedReport[]
+  evidenceLinks ReportEvidenceLink[]
+  distributions ReportDistributionEvent[]
 }
 
 model ReportTemplate {
   id          String     @id @default(uuid())
-  workspaceId String?    // null for global/system templates
+  workspaceId String? // null for global/system templates
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name        String
   description String?
-  layoutType  String     // "RISK_REPORT" | "PRODUCT_RELEASE" | "UX_AUDIT" | "PREDICTIVE_INTEL" | "PERSONA_ANALYSIS" | "WORKFLOW_STABILITY"
-  structure   Json       // Configured layout blocks
+  layoutType  String // "RISK_REPORT" | "PRODUCT_RELEASE" | "UX_AUDIT" | "PREDICTIVE_INTEL" | "PERSONA_ANALYSIS" | "WORKFLOW_STABILITY"
+  structure   Json // Configured layout blocks
   isSystem    Boolean    @default(false)
   createdAt   DateTime   @default(now())
 }
@@ -1281,10 +1298,10 @@ model ReportExport {
   id          String          @id @default(uuid())
   reportId    String
   report      ExecutiveReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  format      String          // "PDF" | "PRESENTATION" | "SNAPSHOT" | "CSV" | "ZIP"
+  format      String // "PDF" | "PRESENTATION" | "SNAPSHOT" | "CSV" | "ZIP"
   status      String          @default("PENDING") // PENDING | GENERATING | COMPLETED | FAILED
   filePath    String?
-  metadata    Json?           // Size, pages, details
+  metadata    Json? // Size, pages, details
   createdById String
   createdBy   User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime        @default(now())
@@ -1308,8 +1325,8 @@ model ReportEvidenceLink {
   id           String          @id @default(uuid())
   reportId     String
   report       ExecutiveReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  evidenceType String          // SCREENSHOT | TIMELINE_EVENT | COGNITIVE_SIGNAL | PREDICTIVE_RISK | SWARM_COMPARISON | REPLAY
-  evidenceId   String          // ID of target model
+  evidenceType String // SCREENSHOT | TIMELINE_EVENT | COGNITIVE_SIGNAL | PREDICTIVE_RISK | SWARM_COMPARISON | REPLAY
+  evidenceId   String // ID of target model
   notes        String?
   createdAt    DateTime        @default(now())
 }
@@ -1318,8 +1335,8 @@ model ReportDistributionEvent {
   id        String          @id @default(uuid())
   reportId  String
   report    ExecutiveReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  channel   String          // "EMAIL" | "WORKSPACE_NOTIFICATION" | "WEBHOOK"
-  recipient String          // Webhook URL or Email address
+  channel   String // "EMAIL" | "WORKSPACE_NOTIFICATION" | "WEBHOOK"
+  recipient String // Webhook URL or Email address
   status    String          @default("SENT") // SENT | FAILED
   sentById  String
   sentBy    User            @relation(fields: [sentById], references: [id], onDelete: Cascade)
@@ -1331,13 +1348,119 @@ model WorkspaceInsightDigest {
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   title          String
-  digestPeriod   String    // DAILY | WEEKLY | MONTHLY
-  metricsSummary Json      // Aggregated score metrics
-  topRisks       Json      // Top predicted failure clusters
+  digestPeriod   String // DAILY | WEEKLY | MONTHLY
+  metricsSummary Json // Aggregated score metrics
+  topRisks       Json // Top predicted failure clusters
   deliveredAt    DateTime?
   createdAt      DateTime  @default(now())
 }
 
+model AuditEvent {
+  id          String     @id @default(uuid())
+  workspaceId String? // null in Solo Mode
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String // e.g. "VIEW_REPLAY", "EXPORT_REPORT", "MODIFY_POLICY"
+  resource    String // e.g. "Replay", "Report", "WorkspacePolicy"
+  resourceId  String?
+  description String
+  metadata    Json? // IP, User Agent, details
+  createdAt   DateTime   @default(now())
+}
 
+model SecurityEvent {
+  id          String     @id @default(uuid())
+  workspaceId String? // null in Solo Mode
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  eventType   String // e.g. "UNAUTHORIZED_ATTEMPT", "SUSPICIOUS_ACCESS", "CROSS_WORKSPACE_VIOLATION"
+  severity    String // INFO | WARNING | CRITICAL
+  description String
+  metadata    Json? // IP, User Agent, details
+  createdAt   DateTime   @default(now())
+}
 
+model ReplayAuditLog {
+  id                String          @id @default(uuid())
+  workspaceId       String? // null in Solo Mode
+  workspace         Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workflowSessionId String
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action            String // ACCESS | EXPORT | SHARE | VISIBILITY_CHANGE
+  description       String
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+}
 
+model InvestigationAuditLog {
+  id                    String              @id @default(uuid())
+  workspaceId           String? // null in Solo Mode
+  workspace             Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sharedInvestigationId String
+  sharedInvestigation   SharedInvestigation @relation(fields: [sharedInvestigationId], references: [id], onDelete: Cascade)
+  userId                String?
+  user                  User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action                String // READ | WRITE | COMMENT | PERMISSION_CHANGE
+  description           String
+  metadata              Json?
+  createdAt             DateTime            @default(now())
+}
+
+model GovernancePolicyEvent {
+  id          String     @id @default(uuid())
+  workspaceId String? // null in Solo Mode
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  policyKey   String // e.g. "inviteRestrictions"
+  oldValue    String
+  newValue    String
+  description String
+  createdAt   DateTime   @default(now())
+}
+
+model ComplianceRetentionRecord {
+  id            String     @id @default(uuid())
+  workspaceId   String? // null in Solo Mode
+  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  resourceType  String // REPLAY | REPORT | INVESTIGATION
+  resourceId    String
+  retentionDays Int
+  expiresAt     DateTime
+  status        String // ACTIVE | ARCHIVED | DELETED
+  notes         String?
+  createdAt     DateTime   @default(now())
+}
+
+model AccessTraceRecord {
+  id           String     @id @default(uuid())
+  workspaceId  String? // null in Solo Mode
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  resourceType String // REPLAY | REPORT | PREDICTIVE_FORECAST
+  resourceId   String
+  ipAddress    String?
+  userAgent    String?
+  accessedAt   DateTime   @default(now())
+}
+
+model WorkspaceSecurityAlert {
+  id           String     @id @default(uuid())
+  workspaceId  String? // null in Solo Mode
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  alertType    String // e.g. "HIGH_RISK_SHARING", "MULTIPLE_POLICY_VIOLATIONS"
+  severity     String // WARNING | CRITICAL
+  description  String
+  resolved     Boolean    @default(false)
+  resolvedById String?
+  resolvedAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+}
