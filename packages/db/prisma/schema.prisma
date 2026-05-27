@@ -24,6 +24,7 @@ model User {
   sharedInvestigations  SharedInvestigation[]
   investigationComments InvestigationComment[]
   workspaceActivities   WorkspaceActivity[]
+  securityEvents        WorkspaceSecurityEvent[]
 }
 
 model Project {
@@ -99,6 +100,7 @@ model WorkflowSession {
   cognitiveTimelineEvents CognitiveTimelineEvent[]
   personaExecutions      PersonaExecution[]
   sharedInvestigations  SharedInvestigation[]
+  replayAccessScopes    ReplayAccessScope[]
 }
 
 model AgentThought {
@@ -562,6 +564,11 @@ model Workspace {
   sharedInvestigations  SharedInvestigation[]
   workspaceProjects     WorkspaceProject[]
   workspaceActivities   WorkspaceActivity[]
+  workspacePolicies     WorkspacePolicy[]
+  investigationAccesses InvestigationAccess[]
+  replayAccessScopes    ReplayAccessScope[]
+  sharedAccessGrants    SharedAccessGrant[]
+  securityEvents        WorkspaceSecurityEvent[]
 }
 
 model Team {
@@ -591,6 +598,8 @@ model WorkspaceMember {
   team           Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissions    PermissionGrant[]
+  workspaceRoleId String?
+  workspaceRole   WorkspaceRole? @relation(fields: [workspaceRoleId], references: [id], onDelete: SetNull)
 }
 
 model InvestigationReview {
@@ -1111,7 +1120,8 @@ model SharedInvestigation {
   createdBy         User                   @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdAt         DateTime               @default(now())
   
-  comments          InvestigationComment[]
+  comments              InvestigationComment[]
+  investigationAccesses InvestigationAccess[]
 }
 
 model InvestigationComment {
@@ -1144,5 +1154,85 @@ model WorkspaceActivity {
   metadata    Json?
   createdAt   DateTime  @default(now())
 }
+
+model WorkspaceRole {
+  id             String                @id @default(uuid())
+  workspaceId    String?               // null for global/system-wide default roles
+  name           String                // OWNER, ADMIN, ANALYST, VIEWER, GUEST, or custom
+  description    String?
+  permissions    WorkspacePermission[]
+  members        WorkspaceMember[]
+  createdAt      DateTime              @default(now())
+}
+
+model WorkspacePermission {
+  id          String         @id @default(uuid())
+  roleId      String
+  role        WorkspaceRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  domain      String         // WORKSPACE, PROJECT, INVESTIGATION, REPLAY, ANALYTICS, SWARM, EXPORT, TEAM
+  action      String         // READ, WRITE, EXECUTE, MANAGE
+  isAllowed   Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+}
+
+model WorkspacePolicy {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  key         String    // inviteRestrictions, externalSharing, guestAccess, replaySharing, exportRestrictions, workspaceVisibility
+  value       String    // e.g. OWNER_ONLY, ADMIN_ONLY, ENABLED, DISABLED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model InvestigationAccess {
+  id                    String              @id @default(uuid())
+  workspaceId           String
+  workspace             Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sharedInvestigationId String
+  sharedInvestigation   SharedInvestigation @relation(fields: [sharedInvestigationId], references: [id], onDelete: Cascade)
+  accessorType          String              // ROLE | MEMBER | PUBLIC
+  accessorId            String?             // WorkspaceRole ID or WorkspaceMember ID or null if public
+  canRead               Boolean             @default(true)
+  canWrite              Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+}
+
+model ReplayAccessScope {
+  id                  String          @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workflowSessionId   String          // References WorkflowSession
+  workflowSession     WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  scopeType           String          // WORKSPACE | PROJECT | PRIVATE | PUBLIC
+  allowedRoles        Json?           // JSON array of role names allowed to access, e.g. ["OWNER", "ADMIN", "ANALYST"]
+  createdAt           DateTime        @default(now())
+}
+
+model SharedAccessGrant {
+  id                  String    @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  resourceType        String    // INVESTIGATION | REPLAY | ANALYTICS
+  resourceId          String    // ID of the target resource
+  granteeId           String?   // WorkspaceMember ID (if shared with specific team member)
+  granteeEmail        String?   // External email (if shared externally)
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+}
+
+model WorkspaceSecurityEvent {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?   // Actor user ID
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  eventType   String    // ROLE_CHANGE, POLICY_UPDATE, UNAUTHORIZED_ACCESS, EXTERNAL_SHARE, REVOCATION
+  severity    String    // INFO, WARNING, CRITICAL
+  description String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+}
+
 
 
