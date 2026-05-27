@@ -1520,7 +1520,7 @@ export const WorkspaceConsole: React.FC = () => {
             { key: 'roles-permissions', label: 'Roles & Permissions', icon: Key },
             { key: 'policies', label: 'Governance Policies', icon: Settings },
             { key: 'replays', label: 'Replay Access Scopes', icon: Eye },
-            { key: 'security', label: 'Security Overview', icon: Shield },
+            { key: 'security', label: 'Trust, Security & Compliance', icon: Shield },
             { key: 'reporting', label: 'Enterprise Reporting', icon: FileText },
           ].map((tab) => {
             const Icon = tab.icon;
