@@ -20,6 +20,7 @@ import { SimulationConsole } from './pages/SimulationConsole';
 import LongitudinalDashboard from './pages/LongitudinalDashboard';
 import { PredictiveDashboard } from './pages/PredictiveDashboard';
 import { RedesignDashboard } from './pages/RedesignDashboard';
+import { AutonomousDashboard } from './pages/AutonomousDashboard';
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
           <Route path="longitudinal" element={<LongitudinalDashboard />} />
           <Route path="predictive" element={<PredictiveDashboard />} />
           <Route path="redesign" element={<RedesignDashboard />} />
+          <Route path="autonomous" element={<AutonomousDashboard />} />
           <Route path="workspace" element={<WorkspaceConsole />} />
           <Route path="simulation" element={<SimulationConsole />} />
           <Route path="personas" element={<Personas />} />
