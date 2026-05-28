@@ -33,6 +33,7 @@ import { workspaceCoreRoutes } from './routes/workspaceCore';
 import { rbacCoreRoutes } from './routes/rbacCore';
 import { securityRoutes } from './routes/security';
 import { intelligenceRoutes } from './routes/intelligence';
+import { redesignRoutes } from './routes/redesign';
 import { startWorker } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
@@ -77,6 +78,8 @@ app.route('/api/rbac', rbacCoreRoutes);
 app.route('/rbac', rbacCoreRoutes);
 app.route('/api/security', securityRoutes);
 app.route('/api/intelligence', intelligenceRoutes);
+app.route('/api/redesign', redesignRoutes);
+app.route('/redesign', redesignRoutes);
 app.route('/api', workspaceCoreRoutes);
 app.route('/', workspaceCoreRoutes);
 
