@@ -3,6 +3,24 @@ import { streamSSE } from 'hono/streaming';
 import { prisma } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { PredictiveForecastingEngine } from '@fricta/predictive-engine';
+import { PredictiveIntelligenceEngine } from '@fricta/predictive-intelligence';
+import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+
+const guard = new RBACAuthorizationGuard(prisma);
+
+async function resolveUser(c: any): Promise<any> {
+  const userId = c.req.query('userId') || c.req.header('X-User-Id');
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user) return user;
+  }
+  const email = c.req.query('email') || c.req.header('X-User-Email');
+  if (email) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user) return user;
+  }
+  return prisma.user.findFirst();
+}
 
 export const predictiveRoutes = new Hono();
 const engine = new PredictiveForecastingEngine(prisma);
@@ -119,8 +137,24 @@ predictiveRoutes.get('/regressions', async (c) => {
  */
 predictiveRoutes.get('/survivability', async (c) => {
   const workflowForecastId = c.req.query('workflowForecastId');
-  if (!workflowForecastId) {
-    return c.json({ error: 'workflowForecastId is required' }, 400);
+  const projectId = c.req.query('projectId');
+  const workspaceId = c.req.query('workspaceId');
+
+  if (!workflowForecastId && !projectId) {
+    return c.json({ error: 'Either workflowForecastId or projectId is required' }, 400);
+  }
+
+  if (projectId) {
+    const user = await resolveUser(c);
+    if (workspaceId) {
+      const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+      if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+    }
+    const signals = await prisma.cognitiveRiskSignal.findMany({
+      where: { projectId, workspaceId: workspaceId || null },
+      orderBy: { personaType: 'asc' }
+    });
+    return c.json({ signals });
   }
 
   const forecasts = await prisma.survivabilityForecast.findMany({
@@ -228,4 +262,152 @@ predictiveRoutes.get('/stream/:workflowForecastId', async (c) => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   });
+});
+
+/**
+ * POST /forecast
+ * Manually trigger the predictive pipeline analysis.
+ */
+predictiveRoutes.post('/forecast', async (c) => {
+  const user = await resolveUser(c);
+  const { projectId, workspaceId } = await c.req.json().catch(() => ({}));
+
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  if (workspaceId) {
+    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
+    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
+
+  const results = await PredictiveIntelligenceEngine.runForecastPipeline(projectId, workspaceId || null);
+  
+  // Publish realtime predictive alerts
+  try {
+    const bus = RealtimeEventBus.getInstance();
+    bus.publish({
+      id: `pred-alert-${Date.now()}`,
+      eventType: 'predictive.failure.predicted',
+      orchestrationSessionId: '',
+      payload: {
+        projectId,
+        workspaceId: workspaceId || null,
+        message: 'Predictive forecasting run completed successfully',
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    // ignore
+  }
+
+  return c.json(results);
+});
+
+/**
+ * GET /risks
+ * Fetch workflow risk scores and metrics.
+ */
+predictiveRoutes.get('/risks', async (c) => {
+  const user = await resolveUser(c);
+  const projectId = c.req.query('projectId');
+  const workspaceId = c.req.query('workspaceId');
+
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  if (workspaceId) {
+    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
+
+  const risks = await prisma.workflowRiskScore.findMany({
+    where: { projectId, workspaceId: workspaceId || null },
+    orderBy: { riskScore: 'desc' }
+  });
+
+  return c.json({ risks });
+});
+
+/**
+ * GET /cognitive
+ * Fetch choice overload and fatigue load parameters.
+ */
+predictiveRoutes.get('/cognitive', async (c) => {
+  const user = await resolveUser(c);
+  const projectId = c.req.query('projectId');
+  const workspaceId = c.req.query('workspaceId');
+
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  if (workspaceId) {
+    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
+
+  const cognitiveSignals = await prisma.cognitiveRiskSignal.findMany({
+    where: { projectId, workspaceId: workspaceId || null }
+  });
+
+  return c.json({ cognitiveSignals });
+});
+
+/**
+ * GET /failures
+ * Fetch predicted failures (CTA degradation, etc.).
+ */
+predictiveRoutes.get('/failures', async (c) => {
+  const user = await resolveUser(c);
+  const projectId = c.req.query('projectId');
+  const workspaceId = c.req.query('workspaceId');
+
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  if (workspaceId) {
+    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
+
+  const failures = await prisma.uXFailurePrediction.findMany({
+    where: { projectId, workspaceId: workspaceId || null },
+    include: { evidence: true },
+    orderBy: { probability: 'desc' }
+  });
+
+  return c.json({ failures });
+});
+
+/**
+ * GET /trends
+ * Fetch long-term portfolio stability projections.
+ */
+predictiveRoutes.get('/trends', async (c) => {
+  const user = await resolveUser(c);
+  const projectId = c.req.query('projectId');
+  const workspaceId = c.req.query('workspaceId');
+
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  if (workspaceId) {
+    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
+
+  const memorySignals = await prisma.predictiveMemorySignal.findMany({
+    where: { projectId, workspaceId: workspaceId || null }
+  });
+
+  return c.json({ memorySignals });
+});
+
+/**
+ * GET /evidence
+ * Fetch evidence linkages supporting predictions.
+ */
+predictiveRoutes.get('/evidence', async (c) => {
+  const predictionId = c.req.query('predictionId');
+  if (!predictionId) return c.json({ error: 'predictionId is required' }, 400);
+
+  const evidence = await prisma.forecastEvidence.findMany({
+    where: { predictionId }
+  });
+
+  return c.json({ evidence });
 });

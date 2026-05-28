@@ -38,7 +38,10 @@ export type RealtimeEventType =
   | 'workspace.security.alert'
   | 'intelligence.trend.updated'
   | 'intelligence.regression.detected'
-  | 'intelligence.pattern.detected';
+  | 'intelligence.pattern.detected'
+  | 'predictive.risk.detected'
+  | 'predictive.failure.predicted'
+  | 'predictive.cognitive.escalated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
