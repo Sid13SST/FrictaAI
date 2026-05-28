@@ -46,24 +46,31 @@ model Project {
   websiteUrl  String
   createdAt   DateTime @default(now())
 
-  user                   User                    @relation(fields: [userId], references: [id])
-  workspace              Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sessions               WorkflowSession[]
-  historicalPatterns     HistoricalPattern[]
-  workflowRegressions    WorkflowRegression[]
-  personaTrends          PersonaTrend[]
-  organizationalInsights OrganizationalInsight[]
-  historicalCorrelations HistoricalCorrelation[]
-  adaptiveSignalProfiles AdaptiveSignalProfile[]
-  annotations            Annotation[]
-  shares                 SharedLink[]
-  simulationProfiles     SimulationProfile[]
-  swarmSessions          SwarmSession[]
-  workflowForecasts      WorkflowForecast[]
-  historicalBaselines    HistoricalBaseline[]
-  regressionEvents       RegressionEvent[]
-  workspaceProjects      WorkspaceProject[]
-  executiveReports       ExecutiveReport[]
+  user                     User                       @relation(fields: [userId], references: [id])
+  workspace                Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions                 WorkflowSession[]
+  historicalPatterns       HistoricalPattern[]
+  workflowRegressions      WorkflowRegression[]
+  personaTrends            PersonaTrend[]
+  organizationalInsights   OrganizationalInsight[]
+  historicalCorrelations   HistoricalCorrelation[]
+  adaptiveSignalProfiles   AdaptiveSignalProfile[]
+  annotations              Annotation[]
+  shares                   SharedLink[]
+  simulationProfiles       SimulationProfile[]
+  swarmSessions            SwarmSession[]
+  workflowForecasts        WorkflowForecast[]
+  historicalBaselines      HistoricalBaseline[]
+  regressionEvents         RegressionEvent[]
+  workspaceProjects        WorkspaceProject[]
+  executiveReports         ExecutiveReport[]
+  CrossSessionPattern      CrossSessionPattern[]
+  HistoricalRegression     HistoricalRegression[]
+  PersonaEvolution         PersonaEvolution[]
+  WorkflowStabilityHistory WorkflowStabilityHistory[]
+  LongitudinalSignal       LongitudinalSignal[]
+  SessionCorrelation       SessionCorrelation[]
+  UXMemorySnapshot         UXMemorySnapshot[]
 }
 
 model WorkflowSession {
@@ -593,6 +600,14 @@ model Workspace {
   complianceRetentionRecords ComplianceRetentionRecord[]
   accessTraceRecords         AccessTraceRecord[]
   securityAlerts             WorkspaceSecurityAlert[]
+  CrossSessionPattern        CrossSessionPattern[]
+  HistoricalRegression       HistoricalRegression[]
+  OrganizationalTrend        OrganizationalTrend[]
+  PersonaEvolution           PersonaEvolution[]
+  WorkflowStabilityHistory   WorkflowStabilityHistory[]
+  LongitudinalSignal         LongitudinalSignal[]
+  SessionCorrelation         SessionCorrelation[]
+  UXMemorySnapshot           UXMemorySnapshot[]
 }
 
 model Team {
@@ -1463,4 +1478,120 @@ model WorkspaceSecurityAlert {
   resolvedAt   DateTime?
   metadata     Json?
   createdAt    DateTime   @default(now())
+}
+
+model CrossSessionPattern {
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  patternName    String // e.g. "Onboarding loop fatigue", "CTA visual occlusion"
+  category       String // e.g. "FRICTION", "NAVIGATION", "ATTENTION"
+  description    String
+  evidenceCount  Int        @default(0)
+  supportingData Json // JSON array of evidence points (sessionIds, coordinates, etc.)
+  severity       String // INFO | WARNING | CRITICAL
+  resolved       Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model HistoricalRegression {
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  metricName     String // e.g. "sessionDelay", "failureRate", "cognitiveLoad"
+  baseVersion    String // e.g. "v1.0"
+  compareVersion String // e.g. "v1.1" or sessionIds
+  baseValue      Float
+  compareValue   Float
+  changePercent  Float
+  status         String // IMPROVED | STABLE | DEGRADED
+  triggerSignals Json // contributing signals
+  createdAt      DateTime   @default(now())
+}
+
+model OrganizationalTrend {
+  id          String     @id @default(uuid())
+  workspaceId String? // null in Solo Mode
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  trendType   String // e.g. "stability", "complexity", "risk"
+  interval    String // e.g. "DAILY", "WEEKLY", "MONTHLY"
+  timestamp   DateTime
+  scoreValue  Float
+  metadata    Json // details and supporting stats
+  createdAt   DateTime   @default(now())
+}
+
+model PersonaEvolution {
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  personaName    String // e.g. "Beginner Teacher"
+  adaptationRate Float // speed of user task completion
+  frictionIndex  Float // aggregate hesitation/reaction friction
+  successRate    Float
+  fatigueTrend   Json // steps-based fatigue curves
+  createdAt      DateTime   @default(now())
+}
+
+model WorkflowStabilityHistory {
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runId          String // version/run reference
+  stabilityScore Float
+  completionRate Float
+  stepAverage    Float
+  complexityRank String // LOW | MEDIUM | HIGH
+  createdAt      DateTime   @default(now())
+}
+
+model LongitudinalSignal {
+  id              String     @id @default(uuid())
+  workspaceId     String? // null in Solo Mode
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  elementSelector String
+  signalType      String // e.g. "HESITATION", "FATIGUE_SPIKE", "MISMATCH"
+  frequency       Int
+  averageSeverity Float
+  historicalBasis Json // list of session references
+  createdAt       DateTime   @default(now())
+}
+
+model SessionCorrelation {
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sessionAId     String
+  sessionBId     String
+  similarity     Float // 0.0 to 1.0
+  sharedFriction Json // matching friction tags/elements
+  deltaNotes     String?
+  createdAt      DateTime   @default(now())
+}
+
+model UXMemorySnapshot {
+  id              String     @id @default(uuid())
+  workspaceId     String? // null in Solo Mode
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  snapshotName    String
+  summary         String
+  patternCount    Int
+  activeRiskCount Int
+  trendHealth     Float // 0.0 to 100.0
+  capturedAt      DateTime   @default(now())
 }
