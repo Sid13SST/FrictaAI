@@ -41,7 +41,10 @@ export type RealtimeEventType =
   | 'intelligence.pattern.detected'
   | 'predictive.risk.detected'
   | 'predictive.failure.predicted'
-  | 'predictive.cognitive.escalated';
+  | 'predictive.cognitive.escalated'
+  | 'redesign.recommendation.generated'
+  | 'redesign.optimization.spotted'
+  | 'redesign.cognitive.remediated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
