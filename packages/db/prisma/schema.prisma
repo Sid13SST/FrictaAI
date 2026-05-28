@@ -46,35 +46,40 @@ model Project {
   websiteUrl  String
   createdAt   DateTime @default(now())
 
-  user                     User                       @relation(fields: [userId], references: [id])
-  workspace                Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sessions                 WorkflowSession[]
-  historicalPatterns       HistoricalPattern[]
-  workflowRegressions      WorkflowRegression[]
-  personaTrends            PersonaTrend[]
-  organizationalInsights   OrganizationalInsight[]
-  historicalCorrelations   HistoricalCorrelation[]
-  adaptiveSignalProfiles   AdaptiveSignalProfile[]
-  annotations              Annotation[]
-  shares                   SharedLink[]
-  simulationProfiles       SimulationProfile[]
-  swarmSessions            SwarmSession[]
-  workflowForecasts        WorkflowForecast[]
-  historicalBaselines      HistoricalBaseline[]
-  regressionEvents         RegressionEvent[]
-  workspaceProjects        WorkspaceProject[]
-  executiveReports         ExecutiveReport[]
-  CrossSessionPattern      CrossSessionPattern[]
-  HistoricalRegression     HistoricalRegression[]
-  PersonaEvolution         PersonaEvolution[]
-  WorkflowStabilityHistory WorkflowStabilityHistory[]
-  LongitudinalSignal       LongitudinalSignal[]
-  SessionCorrelation       SessionCorrelation[]
-  UXMemorySnapshot         UXMemorySnapshot[]
-  uxFailurePredictions     UXFailurePrediction[]
-  cognitiveRiskSignals     CognitiveRiskSignal[]
-  workflowRiskScores       WorkflowRiskScore[]
-  predictiveMemorySignals  PredictiveMemorySignal[]
+  user                      User                       @relation(fields: [userId], references: [id])
+  workspace                 Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions                  WorkflowSession[]
+  historicalPatterns        HistoricalPattern[]
+  workflowRegressions       WorkflowRegression[]
+  personaTrends             PersonaTrend[]
+  organizationalInsights    OrganizationalInsight[]
+  historicalCorrelations    HistoricalCorrelation[]
+  adaptiveSignalProfiles    AdaptiveSignalProfile[]
+  annotations               Annotation[]
+  shares                    SharedLink[]
+  simulationProfiles        SimulationProfile[]
+  swarmSessions             SwarmSession[]
+  workflowForecasts         WorkflowForecast[]
+  historicalBaselines       HistoricalBaseline[]
+  regressionEvents          RegressionEvent[]
+  workspaceProjects         WorkspaceProject[]
+  executiveReports          ExecutiveReport[]
+  CrossSessionPattern       CrossSessionPattern[]
+  HistoricalRegression      HistoricalRegression[]
+  PersonaEvolution          PersonaEvolution[]
+  WorkflowStabilityHistory  WorkflowStabilityHistory[]
+  LongitudinalSignal        LongitudinalSignal[]
+  SessionCorrelation        SessionCorrelation[]
+  UXMemorySnapshot          UXMemorySnapshot[]
+  uxFailurePredictions      UXFailurePrediction[]
+  cognitiveRiskSignals      CognitiveRiskSignal[]
+  workflowRiskScores        WorkflowRiskScore[]
+  predictiveMemorySignals   PredictiveMemorySignal[]
+  redesignRecommendations   RedesignRecommendation[]
+  uxOptimizationSuggestions UXOptimizationSuggestion[]
+  cognitiveRemediations     CognitiveRemediation[]
+  workflowOptimizations     WorkflowOptimization[]
+  optimizationMemorySignals OptimizationMemorySignal[]
 }
 
 model WorkflowSession {
@@ -616,6 +621,11 @@ model Workspace {
   cognitiveRiskSignals       CognitiveRiskSignal[]
   workflowRiskScores         WorkflowRiskScore[]
   predictiveMemorySignals    PredictiveMemorySignal[]
+  redesignRecommendations    RedesignRecommendation[]
+  uxOptimizationSuggestions  UXOptimizationSuggestion[]
+  cognitiveRemediations      CognitiveRemediation[]
+  workflowOptimizations      WorkflowOptimization[]
+  optimizationMemorySignals  OptimizationMemorySignal[]
 }
 
 model Team {
@@ -1669,4 +1679,105 @@ model PredictiveMemorySignal {
   signalKey    String // e.g. "cta-collapse-rate", "onboarding-survival-index"
   signalValue  Float
   lastComputed DateTime   @default(now())
+}
+
+model RedesignRecommendation {
+  id                 String                         @id @default(uuid())
+  workspaceId        String? // null in Solo Mode
+  workspace          Workspace?                     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId          String
+  project            Project                        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  targetElement      String?
+  workflowPath       String
+  recommendationType String // "CTA_OPTIMIZATION" | "ONBOARDING_STREAMLINE" | "COGNITIVE_SIMPLIFICATION" | "NAVIGATION_RESTRUCTURE"
+  title              String
+  description        String
+  proposedChange     String // Describe layout modification
+  impactScore        Float // 0.0 to 100.0 projected improvement
+  confidenceScore    Float // 0.0 to 1.0 based on evidence strength
+  evidence           RecommendationEvidence[]
+  impactForecasts    RecommendationImpactForecast[]
+  redesignTraces     RedesignTrace[]
+  createdAt          DateTime                       @default(now())
+}
+
+model RecommendationEvidence {
+  id               String                 @id @default(uuid())
+  recommendationId String
+  recommendation   RedesignRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  sessionRefId     String? // references historical WorkflowSession ID
+  findingRefId     String? // references historical UXFinding ID
+  evidenceNotes    String
+  metricDriftValue Float?
+  createdAt        DateTime               @default(now())
+}
+
+model UXOptimizationSuggestion {
+  id             String     @id @default(uuid())
+  workspaceId    String? // null in Solo Mode
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category       String // "ACCESSIBILITY" | "FRICTION_REDUCTION" | "RETENTION"
+  title          String
+  description    String
+  effortEstimate String // LOW | MEDIUM | HIGH
+  createdAt      DateTime   @default(now())
+}
+
+model CognitiveRemediation {
+  id                  String     @id @default(uuid())
+  workspaceId         String? // null in Solo Mode
+  workspace           Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId           String
+  project             Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  targetStep          Int
+  loadType            String // "DECISION_COMPLEXITY" | "ATTENTION_FRAGMENTATION" | "FATIGUE"
+  remediationPlan     String
+  complexityReduction Float // projected % reduction
+  createdAt           DateTime   @default(now())
+}
+
+model WorkflowOptimization {
+  id                   String     @id @default(uuid())
+  workspaceId          String? // null in Solo Mode
+  workspace            Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId            String
+  project              Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath         String
+  stepCountReduction   Int
+  expectedSurvivalGain Float // projected % survival increase
+  remediationStrategy  String
+  createdAt            DateTime   @default(now())
+}
+
+model RecommendationImpactForecast {
+  id               String                 @id @default(uuid())
+  recommendationId String
+  recommendation   RedesignRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  metricName       String // "COMPLETION_RATE" | "CONVERSION_RATE" | "SESSION_PACING"
+  beforeValue      Float
+  afterValue       Float
+  createdAt        DateTime               @default(now())
+}
+
+model RedesignTrace {
+  id               String                 @id @default(uuid())
+  recommendationId String
+  recommendation   RedesignRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  actionNodeIndex  Int
+  actionSelector   String
+  screenshotPath   String?
+  createdAt        DateTime               @default(now())
+}
+
+model OptimizationMemorySignal {
+  id          String     @id @default(uuid())
+  workspaceId String? // null in Solo Mode
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  signalKey   String // e.g. "redesign-readiness-index", "survivability-gain"
+  signalValue Float
+  lastUpdated DateTime   @default(now())
 }
