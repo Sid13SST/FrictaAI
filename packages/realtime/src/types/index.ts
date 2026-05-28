@@ -35,7 +35,10 @@ export type RealtimeEventType =
   | 'workspace.exports.progress'
   | 'workspace.digest.delivered'
   | 'workspace.audit.updated'
-  | 'workspace.security.alert';
+  | 'workspace.security.alert'
+  | 'intelligence.trend.updated'
+  | 'intelligence.regression.detected'
+  | 'intelligence.pattern.detected';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
