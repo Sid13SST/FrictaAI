@@ -71,6 +71,10 @@ model Project {
   LongitudinalSignal       LongitudinalSignal[]
   SessionCorrelation       SessionCorrelation[]
   UXMemorySnapshot         UXMemorySnapshot[]
+  uxFailurePredictions     UXFailurePrediction[]
+  cognitiveRiskSignals     CognitiveRiskSignal[]
+  workflowRiskScores       WorkflowRiskScore[]
+  predictiveMemorySignals  PredictiveMemorySignal[]
 }
 
 model WorkflowSession {
@@ -608,6 +612,10 @@ model Workspace {
   LongitudinalSignal         LongitudinalSignal[]
   SessionCorrelation         SessionCorrelation[]
   UXMemorySnapshot           UXMemorySnapshot[]
+  uxFailurePredictions       UXFailurePrediction[]
+  cognitiveRiskSignals       CognitiveRiskSignal[]
+  workflowRiskScores         WorkflowRiskScore[]
+  predictiveMemorySignals    PredictiveMemorySignal[]
 }
 
 model Team {
@@ -1594,4 +1602,71 @@ model UXMemorySnapshot {
   activeRiskCount Int
   trendHealth     Float // 0.0 to 100.0
   capturedAt      DateTime   @default(now())
+}
+
+model UXFailurePrediction {
+  id                   String             @id @default(uuid())
+  workspaceId          String? // null in Solo Mode
+  workspace            Workspace?         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId            String
+  project              Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath         String
+  predictedFailureType String // "ONBOARDING_COLLAPSE" | "CTA_DEGRADATION" | "NAVIGATION_BREAKDOWN" | "FRICTION_ESCALATION"
+  probability          Float // 0.0 to 1.0
+  severity             String // LOW | MEDIUM | HIGH | CRITICAL
+  targetSelector       String?
+  estimatedSteps       Int?
+  description          String
+  evidence             ForecastEvidence[]
+  createdAt            DateTime           @default(now())
+}
+
+model CognitiveRiskSignal {
+  id              String     @id @default(uuid())
+  workspaceId     String? // null in Solo Mode
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  personaType     String
+  riskType        String // "FATIGUE_SPIKE" | "DECISION_OVERHEAD" | "ATTENTION_FRAGMENTATION"
+  predictedLoad   Float // 0.0 to 100.0
+  estimatedStep   Int
+  mitigationNotes String
+  createdAt       DateTime   @default(now())
+}
+
+model ForecastEvidence {
+  id                  String              @id @default(uuid())
+  predictionId        String
+  prediction          UXFailurePrediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  sessionRefId        String? // references a historical WorkflowSession ID
+  findingRefId        String? // references a historical UXFinding ID
+  evidenceDescription String
+  confidenceWeight    Float // 0.0 to 1.0
+  createdAt           DateTime            @default(now())
+}
+
+model WorkflowRiskScore {
+  id                     String     @id @default(uuid())
+  workspaceId            String? // null in Solo Mode
+  workspace              Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId              String
+  project                Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath           String
+  riskScore              Float // 0.0 to 100.0 (overall predicted risk level)
+  onboardingFailureRate  Float // predicted onboarding failure probability
+  frictionEscalationRate Float // predicted rate of friction accumulation
+  stabilityIndex         Float // predicted future stability score
+  createdAt              DateTime   @default(now())
+}
+
+model PredictiveMemorySignal {
+  id           String     @id @default(uuid())
+  workspaceId  String? // null in Solo Mode
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  signalKey    String // e.g. "cta-collapse-rate", "onboarding-survival-index"
+  signalValue  Float
+  lastComputed DateTime   @default(now())
 }
