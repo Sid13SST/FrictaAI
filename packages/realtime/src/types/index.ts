@@ -44,7 +44,12 @@ export type RealtimeEventType =
   | 'predictive.cognitive.escalated'
   | 'redesign.recommendation.generated'
   | 'redesign.optimization.spotted'
-  | 'redesign.cognitive.remediated';
+  | 'redesign.cognitive.remediated'
+  | 'autonomous.proposal.created'
+  | 'autonomous.approval.updated'
+  | 'autonomous.simulation.completed'
+  | 'autonomous.safety.triggered'
+  | 'autonomous.rollback.executed';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
