@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id                     String                    @id @default(uuid())
-  email                  String                    @unique
+  id                     String                        @id @default(uuid())
+  email                  String                        @unique
   name                   String?
-  createdAt              DateTime                  @default(now())
+  createdAt              DateTime                      @default(now())
   projects               Project[]
   platformUsage          PlatformUsage?
   memberships            WorkspaceMember[]
@@ -20,7 +20,7 @@ model User {
   comments               EvidenceComment[]
   shares                 SharedLink[]
   activities             ActivityEvent[]
-  sentInvites            WorkspaceInvite[]         @relation("Inviter")
+  sentInvites            WorkspaceInvite[]             @relation("Inviter")
   sharedInvestigations   SharedInvestigation[]
   investigationComments  InvestigationComment[]
   workspaceActivities    WorkspaceActivity[]
@@ -36,6 +36,9 @@ model User {
   governancePolicyEvents GovernancePolicyEvent[]
   accessTraceRecords     AccessTraceRecord[]
   securityAlerts         WorkspaceSecurityAlert[]
+  optimizationApprovals  OptimizationApproval[]
+  optimizationRollbacks  OptimizationRollback[]
+  governanceEvents       OptimizationGovernanceEvent[]
 }
 
 model Project {
@@ -46,8 +49,8 @@ model Project {
   websiteUrl  String
   createdAt   DateTime @default(now())
 
-  user                      User                       @relation(fields: [userId], references: [id])
-  workspace                 Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user                      User                        @relation(fields: [userId], references: [id])
+  workspace                 Workspace?                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   sessions                  WorkflowSession[]
   historicalPatterns        HistoricalPattern[]
   workflowRegressions       WorkflowRegression[]
@@ -80,6 +83,8 @@ model Project {
   cognitiveRemediations     CognitiveRemediation[]
   workflowOptimizations     WorkflowOptimization[]
   optimizationMemorySignals OptimizationMemorySignal[]
+  autonomousRuns            AutonomousOptimizationRun[]
+  adaptationRules           AdaptationRule[]
 }
 
 model WorkflowSession {
@@ -586,7 +591,7 @@ model Workspace {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization               Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization               Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members                    WorkspaceMember[]
   projects                   Project[]
   invites                    WorkspaceInvite[]
@@ -626,6 +631,9 @@ model Workspace {
   cognitiveRemediations      CognitiveRemediation[]
   workflowOptimizations      WorkflowOptimization[]
   optimizationMemorySignals  OptimizationMemorySignal[]
+  autonomousRuns             AutonomousOptimizationRun[]
+  adaptationRules            AdaptationRule[]
+  governanceEvents           OptimizationGovernanceEvent[]
 }
 
 model Team {
@@ -1780,4 +1788,112 @@ model OptimizationMemorySignal {
   signalKey   String // e.g. "redesign-readiness-index", "survivability-gain"
   signalValue Float
   lastUpdated DateTime   @default(now())
+}
+
+model AutonomousOptimizationRun {
+  id                 String                     @id @default(uuid())
+  workspaceId        String?
+  workspace          Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId          String
+  project            Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowPath       String
+  status             String // "PENDING_APPROVAL" | "SIMULATING" | "APPLIED" | "ROLLED_BACK" | "FAILED"
+  recommendationId   String?
+  remediationPlan    String
+  targetSelector     String?
+  overallSafetyScore Float
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  simulations        OptimizationSimulation[]
+  approvals          OptimizationApproval[]
+  rollbacks          OptimizationRollback[]
+  decisionTraces     AutonomousDecisionTrace[]
+  safetySignals      OptimizationSafetySignal[]
+}
+
+model OptimizationSimulation {
+  id                    String                    @id @default(uuid())
+  optimizationRunId     String
+  optimizationRun       AutonomousOptimizationRun @relation(fields: [optimizationRunId], references: [id], onDelete: Cascade)
+  personaType           String
+  simulatedSurvivalGain Float // projected % increase
+  simulatedClarityGain  Float // projected % increase
+  cognitiveLoadBefore   Float
+  cognitiveLoadAfter    Float
+  verdict               String // "SUCCESS" | "DEGRADED" | "NEUTRAL"
+  simulatedLogs         Json // Step-by-step intent transitions
+  createdAt             DateTime                  @default(now())
+}
+
+model AdaptationRule {
+  id              String     @id @default(uuid())
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ruleKey         String // e.g. "cta-auto-contrast", "onboarding-progressive-disclosure"
+  description     String
+  triggerSelector String
+  thresholdMetric String // e.g. "frictionEscalation"
+  thresholdValue  Float
+  mitigationValue String // value configuration rule
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+}
+
+model OptimizationApproval {
+  id                String                    @id @default(uuid())
+  optimizationRunId String
+  optimizationRun   AutonomousOptimizationRun @relation(fields: [optimizationRunId], references: [id], onDelete: Cascade)
+  reviewedById      String?
+  reviewedBy        User?                     @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  roleScope         String // e.g. "UX_LEAD"
+  action            String // "APPROVED" | "REJECTED" | "REQUESTED_CHANGES"
+  comments          String?
+  createdAt         DateTime                  @default(now())
+}
+
+model OptimizationRollback {
+  id                String                    @id @default(uuid())
+  optimizationRunId String
+  optimizationRun   AutonomousOptimizationRun @relation(fields: [optimizationRunId], references: [id], onDelete: Cascade)
+  initiatedById     String?
+  initiatedBy       User?                     @relation(fields: [initiatedById], references: [id], onDelete: SetNull)
+  rollbackReason    String
+  status            String // "PENDING" | "COMPLETED" | "FAILED"
+  createdAt         DateTime                  @default(now())
+}
+
+model AutonomousDecisionTrace {
+  id                 String                    @id @default(uuid())
+  optimizationRunId  String
+  optimizationRun    AutonomousOptimizationRun @relation(fields: [optimizationRunId], references: [id], onDelete: Cascade)
+  stepIndex          Int
+  decisionNode       String // e.g. "EVALUATING_CTA"
+  outcomeDescription String
+  evidenceRefId      String? // references RecommendationEvidence or similar
+  createdAt          DateTime                  @default(now())
+}
+
+model OptimizationGovernanceEvent {
+  id           String     @id @default(uuid())
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String // "CREATE_RULE" | "REVOKE_APPROVAL" | "ENFORCE_RETENTION"
+  description  String
+  policyPassed Boolean
+  createdAt    DateTime   @default(now())
+}
+
+model OptimizationSafetySignal {
+  id                String                    @id @default(uuid())
+  optimizationRunId String
+  optimizationRun   AutonomousOptimizationRun @relation(fields: [optimizationRunId], references: [id], onDelete: Cascade)
+  metricName        String // "CLUTTER_INDEX" | "FATIGUE_DRIFT" | "CONVERSION_FLOOR"
+  metricValue       Float
+  thresholdLimit    Float
+  policyPassed      Boolean
+  createdAt         DateTime                  @default(now())
 }
