@@ -18,7 +18,7 @@ import {
   Search
 } from 'lucide-react';
 
-const baseApiUrl = '/api';
+const baseApiUrl = 'http://127.0.0.1:3001/api';
 
 export default function LongitudinalDashboard() {
   const [projectId, setProjectId] = useState<string>('');
@@ -75,7 +75,7 @@ export default function LongitudinalDashboard() {
 
   const fetchSessions = async (projId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/console/${projId}/sessions`);
+      const res = await fetch(`${baseApiUrl}/workflows?projectId=${projId}`);
       const data = await res.json();
       const list = data.sessions || [];
       setSessions(list);
@@ -178,6 +178,31 @@ export default function LongitudinalDashboard() {
       setComparison(null);
     }
   };
+
+  // Calculate dynamic points for the stability index graph
+  const stabilityTrends = trends.filter(t => t.trendType === 'stability');
+  const points = stabilityTrends.map((t, idx, arr) => {
+    const total = arr.length || 1;
+    const x = total > 1 ? 20 + (idx * 560) / (total - 1) : 300;
+    const y = 200 - (t.scoreValue / 100) * 180;
+    return { id: t.id, scoreValue: t.scoreValue, x, y };
+  });
+
+  let pathD = "M 20 100 L 580 100";
+  let areaD = "M 20 100 L 580 100 L 580 200 L 20 200 Z";
+  if (points.length > 0) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cpX1 = p0.x + (p1.x - p0.x) / 3;
+      const cpY1 = p0.y;
+      const cpX2 = p0.x + 2 * (p1.x - p0.x) / 3;
+      const cpY2 = p1.y;
+      pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
+    }
+    areaD = `${pathD} L ${points[points.length - 1].x} 200 L ${points[0].x} 200 Z`;
+  }
 
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#5ed29c]/30 selection:text-white">
@@ -298,32 +323,32 @@ export default function LongitudinalDashboard() {
                     <line x1="0" y1="100" x2="600" y2="100" stroke="#222226" strokeDasharray="4 4" />
                     <line x1="0" y1="150" x2="600" y2="150" stroke="#222226" strokeDasharray="4 4" />
 
-                    {/* Trend Line (Interpolated Bezier curve) */}
-                    <path
-                      d="M 20 60 Q 150 70 300 110 T 580 145"
-                      fill="none"
-                      stroke="#5ed29c"
-                      strokeWidth="3.5"
-                    />
+                    {/* Trend Line (Dynamic interpolated Bezier curve) */}
+                    {points.length > 0 && (
+                      <path
+                        d={pathD}
+                        fill="none"
+                        stroke="#5ed29c"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                      />
+                    )}
 
                     {/* Area fill */}
-                    <path
-                      d="M 20 60 Q 150 70 300 110 T 580 145 L 580 200 L 20 200 Z"
-                      fill="url(#gradient-stability)"
-                    />
+                    {points.length > 0 && (
+                      <path
+                        d={areaD}
+                        fill="url(#gradient-stability)"
+                      />
+                    )}
 
                     {/* Data Points */}
-                    {trends.filter(t => t.trendType === 'stability').map((t, idx, arr) => {
-                      const total = arr.length || 1;
-                      const x = 20 + (idx * 560) / (total - 1);
-                      // scale scoreValue (0-100) to height (200 to 20)
-                      const y = 200 - (t.scoreValue / 100) * 180;
+                    {points.map((pt, idx) => {
                       return (
-                        <g key={t.id}>
-                          <circle cx={x} cy={y} r="5" className="fill-[#5ed29c] stroke-[#121214] stroke-2" />
-                          <circle cx={x} cy={y} r="10" className="stroke-[#5ed29c]/40 stroke-1 fill-none animate-ping" />
-                          <text x={x} y={y - 12} className="fill-white text-[9px] font-bold text-center" textAnchor="middle">
-                            {Math.round(t.scoreValue)}%
+                        <g key={pt.id}>
+                          <circle cx={pt.x} cy={pt.y} r="5" className="fill-[#5ed29c] stroke-[#121214] stroke-2" />
+                          <text x={pt.x} y={pt.y - 12} className="fill-zinc-300 text-[9px] font-mono text-center" textAnchor="middle">
+                            {Math.round(pt.scoreValue)}%
                           </text>
                         </g>
                       );
