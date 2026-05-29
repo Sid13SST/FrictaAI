@@ -151,6 +151,7 @@ const StatusBadge = ({ status }: { status: Status }) => {
 
 const ProviderCard = ({
   integration,
+  provider,
   onConnect,
   onRevoke
 }: {
@@ -159,7 +160,7 @@ const ProviderCard = ({
   onConnect: (p: Provider) => void;
   onRevoke: (p: Provider) => void;
 }) => {
-  const provider = integration?.provider || 'FIGMA';
+  // Use the passed `provider` prop directly — do NOT fall back to 'FIGMA'
   const meta = PROVIDER_META[provider];
   const Icon = meta.icon;
   const isConnected = integration?.status === 'CONNECTED';
