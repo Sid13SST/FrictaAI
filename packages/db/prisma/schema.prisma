@@ -2287,3 +2287,92 @@ model TeamMentionEvent {
   read          Boolean             @default(false)
   createdAt     DateTime            @default(now())
 }
+
+model ApiKey {
+  id        String    @id @default(uuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  keyHash   String    @unique
+  name      String
+  scopes    Json // array of string permissions
+  active    Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ServiceAccount {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  role      String   @default("DEVELOPER")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  secret    String
+  events    Json // array of strings
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String          @id @default(uuid())
+  endpointId   String
+  endpoint     WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  eventType    String
+  payload      Json
+  statusCode   Int?
+  success      Boolean
+  errorMessage String?
+  retryCount   Int             @default(0)
+  deliveredAt  DateTime        @default(now())
+}
+
+model ApiUsageRecord {
+  id             String   @id @default(uuid())
+  apiKeyId       String?
+  endpoint       String
+  method         String
+  statusCode     Int
+  responseTimeMs Int
+  timestamp      DateTime @default(now())
+}
+
+model RateLimitBucket {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  tokens       Float
+  lastRefilled DateTime @default(now())
+}
+
+model DeveloperApplication {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  clientId     String   @unique
+  clientSecret String
+  redirectUris Json // array of strings
+  createdAt    DateTime @default(now())
+}
+
+model PlatformAuditEvent {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor     String
+  action    String
+  resource  String
+  status    String
+  ipAddress String?
+  timestamp DateTime @default(now())
+}
