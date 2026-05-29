@@ -95,6 +95,11 @@ model Project {
   collaborationLogs         CollaborationEvent[]
   operationalAlerts         OperationalAlert[]
   digestSubs                DigestSubscription[]
+  apiKeys                   ApiKey[]
+  serviceAccounts           ServiceAccount[]
+  webhooks                  WebhookEndpoint[]
+  developerApps             DeveloperApplication[]
+  platformAudits            PlatformAuditEvent[]
 }
 
 model WorkflowSession {
