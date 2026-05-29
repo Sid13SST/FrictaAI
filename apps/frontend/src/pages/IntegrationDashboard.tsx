@@ -464,17 +464,18 @@ export const IntegrationDashboard = () => {
           <div>
             <h1 className="text-xl font-bold text-white">Integration Ecosystem</h1>
             <p className="text-[11px] font-mono uppercase tracking-widest mt-0.5" style={{ color: 'rgba(16, 185, 129, 0.7)' }}>
-              Phase 11 · Design & Product Intelligence
+              Design &middot; Product &middot; Engineering
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={fetchAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all hover:opacity-80 disabled:opacity-50"
               style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              <RefreshCw size={11} />
-              Refresh
+              <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
         </div>
