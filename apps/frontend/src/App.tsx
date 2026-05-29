@@ -24,6 +24,7 @@ import { AutonomousDashboard } from './pages/AutonomousDashboard';
 import { IntegrationDashboard } from './pages/IntegrationDashboard';
 import { EngineeringDashboard } from './pages/EngineeringDashboard';
 import { CollaborationDashboard } from './pages/CollaborationDashboard';
+import { DeveloperPortal } from './pages/DeveloperPortal';
 
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
           <Route path="integrations" element={<IntegrationDashboard />} />
           <Route path="engineering" element={<EngineeringDashboard />} />
           <Route path="collaboration" element={<CollaborationDashboard />} />
+          <Route path="developer" element={<DeveloperPortal />} />
           <Route path="workspace" element={<WorkspaceConsole />} />
           <Route path="simulation" element={<SimulationConsole />} />
           <Route path="personas" element={<Personas />} />
