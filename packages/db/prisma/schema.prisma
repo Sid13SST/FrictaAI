@@ -89,6 +89,7 @@ model Project {
   integrations              WorkspaceIntegration[]
   replayLinks               ReplayLink[]
   evidenceAttachments       EvidenceAttachment[]
+  deploymentRuns            DeploymentRun[]
 }
 
 model WorkflowSession {
@@ -139,6 +140,7 @@ model WorkflowSession {
   sharedInvestigations     SharedInvestigation[]
   replayAccessScopes       ReplayAccessScope[]
   ReplayAuditLog           ReplayAuditLog[]
+  replayExecutions         ReplayExecution[]
 }
 
 model AgentThought {
@@ -2047,4 +2049,130 @@ model IntegrationAuditEvent {
   resourceId   String? // affected external resource ID
   policyPassed Boolean    @default(true)
   createdAt    DateTime   @default(now())
+}
+
+// ─── Phase 11 Part 2: Engineering Workflow Integration Models ──────────────────
+
+model DeploymentRun {
+  id                 String   @id @default(uuid())
+  projectId          String
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  commitHash         String
+  branch             String
+  environment        String // "production" | "staging" | "preview"
+  deploymentUrl      String?
+  status             String   @default("PENDING") // "PENDING" | "RUNNING" | "COMPLETED" | "FAILED"
+  provider           String // "VERCEL" | "NETLIFY" | "GITHUB_ACTIONS" | "GITLAB_CI"
+  survivabilityScore Float?
+  riskLevel          String? // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  replayExecutions  ReplayExecution[]
+  previews          PreviewEnvironment[]
+  prIntelligences   PullRequestIntelligence[]
+  regressions       RegressionAnalysis[]
+  riskSignals       DeploymentRiskSignal[]
+  buildCorrelations BuildCorrelation[]
+  timelineEvents    ReleaseTimelineEvent[]
+}
+
+model ReplayExecution {
+  id                String           @id @default(uuid())
+  deploymentRunId   String
+  deploymentRun     DeploymentRun    @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  workflowSessionId String?
+  workflowSession   WorkflowSession? @relation(fields: [workflowSessionId], references: [id], onDelete: SetNull)
+  workflowPath      String
+  status            String           @default("PENDING") // "PENDING" | "RUNNING" | "COMPLETED" | "FAILED"
+  survivabilityRate Float?
+  cognitiveLoad     Float?
+  frictionScore     Float?
+  stepsCompleted    Int?
+  errorMessage      String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model PreviewEnvironment {
+  id              String        @id @default(uuid())
+  deploymentRunId String
+  deploymentRun   DeploymentRun @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  provider        String // "VERCEL" | "NETLIFY"
+  url             String
+  branch          String
+  prNumber        String?
+  isTemporary     Boolean       @default(true)
+  status          String        @default("ACTIVE") // "ACTIVE" | "TEARDOWN" | "INACTIVE"
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model PullRequestIntelligence {
+  id                 String        @id @default(uuid())
+  deploymentRunId    String
+  deploymentRun      DeploymentRun @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  prNumber           String
+  prTitle            String
+  sourceBranch       String
+  targetBranch       String
+  uxRegressionCount  Int           @default(0)
+  cognitiveDrift     Float         @default(0.0)
+  survivabilityDelta Float         @default(0.0)
+  riskScore          Float         @default(0.0)
+  summary            String?
+  status             String        @default("PENDING") // "PENDING" | "COMPLETED" | "FAILED"
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model RegressionAnalysis {
+  id              String        @id @default(uuid())
+  deploymentRunId String
+  deploymentRun   DeploymentRun @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  workflowPath    String
+  metricName      String // "SUCCESS_RATE" | "COGNITIVE_LOAD" | "FRICTION" | "STEPS"
+  baseValue       Float
+  currentValue    Float
+  delta           Float
+  severity        String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  explanation     String
+  escalated       Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+}
+
+model DeploymentRiskSignal {
+  id              String        @id @default(uuid())
+  deploymentRunId String
+  deploymentRun   DeploymentRun @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  riskType        String // "CTA_BROKEN" | "COGNITIVE_SPIKE" | "ONBOARDING_REGRESSION" | "NAV_LOOP"
+  severity        String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  description     String
+  targetSelector  String?
+  evidenceUrl     String?
+  createdAt       DateTime      @default(now())
+}
+
+model BuildCorrelation {
+  id              String        @id @default(uuid())
+  deploymentRunId String
+  deploymentRun   DeploymentRun @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  buildId         String
+  jobId           String?
+  commitMessage   String?
+  author          String?
+  duration        Int?
+  logUrl          String?
+  createdAt       DateTime      @default(now())
+}
+
+model ReleaseTimelineEvent {
+  id              String        @id @default(uuid())
+  deploymentRunId String
+  deploymentRun   DeploymentRun @relation(fields: [deploymentRunId], references: [id], onDelete: Cascade)
+  eventType       String // "COMMIT" | "BUILD_START" | "BUILD_SUCCESS" | "DEPLOY" | "REPLAY_START" | "REPLAY_SUCCESS" | "PR_COMMENTED" | "REGRESSION_DETECTED"
+  eventTitle      String
+  description     String
+  timestamp       DateTime      @default(now())
 }
