@@ -39,6 +39,7 @@ model User {
   optimizationApprovals  OptimizationApproval[]
   optimizationRollbacks  OptimizationRollback[]
   governanceEvents       OptimizationGovernanceEvent[]
+  integrationAuditEvents IntegrationAuditEvent[]
 }
 
 model Project {
@@ -85,6 +86,9 @@ model Project {
   optimizationMemorySignals OptimizationMemorySignal[]
   autonomousRuns            AutonomousOptimizationRun[]
   adaptationRules           AdaptationRule[]
+  integrations              WorkspaceIntegration[]
+  replayLinks               ReplayLink[]
+  evidenceAttachments       EvidenceAttachment[]
 }
 
 model WorkflowSession {
@@ -634,6 +638,9 @@ model Workspace {
   autonomousRuns             AutonomousOptimizationRun[]
   adaptationRules            AdaptationRule[]
   governanceEvents           OptimizationGovernanceEvent[]
+  integrations               WorkspaceIntegration[]
+  integrationEvents          IntegrationEvent[]
+  integrationAuditEvents     IntegrationAuditEvent[]
 }
 
 model Team {
@@ -1896,4 +1903,148 @@ model OptimizationSafetySignal {
   thresholdLimit    Float
   policyPassed      Boolean
   createdAt         DateTime                  @default(now())
+}
+
+// ─── Phase 11 Part 1: Integration Infrastructure Models ──────────────────────
+
+model WorkspaceIntegration {
+  id             String     @id @default(uuid())
+  workspaceId    String?
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider       String // "FIGMA" | "FIGJAM" | "NOTION" | "JIRA" | "LINEAR" | "GITHUB" | "PRODUCTBOARD"
+  status         String     @default("DISCONNECTED") // "CONNECTED" | "DISCONNECTED" | "ERROR" | "PENDING"
+  accessToken    String? // encrypted at rest
+  refreshToken   String? // encrypted at rest
+  tokenExpiresAt DateTime?
+  providerUserId String?
+  providerOrgId  String?
+  scopes         String? // space-separated OAuth scopes
+  metadata       Json? // provider-specific config (Jira base URL, GitHub org, etc.)
+  lastSyncedAt   DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  connections IntegrationConnection[]
+  events      IntegrationEvent[]
+  syncJobs    SyncJob[]
+  Project     Project?                @relation(fields: [projectId], references: [id])
+  projectId   String?
+}
+
+model IntegrationConnection {
+  id                     String               @id @default(uuid())
+  workspaceIntegrationId String
+  integration            WorkspaceIntegration @relation(fields: [workspaceIntegrationId], references: [id], onDelete: Cascade)
+  provider               String // mirrors parent
+  externalId             String // Figma fileId, Jira projectKey, Linear teamId, etc.
+  externalName           String
+  externalUrl            String?
+  connectionType         String // "PROJECT" | "FILE" | "BOARD" | "REPO" | "TEAM"
+  active                 Boolean              @default(true)
+  metadata               Json?
+  createdAt              DateTime             @default(now())
+
+  replayLinks         ReplayLink[]
+  evidenceAttachments EvidenceAttachment[]
+  externalReferences  ExternalReference[]
+}
+
+model IntegrationEvent {
+  id                     String                @id @default(uuid())
+  workspaceIntegrationId String?
+  integration            WorkspaceIntegration? @relation(fields: [workspaceIntegrationId], references: [id], onDelete: SetNull)
+  workspaceId            String?
+  workspace              Workspace?            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider               String
+  direction              String // "INCOMING" | "OUTGOING"
+  eventType              String // e.g. "REPLAY_LINKED", "TICKET_CREATED", "WEBHOOK_RECEIVED"
+  status                 String                @default("PENDING") // "PENDING" | "PROCESSED" | "FAILED"
+  payload                Json?
+  errorMessage           String?
+  retryCount             Int                   @default(0)
+  deduplicationKey       String?               @unique
+  createdAt              DateTime              @default(now())
+  processedAt            DateTime?
+}
+
+model ReplayLink {
+  id                   String                 @id @default(uuid())
+  projectId            String
+  project              Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  connectionId         String?
+  connection           IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  workflowSessionId    String?
+  provider             String // "FIGMA" | "JIRA" | "GITHUB" | etc.
+  externalResourceId   String // frame nodeId, issue key, PR number, etc.
+  externalResourceUrl  String?
+  externalResourceName String?
+  linkType             String // "FRAME" | "ISSUE" | "PR" | "PAGE" | "FEATURE" | "COMMIT"
+  uxFindingId          String? // optional direct finding reference
+  evidenceSummary      String? // short cognitive/survivability context
+  createdAt            DateTime               @default(now())
+}
+
+model EvidenceAttachment {
+  id             String                 @id @default(uuid())
+  projectId      String
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  connectionId   String?
+  connection     IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  provider       String
+  externalId     String // the ticket / frame / PR ID on the external system
+  attachmentType String // "SCREENSHOT" | "FINDING" | "COGNITIVE_SIGNAL" | "SURVIVABILITY" | "REPLAY_CLIP"
+  title          String
+  description    String?
+  evidenceUrl    String? // local screenshot path or replay URL
+  severity       String? // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+  metadata       Json?
+  createdAt      DateTime               @default(now())
+}
+
+model ExternalReference {
+  id            String                @id @default(uuid())
+  connectionId  String
+  connection    IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  provider      String
+  refType       String // "ISSUE" | "PR" | "COMMIT" | "FRAME" | "PAGE" | "FEATURE"
+  externalId    String
+  externalKey   String? // human-readable: "JIRA-123", "GH-PR-456", "figma:nodeId"
+  externalUrl   String?
+  title         String?
+  status        String? // mirrors external system status
+  replayLineage Json? // serialized replay context for full traceability
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model SyncJob {
+  id                     String               @id @default(uuid())
+  workspaceIntegrationId String
+  integration            WorkspaceIntegration @relation(fields: [workspaceIntegrationId], references: [id], onDelete: Cascade)
+  provider               String
+  jobType                String // "REPLAY_LINK" | "EVIDENCE_PUSH" | "TICKET_CREATE" | "WEBHOOK_PROCESS"
+  status                 String               @default("QUEUED") // "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "DEAD_LETTER"
+  payload                Json?
+  result                 Json?
+  errorMessage           String?
+  retryCount             Int                  @default(0)
+  maxRetries             Int                  @default(3)
+  scheduledAt            DateTime             @default(now())
+  startedAt              DateTime?
+  completedAt            DateTime?
+  createdAt              DateTime             @default(now())
+}
+
+model IntegrationAuditEvent {
+  id           String     @id @default(uuid())
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider     String
+  action       String // "CONNECT" | "DISCONNECT" | "TOKEN_REFRESH" | "REPLAY_LINKED" | "EVIDENCE_ATTACHED" | "TICKET_CREATED" | "WEBHOOK_RECEIVED"
+  description  String
+  resourceId   String? // affected external resource ID
+  policyPassed Boolean    @default(true)
+  createdAt    DateTime   @default(now())
 }
