@@ -32,6 +32,7 @@
     "@fricta/redesign-intelligence": "*",
     "@fricta/autonomous-optimization": "*",
     "@fricta/integration-core": "*",
+    "@fricta/developer-platform": "*",
     "@hono/node-server": "^1.11.1",
     "hono": "^4.3.4",
     "zod": "^3.23.8",
