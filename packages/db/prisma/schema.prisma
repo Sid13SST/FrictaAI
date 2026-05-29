@@ -90,6 +90,11 @@ model Project {
   replayLinks               ReplayLink[]
   evidenceAttachments       EvidenceAttachment[]
   deploymentRuns            DeploymentRun[]
+  sharedReplays             SharedReplaySession[]
+  threads                   InvestigationThread[]
+  collaborationLogs         CollaborationEvent[]
+  operationalAlerts         OperationalAlert[]
+  digestSubs                DigestSubscription[]
 }
 
 model WorkflowSession {
@@ -141,6 +146,9 @@ model WorkflowSession {
   replayAccessScopes       ReplayAccessScope[]
   ReplayAuditLog           ReplayAuditLog[]
   replayExecutions         ReplayExecution[]
+  sharedSessions           SharedReplaySession[]
+  investigationThreads     InvestigationThread[]
+  operationalAlerts        OperationalAlert[]
 }
 
 model AgentThought {
@@ -2175,4 +2183,107 @@ model ReleaseTimelineEvent {
   eventTitle      String
   description     String
   timestamp       DateTime      @default(now())
+}
+
+// ─── Phase 11 Part 3: Operational Collaboration Models ───────────────────────
+
+model SharedReplaySession {
+  id                String          @id @default(uuid())
+  projectId         String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowSessionId String
+  workflowSession   WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
+  shareToken        String          @unique
+  sharedWithEmail   String?
+  notes             String?
+  expiresAt         DateTime?
+  createdAt         DateTime        @default(now())
+}
+
+model InvestigationThread {
+  id                String           @id @default(uuid())
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title             String
+  workflowSessionId String?
+  workflowSession   WorkflowSession? @relation(fields: [workflowSessionId], references: [id], onDelete: SetNull)
+  uxFindingId       String?
+  status            String           @default("ACTIVE") // "ACTIVE" | "RESOLVED"
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  annotations ReplayAnnotation[]
+  mentions    TeamMentionEvent[]
+}
+
+model ReplayAnnotation {
+  id        String              @id @default(uuid())
+  threadId  String
+  thread    InvestigationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  stepIndex Int
+  author    String
+  content   String
+  x         Float?
+  y         Float?
+  timestamp DateTime            @default(now())
+}
+
+model CollaborationEvent {
+  id         String   @id @default(uuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  roomType   String // "INVESTIGATION" | "REPLAY_SHARING"
+  roomId     String
+  userEmail  String
+  actionType String // "JOINED" | "SCRUBBED" | "ANNOTATED" | "ESCALATED"
+  payload    Json?
+  timestamp  DateTime @default(now())
+}
+
+model OperationalAlert {
+  id                String           @id @default(uuid())
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  alertType         String // "SURVIVABILITY_DROP" | "COGNITIVE_OVERLOAD" | "REGRESSION"
+  severity          String // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  message           String
+  workflowSessionId String?
+  workflowSession   WorkflowSession? @relation(fields: [workflowSessionId], references: [id], onDelete: SetNull)
+  resolved          Boolean          @default(false)
+  resolvedAt        DateTime?
+  createdAt         DateTime         @default(now())
+
+  escalations AlertEscalation[]
+}
+
+model AlertEscalation {
+  id           String           @id @default(uuid())
+  alertId      String
+  alert        OperationalAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  channel      String // "SLACK" | "DISCORD" | "TEAMS" | "EMAIL"
+  recipient    String // channel id, webhook, or email
+  status       String // "SENT" | "FAILED"
+  errorMessage String?
+  sentAt       DateTime         @default(now())
+}
+
+model DigestSubscription {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  email     String
+  frequency String // "DAILY" | "WEEKLY"
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model TeamMentionEvent {
+  id            String              @id @default(uuid())
+  threadId      String
+  thread        InvestigationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  mentionedUser String
+  author        String
+  content       String
+  read          Boolean             @default(false)
+  createdAt     DateTime            @default(now())
 }
