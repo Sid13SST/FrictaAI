@@ -55,7 +55,13 @@ export type RealtimeEventType =
   | 'integration.sync.failed'
   | 'integration.replay.linked'
   | 'integration.evidence.attached'
-  | 'integration.webhook.received';
+  | 'integration.webhook.received'
+  | 'deployment.started'
+  | 'deployment.completed'
+  | 'ci.replay.completed'
+  | 'regression.escalated'
+  | 'pullrequest.updated'
+  | 'risk.escalated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
