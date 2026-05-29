@@ -17,3 +17,18 @@ export * from './evidence';
 export * from './timelines';
 export * from './routing';
 export * from './governance';
+
+// ─── Phase 11 Part 2: @fricta/integration-core — Engineering Exports ──────────
+export * from './vercel';
+export * from './netlify';
+export * from './deployments';
+export * from './previews';
+export * from './ci';
+export * from './regressions';
+export * from './pull-requests';
+export * from './builds';
+export * from './releases';
+export * from './pipelines';
+export * from './observability';
+export * from './github-actions';
+export * from './gitlab-ci';
