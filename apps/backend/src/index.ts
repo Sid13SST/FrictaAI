@@ -36,6 +36,7 @@ import { intelligenceRoutes } from './routes/intelligence';
 import { redesignRoutes } from './routes/redesign';
 import { autonomousRoutes } from './routes/autonomous';
 import { integrationRoutes } from './routes/integrations';
+import { engineeringRoutes } from './routes/engineering';
 import { startWorker } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
@@ -86,6 +87,8 @@ app.route('/api/autonomous', autonomousRoutes);
 app.route('/autonomous', autonomousRoutes);
 app.route('/api/integrations', integrationRoutes);
 app.route('/integrations', integrationRoutes);
+app.route('/api', engineeringRoutes);
+app.route('/', engineeringRoutes);
 app.route('/api', workspaceCoreRoutes);
 app.route('/', workspaceCoreRoutes);
 
