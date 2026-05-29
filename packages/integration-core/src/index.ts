@@ -32,3 +32,19 @@ export * from './pipelines';
 export * from './observability';
 export * from './github-actions';
 export * from './gitlab-ci';
+
+// ─── Phase 11 Part 3: @fricta/integration-core — Collaboration & Alerting Exports ──
+export * from './slack';
+export * from './discord';
+export * from './teams';
+export * from './email';
+export * from './sharing';
+export * from './threads';
+export * from './mentions';
+export * from './discussions';
+export * from './alerts';
+export * from './escalations';
+export * from './digests';
+export * from './collaboration';
+export * from './realtime-sync';
+
