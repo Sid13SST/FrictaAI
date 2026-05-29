@@ -61,7 +61,13 @@ export type RealtimeEventType =
   | 'ci.replay.completed'
   | 'regression.escalated'
   | 'pullrequest.updated'
-  | 'risk.escalated';
+  | 'risk.escalated'
+  | 'collab.presence'
+  | 'collab.scrub'
+  | 'collab.annotation'
+  | 'collab.message'
+  | 'alert.triggered'
+  | 'alert.escalated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
