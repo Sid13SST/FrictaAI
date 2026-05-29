@@ -49,7 +49,13 @@ export type RealtimeEventType =
   | 'autonomous.approval.updated'
   | 'autonomous.simulation.completed'
   | 'autonomous.safety.triggered'
-  | 'autonomous.rollback.executed';
+  | 'autonomous.rollback.executed'
+  | 'integration.connected'
+  | 'integration.sync.completed'
+  | 'integration.sync.failed'
+  | 'integration.replay.linked'
+  | 'integration.evidence.attached'
+  | 'integration.webhook.received';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
