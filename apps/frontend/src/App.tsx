@@ -21,6 +21,7 @@ import LongitudinalDashboard from './pages/LongitudinalDashboard';
 import { PredictiveDashboard } from './pages/PredictiveDashboard';
 import { RedesignDashboard } from './pages/RedesignDashboard';
 import { AutonomousDashboard } from './pages/AutonomousDashboard';
+import { IntegrationDashboard } from './pages/IntegrationDashboard';
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
           <Route path="predictive" element={<PredictiveDashboard />} />
           <Route path="redesign" element={<RedesignDashboard />} />
           <Route path="autonomous" element={<AutonomousDashboard />} />
+          <Route path="integrations" element={<IntegrationDashboard />} />
           <Route path="workspace" element={<WorkspaceConsole />} />
           <Route path="simulation" element={<SimulationConsole />} />
           <Route path="personas" element={<Personas />} />
