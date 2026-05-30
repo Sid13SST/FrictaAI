@@ -547,21 +547,82 @@ export function OptimizationLab() {
         ))}
       </div>
 
+      {/* Scoped CSS for premium tab switching transitions */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .opt-tab-container {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 28px;
+          background: rgba(15, 23, 42, 0.4);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 14px;
+          padding: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          width: fit-content;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+        .opt-tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: 10px;
+          border: 1px solid transparent;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+          background: transparent;
+          color: #64748b;
+          outline: none;
+          user-select: none;
+        }
+        .opt-tab-btn:hover {
+          color: #cbd5e1;
+          background: rgba(255, 255, 255, 0.03);
+          border-color: rgba(255, 255, 255, 0.03);
+        }
+        .opt-tab-btn:active {
+          transform: scale(0.97);
+        }
+        .opt-tab-btn.active {
+          background: rgba(99, 102, 241, 0.12);
+          color: #c7d2fe;
+          border-color: rgba(99, 102, 241, 0.35);
+          box-shadow: 0 0 16px rgba(99, 102, 241, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .opt-tab-icon {
+          transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .opt-tab-btn.active .opt-tab-icon {
+          transform: scale(1.18);
+        }
+      ` }} />
+
       {/* Tabs */}
-      <div style={{ display:'flex',gap:2,marginBottom:24,background:'rgba(255,255,255,0.02)',borderRadius:10,padding:4,border:'1px solid rgba(255,255,255,0.05)',width:'fit-content' }}>
-        {tabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            style={{
-              display:'flex',alignItems:'center',gap:6,padding:'8px 16px',borderRadius:8,border:'none',cursor:'pointer',fontSize:12,fontWeight:600,transition:'all 0.2s',
-              background: activeTab === t.key ? 'rgba(99,102,241,0.2)' : 'transparent',
-              color: activeTab === t.key ? '#818cf8' : '#475569',
-            }}
-          >
-            <t.icon size={12} />{t.label}
-          </button>
-        ))}
+      <div className="opt-tab-container">
+        {tabs.map(t => {
+          const isActive = activeTab === t.key;
+          const activeColors: Record<string, string> = {
+            experiments: '#818cf8',
+            hypotheses: '#fbbf24',
+            outcomes: '#22d3ee',
+            impact: '#f472b6',
+            memory: '#34d399',
+          };
+          const iconColor = isActive ? activeColors[t.key] : '#475569';
+          return (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`opt-tab-btn ${isActive ? 'active' : ''}`}
+            >
+              <t.icon size={13} color={iconColor} className="opt-tab-icon" />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
