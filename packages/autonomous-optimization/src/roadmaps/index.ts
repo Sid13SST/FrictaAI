@@ -6,6 +6,9 @@ export class RoadmapManager {
    * High priority, low complexity -> Q3.
    * Medium priority or medium complexity -> Q4.
    * Low priority or high complexity -> Q1.
+   * 
+   * This provides a structured, multi-quarter roadmap proposal for human review,
+   * aligning with organizational capabilities and resources.
    */
   static async buildRoadmapProposal(projectId: string, initiativeIds: string[]) {
     // 1. Fetch initiatives
