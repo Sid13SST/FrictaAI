@@ -597,14 +597,14 @@ export const LiveTelemetry: React.FC = () => {
                   >
                     <div className="flex items-center gap-4">
                       {/* Status indicator */}
-                      <div className="relative flex-shrink-0">
+                      <div className="relative flex-shrink-0 w-3 h-3 flex items-center justify-center">
                         {sess.status === 'ACTIVE' ? (
                           <>
-                            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                           </>
                         ) : (
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-zinc-600"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-zinc-600"></span>
                         )}
                       </div>
 

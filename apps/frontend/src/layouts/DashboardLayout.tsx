@@ -27,7 +27,7 @@ export const DashboardLayout = () => {
   ];
 
   return (
-    <div className="flex h-screen" style={{ background: 'var(--fricta-bg, #070b0a)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--fricta-bg, #070b0a)' }}>
 
       {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
       <aside
@@ -75,7 +75,7 @@ export const DashboardLayout = () => {
         </Link>
 
         {/* Nav */}
-        <nav className="flex-1 px-4 py-4 flex flex-col gap-1.5 mt-1">
+        <nav className="flex-1 px-4 py-4 flex flex-col gap-1.5 mt-1 overflow-y-auto scrollbar-thin">
           <div
             className="text-[10px] font-bold uppercase tracking-[0.2em] px-3.5 py-1 mb-2 font-mono"
             style={{ color: 'rgba(255, 255, 255, 0.25)' }}
