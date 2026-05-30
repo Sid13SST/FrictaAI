@@ -4,6 +4,9 @@ export class Prioritizer {
   /**
    * Deterministically calculate prioritization score.
    * RICE Score: (Reach * Impact * Confidence) / Effort
+   * Enforces mathematical explainability so that the human reviewer knows
+   * exactly how the prioritization score was computed and which historical factors
+   * influenced the confidence/impact metrics.
    * Reach: 0.0 - 1.0 (percent of users affected)
    * Impact: 0.0 - 1.0 (relative survivability/completion gain)
    * Confidence: 0.0 - 1.0 (engine confidence level)
