@@ -4,6 +4,9 @@ import type { DecisionInput } from '../types';
 export class RecommendationManager {
   /**
    * Apply a decision to an initiative recommendation under human gate constraints.
+   * Enforces transition states: PROPOSED, UNDER_REVIEW, APPROVED, REJECTED, ARCHIVED,
+   * CONVERTED_TO_EXPERIMENT, CONVERTED_TO_INVESTIGATION, CONVERTED_TO_JIRA.
+   * Ensures fully traceable logs for corporate audit purposes.
    */
   static async decide(
     recommendationId: string,
