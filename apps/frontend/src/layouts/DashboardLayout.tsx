@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2, Compass, TrendingUp, Zap, Sparkles, Cpu, Link2, GitBranch, MessageSquare, Terminal, Activity, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2, Compass, TrendingUp, Zap, Sparkles, Cpu, Link2, GitBranch, MessageSquare, Terminal, Activity, FlaskConical, Target } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 
 export const DashboardLayout = () => {
@@ -15,6 +15,7 @@ export const DashboardLayout = () => {
     { name: 'Predictive',   path: '/app/predictive',   icon: Zap,            desc: 'Forecasting' },
     { name: 'Redesign',     path: '/app/redesign',     icon: Sparkles,       desc: 'Remediation' },
     { name: 'Autonomous',   path: '/app/autonomous',   icon: Cpu,            desc: 'Optimization' },
+    { name: 'Strategy OS',  path: '/app/autonomous-strategy', icon: Target, desc: 'Planning' },
     { name: 'Integrations', path: '/app/integrations', icon: Link2,          desc: 'Ecosystem' },
     { name: 'Engineering',  path: '/app/engineering',  icon: GitBranch,      desc: 'CI/CD & Deploy' },
     { name: 'Collaboration', path: '/app/collaboration', icon: MessageSquare,   desc: 'War Rooms' },
