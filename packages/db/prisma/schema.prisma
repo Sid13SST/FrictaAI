@@ -114,6 +114,11 @@ model Project {
   recommendationImpacts     RecommendationImpact[]
   optimizationMemories      OptimizationMemory[]
   improvementBaselines      ImprovementBaseline[]
+  optimizationPlans          OptimizationPlan[]
+  optimizationOpportunities  OptimizationOpportunity[]
+  optimizationForecasts      OptimizationForecast[]
+  optimizationRoadmaps       OptimizationRoadmap[]
+  initiativeRecommendations  InitiativeRecommendation[]
 }
 
 model WorkflowSession {
@@ -2715,4 +2720,126 @@ model ExperimentEvidence {
   referenceId  String? // id of the linked anomaly/session/signal
   details      Json
   addedAt      DateTime     @default(now())
+}
+
+// ─── Phase 12 Part 4: Human-Supervised Autonomous Optimization Engine ─────────
+
+model OptimizationPlan {
+  id          String                     @id @default(uuid())
+  projectId   String
+  project     Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  status      String                     @default("DRAFT") // DRAFT | ACTIVE | COMPLETED | ABANDONED
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  initiatives InitiativeRecommendation[]
+  forecasts   OptimizationForecast[]
+}
+
+model OptimizationOpportunity {
+  id                       String                     @id @default(uuid())
+  projectId                String
+  project                  Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  opportunityType          String // HIGH_FRICTION | ONBOARDING | CTA | NAVIGATION | COGNITIVE | WORKFLOW | SURVIVABILITY
+  title                    String
+  description              String
+  evidence                 Json // JSON-serialized list of evidence references
+  score                    Float // Prioritization score
+  impactPotential          Float
+  userReach                Float
+  severity                 String // LOW | MEDIUM | HIGH | CRITICAL
+  confidence               Float
+  survivabilityGain        Float
+  implementationComplexity String // LOW | MEDIUM | HIGH
+  status                   String                     @default("ACTIVE") // ACTIVE | ADDRESSED | IGNORED
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  recommendations          InitiativeRecommendation[]
+  forecasts                OptimizationForecast[]
+}
+
+model OptimizationForecast {
+  id                      String                   @id @default(uuid())
+  projectId               String
+  project                 Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  opportunityId           String?
+  opportunity             OptimizationOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  planId                  String?
+  plan                    OptimizationPlan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  metricName              String // e.g. survivability, friction, completion_rate
+  currentValue            Float
+  forecastedValue         Float
+  confidenceIntervalLower Float
+  confidenceIntervalUpper Float
+  uncertaintyDetails      String
+  createdAt               DateTime                 @default(now())
+  accuracyRecords         ForecastAccuracyRecord[]
+}
+
+model OptimizationRoadmap {
+  id              String                     @id @default(uuid())
+  projectId       String
+  project         Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quarter         String // e.g. "2026-Q3"
+  title           String
+  description     String
+  status          String                     @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  recommendations InitiativeRecommendation[]
+}
+
+model InitiativeRecommendation {
+  id            String                   @id @default(uuid())
+  projectId     String
+  project       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  planId        String?
+  plan          OptimizationPlan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  opportunityId String?
+  opportunity   OptimizationOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  roadmapId     String?
+  roadmap       OptimizationRoadmap?     @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  title         String
+  description   String
+  impactArea    String // e.g. onboarding, checkout, forms
+  score         Float
+  complexity    String // LOW | MEDIUM | HIGH
+  status        String                   @default("PROPOSED") // PROPOSED | UNDER_REVIEW | APPROVED | REJECTED | ARCHIVED | CONVERTED_TO_EXPERIMENT | CONVERTED_TO_INVESTIGATION | CONVERTED_TO_JIRA
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  decisions     RecommendationDecision[]
+  outcomes      OptimizationOutcome[]
+}
+
+model RecommendationDecision {
+  id               String                   @id @default(uuid())
+  recommendationId String
+  recommendation   InitiativeRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  userId           String?
+  action           String // APPROVED | REJECTED | ARCHIVED | CONVERT_TO_EXPERIMENT | CONVERT_TO_INVESTIGATION | CONVERT_TO_JIRA
+  comments         String?
+  externalReference String? // Jira URL or Ticket ID, Experiment ID, etc.
+  decidedAt        DateTime                 @default(now())
+}
+
+model OptimizationOutcome {
+  id               String                   @id @default(uuid())
+  recommendationId String
+  recommendation   InitiativeRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  metricName       String
+  baselineValue    Float
+  actualValue      Float
+  deltaPercent     Float
+  verdict          String // SUCCESS | NEUTRAL | FAILURE
+  evaluatedAt      DateTime                 @default(now())
+}
+
+model ForecastAccuracyRecord {
+  id          String               @id @default(uuid())
+  forecastId  String
+  forecast    OptimizationForecast @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+  actualValue Float
+  errorPercent Float
+  capturedAt  DateTime             @default(now())
 }
