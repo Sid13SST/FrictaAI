@@ -4,7 +4,11 @@ import {
   AutonomousOptimizationEngine,
   AdaptationProcessor,
   OptimizationSimulator,
-  RollbackController
+  RollbackController,
+  SynthesisEngine,
+  RecommendationManager,
+  RoadmapManager,
+  TimelineManager
 } from '@fricta/autonomous-optimization';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
@@ -269,4 +273,218 @@ autonomousRoutes.get('/governance', async (c) => {
   });
 
   return c.json({ events });
+});
+
+/**
+ * GET /api/autonomous/opportunities
+ * Fetch optimization opportunities for a project.
+ */
+autonomousRoutes.get('/opportunities', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const opportunities = await prisma.optimizationOpportunity.findMany({
+    where: { projectId },
+    orderBy: { score: 'desc' }
+  });
+
+  return c.json({ opportunities });
+});
+
+/**
+ * GET /api/autonomous/recommendations
+ * Fetch initiative recommendations for a project.
+ */
+autonomousRoutes.get('/recommendations', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const recommendations = await prisma.initiativeRecommendation.findMany({
+    where: { projectId },
+    orderBy: { score: 'desc' },
+    include: {
+      decisions: { orderBy: { decidedAt: 'desc' } }
+    }
+  });
+
+  return c.json({ recommendations });
+});
+
+/**
+ * GET /api/autonomous/roadmaps
+ * Fetch roadmaps for a project.
+ */
+autonomousRoutes.get('/roadmaps', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const roadmaps = await prisma.optimizationRoadmap.findMany({
+    where: { projectId },
+    include: {
+      recommendations: { orderBy: { score: 'desc' } }
+    },
+    orderBy: { quarter: 'asc' }
+  });
+
+  return c.json({ roadmaps });
+});
+
+/**
+ * GET /api/autonomous/forecasts
+ * Fetch optimization forecasts for a project.
+ */
+autonomousRoutes.get('/forecasts', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const forecasts = await prisma.optimizationForecast.findMany({
+    where: { projectId },
+    include: {
+      opportunity: true
+    },
+    orderBy: { currentValue: 'desc' }
+  });
+
+  return c.json({ forecasts });
+});
+
+/**
+ * GET /api/autonomous/timeline
+ * Fetch sequential implementation and decision timeline for a project.
+ */
+autonomousRoutes.get('/timeline', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const events = await TimelineManager.getProjectTimeline(projectId);
+  return c.json({ timeline: events });
+});
+
+/**
+ * POST /api/autonomous/synthesize
+ * Trigger cross-intelligence layer synthesis and populate opportunities & forecasts.
+ */
+autonomousRoutes.post('/synthesize', async (c) => {
+  const { projectId } = await c.req.json().catch(() => ({}));
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  // 1. Run the synthesis engine
+  const result = await SynthesisEngine.synthesize(projectId);
+
+  // 2. Fetch or create an active optimization plan
+  let plan = await prisma.optimizationPlan.findFirst({
+    where: { projectId, status: 'ACTIVE' }
+  });
+  if (!plan) {
+    plan = await prisma.optimizationPlan.create({
+      data: {
+        projectId,
+        name: `Core UX Optimization Plan - ${new Date().toLocaleDateString()}`,
+        description: 'Automatically synthesized optimization plan targeting live user behavior metrics.',
+        status: 'ACTIVE'
+      }
+    });
+  }
+
+  // 3. Save each opportunity, forecast, and initiative candidate
+  for (const op of result.opportunities) {
+    const dbOp = await prisma.optimizationOpportunity.create({
+      data: {
+        projectId,
+        opportunityType: op.opportunityType,
+        title: op.title,
+        description: op.description,
+        evidence: JSON.stringify(op.evidence),
+        score: op.score,
+        impactPotential: op.impactPotential,
+        userReach: op.userReach,
+        severity: op.severity,
+        confidence: op.confidence,
+        survivabilityGain: op.survivabilityGain,
+        implementationComplexity: op.implementationComplexity,
+        status: 'ACTIVE'
+      }
+    });
+
+    // Associated forecast
+    const fc = result.forecasts.find(f => f.metricName === (
+      op.opportunityType === 'ONBOARDING' ? 'onboarding_survivability' :
+      op.opportunityType === 'HIGH_FRICTION' ? 'rage_click_rate' :
+      op.opportunityType === 'CTA' ? 'cta_survivability' :
+      op.opportunityType === 'NAVIGATION' ? 'navigation_survivability' :
+      op.opportunityType === 'COGNITIVE' ? 'cognitive_survivability' : 'workflow_survivability'
+    ));
+    if (fc) {
+      await prisma.optimizationForecast.create({
+        data: {
+          projectId,
+          opportunityId: dbOp.id,
+          planId: plan.id,
+          metricName: fc.metricName,
+          currentValue: fc.currentValue,
+          forecastedValue: fc.forecastedValue,
+          confidenceIntervalLower: fc.confidenceIntervalLower,
+          confidenceIntervalUpper: fc.confidenceIntervalUpper,
+          uncertaintyDetails: fc.uncertaintyDetails
+        }
+      });
+    }
+
+    // Associated InitiativeRecommendation
+    const init = result.initiatives.find(i => i.impactArea === op.opportunityType);
+    if (init) {
+      await prisma.initiativeRecommendation.create({
+        data: {
+          projectId,
+          planId: plan.id,
+          opportunityId: dbOp.id,
+          title: init.title,
+          description: init.description,
+          impactArea: init.impactArea,
+          score: init.score,
+          complexity: init.complexity,
+          status: 'PROPOSED'
+        }
+      });
+    }
+  }
+
+  return c.json({ success: true, count: result.opportunities.length });
+});
+
+/**
+ * POST /api/autonomous/recommendations/:id/decide
+ * Apply a human-in-the-loop governance decision on a recommendation.
+ */
+autonomousRoutes.post('/recommendations/:id/decide', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+
+  if (!body.action) {
+    return c.json({ error: 'action is required' }, 400);
+  }
+
+  const result = await RecommendationManager.decide(id, {
+    userId: body.userId || 'demo_user',
+    action: body.action,
+    comments: body.comments,
+    externalReference: body.externalReference
+  });
+
+  return c.json(result);
+});
+
+/**
+ * POST /api/autonomous/roadmaps/proposal
+ * Sequence initiatives/recommendations into a quarterly roadmap.
+ */
+autonomousRoutes.post('/roadmaps/proposal', async (c) => {
+  const { projectId, initiativeIds } = await c.req.json().catch(() => ({}));
+
+  if (!projectId || !initiativeIds || !Array.isArray(initiativeIds)) {
+    return c.json({ error: 'projectId and initiativeIds array are required' }, 400);
+  }
+
+  const roadmaps = await RoadmapManager.buildRoadmapProposal(projectId, initiativeIds);
+  return c.json({ roadmaps });
 });
