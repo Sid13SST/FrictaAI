@@ -390,13 +390,13 @@ async function resolveUser(c: any): Promise<any> {
 }
 
 const guard = new RBACAuthorizationGuard(prisma);
-const compiler = new ExecutiveReportingCompiler(prisma);
-const summaryEngine = new SummarySynthesisEngine(prisma);
-const evidenceManager = new EvidenceLinkManager(prisma);
-const exportService = new ExportProcessingService(prisma);
-const shareManager = new SharedReportManager(prisma);
-const distributionDispatcher = new ReportDistributionDispatcher(prisma);
-const analyticsEngine = new WorkspaceAnalyticsEngine(prisma);
+const compiler = new ExecutiveReportingCompiler(prisma as any);
+const summaryEngine = new SummarySynthesisEngine(prisma as any);
+const evidenceManager = new EvidenceLinkManager(prisma as any);
+const exportService = new ExportProcessingService(prisma as any);
+const shareManager = new SharedReportManager(prisma as any);
+const distributionDispatcher = new ReportDistributionDispatcher(prisma as any);
+const analyticsEngine = new WorkspaceAnalyticsEngine(prisma as any);
 
 /**
  * GET /api/reports/executive/list
