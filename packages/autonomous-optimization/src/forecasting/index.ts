@@ -1,6 +1,11 @@
 import type { OpportunityCandidate, ForecastDefinition } from '../types';
 
 export class Forecaster {
+  /**
+   * Generates mathematical forecasts for a target opportunity based on active telemetry.
+   * Projections are bounded and specify lower/upper confidence intervals so that
+   * human operators can gauge implementation risks and potential rewards.
+   */
   static generateForecast(op: OpportunityCandidate, metrics: any[]): ForecastDefinition {
     const metricName = op.opportunityType === 'ONBOARDING' ? 'onboarding_survivability' :
                        op.opportunityType === 'HIGH_FRICTION' ? 'rage_click_rate' :
