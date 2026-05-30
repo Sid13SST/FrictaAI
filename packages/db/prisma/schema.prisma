@@ -100,6 +100,8 @@ model Project {
   webhooks                  WebhookEndpoint[]
   developerApps             DeveloperApplication[]
   platformAudits            PlatformAuditEvent[]
+  liveSessions              LiveSession[]
+  telemetryAudits           TelemetryAuditRecord[]
 }
 
 model WorkflowSession {
