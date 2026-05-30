@@ -25,6 +25,7 @@ import { IntegrationDashboard } from './pages/IntegrationDashboard';
 import { EngineeringDashboard } from './pages/EngineeringDashboard';
 import { CollaborationDashboard } from './pages/CollaborationDashboard';
 import { DeveloperPortal } from './pages/DeveloperPortal';
+import { LiveTelemetry } from './pages/LiveTelemetry';
 
 
 function App() {
@@ -71,6 +72,7 @@ function App() {
           <Route path="engineering" element={<EngineeringDashboard />} />
           <Route path="collaboration" element={<CollaborationDashboard />} />
           <Route path="developer" element={<DeveloperPortal />} />
+          <Route path="telemetry" element={<LiveTelemetry />} />
           <Route path="workspace" element={<WorkspaceConsole />} />
           <Route path="simulation" element={<SimulationConsole />} />
           <Route path="personas" element={<Personas />} />
