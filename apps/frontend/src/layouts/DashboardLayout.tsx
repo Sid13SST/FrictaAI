@@ -20,6 +20,7 @@ export const DashboardLayout = () => {
     { name: 'Collaboration', path: '/app/collaboration', icon: MessageSquare,   desc: 'War Rooms' },
     { name: 'Developer',  path: '/app/developer',    icon: Terminal,       desc: 'APIs & SDKs' },
     { name: 'Live Telemetry', path: '/app/telemetry',  icon: Activity,       desc: 'Real User' },
+    { name: 'Live Intelligence', path: '/app/live-intelligence', icon: Zap, desc: 'UX Observability' },
     { name: 'Simulation', path: '/app/simulation',   icon: Compass,         desc: 'Behavior' },
     { name: 'Workspace',  path: '/app/workspace',    icon: Share2,          desc: 'Collaborate' },
     { name: 'Personas',   path: '/app/personas',     icon: Users,           desc: 'Profiles' },

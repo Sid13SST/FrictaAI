@@ -26,6 +26,7 @@ import { EngineeringDashboard } from './pages/EngineeringDashboard';
 import { CollaborationDashboard } from './pages/CollaborationDashboard';
 import { DeveloperPortal } from './pages/DeveloperPortal';
 import { LiveTelemetry } from './pages/LiveTelemetry';
+import { LiveIntelligence } from './pages/LiveIntelligence';
 
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
           <Route path="collaboration" element={<CollaborationDashboard />} />
           <Route path="developer" element={<DeveloperPortal />} />
           <Route path="telemetry" element={<LiveTelemetry />} />
+          <Route path="live-intelligence" element={<LiveIntelligence />} />
           <Route path="workspace" element={<WorkspaceConsole />} />
           <Route path="simulation" element={<SimulationConsole />} />
           <Route path="personas" element={<Personas />} />
