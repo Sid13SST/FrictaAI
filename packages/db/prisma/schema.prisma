@@ -108,6 +108,12 @@ model Project {
   survivabilityMetrics      SurvivabilityMetric[]
   productionBaselines       ProductionBaseline[]
   intelligenceAlerts        IntelligenceAlert[]
+  uxExperiments             UXExperiment[]
+  optimizationHypotheses    OptimizationHypothesis[]
+  experimentOutcomes        ExperimentOutcome[]
+  recommendationImpacts     RecommendationImpact[]
+  optimizationMemories      OptimizationMemory[]
+  improvementBaselines      ImprovementBaseline[]
 }
 
 model WorkflowSession {
@@ -2582,4 +2588,131 @@ model IntelligenceAlert {
   severity  String // LOW, MEDIUM, HIGH, CRITICAL
   isRead    Boolean  @default(false)
   timestamp DateTime @default(now())
+}
+
+// ─── Phase 12 Part 3: Continuous Experimentation & Optimization Intelligence ──
+
+model UXExperiment {
+  id               String                  @id @default(uuid())
+  projectId        String
+  project          Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name             String
+  description      String
+  status           String                  @default("DRAFT") // DRAFT | ACTIVE | PAUSED | COMPLETED | ABANDONED
+  targetMetric     String // e.g. rage_click_rate, form_completion_rate, onboarding_survivability
+  targetWorkflow   String?
+  evaluationWindow Int                     @default(14) // days
+  startedAt        DateTime?
+  concludedAt      DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  hypothesis       OptimizationHypothesis?
+  variants         ExperimentVariant[]
+  outcomes         ExperimentOutcome[]
+  evidence         ExperimentEvidence[]
+  baselines        ImprovementBaseline[]
+}
+
+model ExperimentVariant {
+  id             String       @id @default(uuid())
+  experimentId   String
+  experiment     UXExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  name           String // e.g. "Control", "Variant A"
+  isControl      Boolean      @default(false)
+  description    String // What changed in this variant
+  changeType     String // UI_COPY | LAYOUT | FLOW | CTA | FORM | NAVIGATION | TIMING
+  changeDetails  Json // Specific change specification
+  createdAt      DateTime     @default(now())
+}
+
+model OptimizationHypothesis {
+  id                   String        @id @default(uuid())
+  projectId            String
+  project              Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  experimentId         String?       @unique
+  experiment           UXExperiment? @relation(fields: [experimentId], references: [id])
+  problemStatement     String
+  supportingEvidence   String // JSON-serialized list of evidence references
+  expectedImprovement  String // What metric should improve and by how much
+  measurementStrategy  String // How success will be measured
+  riskAssessment       String // What could go wrong
+  evaluationWindow     Int           @default(14) // days
+  successThreshold     Float         @default(0.05) // minimum improvement % to call it a success
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+model ExperimentOutcome {
+  id                   String       @id @default(uuid())
+  projectId            String
+  project              Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  experimentId         String
+  experiment           UXExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  conclusion           String // IMPROVED | REGRESSED | NEUTRAL | INCONCLUSIVE
+  confidenceScore      Float // 0.0 to 1.0
+  baselineMetricValue  Float
+  outcomeMetricValue   Float
+  deltaPercent         Float // positive = improvement, negative = regression
+  unexpectedEffects    String? // Any unintended side-effects detected
+  evaluationNotes      String?
+  evaluatedAt          DateTime     @default(now())
+}
+
+model RecommendationImpact {
+  id                    String   @id @default(uuid())
+  projectId             String
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recommendationId      String? // links to RedesignRecommendation if applicable
+  recommendationType    String // REDESIGN | COPY | FLOW | CTA | LAYOUT | NAVIGATION
+  title                 String
+  description           String
+  adoptionStatus        String   @default("PENDING") // PENDING | ADOPTED | REJECTED | DEFERRED
+  adoptedAt             DateTime?
+  baselineSurvivability Float?
+  currentSurvivability  Float?
+  survivabilityDelta    Float?
+  baselineFriction      Float?
+  currentFriction       Float?
+  frictionDelta         Float?
+  verificationStatus    String   @default("UNVERIFIED") // UNVERIFIED | VERIFIED_IMPROVED | VERIFIED_NEUTRAL | VERIFIED_REGRESSED
+  verifiedAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model OptimizationMemory {
+  id              String   @id @default(uuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  memoryType      String // SUCCESSFUL_PATTERN | FAILED_PATTERN | RECOMMENDATION_HISTORY | IMPROVEMENT_HISTORY
+  patternKey      String // e.g. "rage_click_reduction", "checkout_completion_improvement"
+  patternSummary  String
+  outcomeType     String // SUCCESS | FAILURE | PARTIAL
+  metricImpacted  String
+  deltaAchieved   Float?
+  experimentId    String?
+  evidenceDetails Json?
+  createdAt       DateTime @default(now())
+}
+
+model ImprovementBaseline {
+  id             String        @id @default(uuid())
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  experimentId   String?
+  experiment     UXExperiment? @relation(fields: [experimentId], references: [id])
+  metricName     String // e.g. rage_click_rate, form_completion_rate
+  baselineValue  Float
+  capturedAt     DateTime      @default(now())
+  scopeKey       String? // e.g. workflow, persona, version
+}
+
+model ExperimentEvidence {
+  id           String       @id @default(uuid())
+  experimentId String
+  experiment   UXExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  evidenceType String // ANOMALY | LIVE_SESSION | TELEMETRY_SIGNAL | SURVIVABILITY_DROP | FRICTION_SPIKE
+  referenceId  String? // id of the linked anomaly/session/signal
+  details      Json
+  addedAt      DateTime     @default(now())
 }
