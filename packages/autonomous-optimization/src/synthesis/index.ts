@@ -5,6 +5,12 @@ import { Prioritizer } from '../prioritization';
 import { Forecaster } from '../forecasting';
 
 export class SynthesisEngine {
+  /**
+   * COLLATES ALL LAYER INTELLIGENCE FOR STRATEGIC REVIEW.
+   * Note: In alignment with the Human Authority Governance Principle, this engine
+   * synthesizes insights, forecasts, and opportunities to be reviewed, approved,
+   * or converted by human operators. It does not execute or deploy changes.
+   */
   static async synthesize(projectId: string): Promise<SynthesisResult> {
     // 1. Gather all required intelligence layers
     const [
