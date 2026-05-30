@@ -6,7 +6,7 @@ import {
   BookOpen, Lightbulb, Shield, Activity, Minus, RotateCcw
 } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL || '';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,16 +134,35 @@ function NewExperimentModal({ projectId, onClose, onCreated }: {
   ];
 
   const handleSubmit = async () => {
-    if (!form.name || !form.description) return;
+    // Ensure we have a projectId before attempting to create
+    if (!projectId) {
+      alert('Project not loaded yet – please wait for the workspace to initialise.');
+      return;
+    }
+    if (!form.name.trim()) {
+      alert('Please enter an experiment name.');
+      return;
+    }
+    if (!form.description.trim()) {
+      alert('Please enter a description.');
+      return;
+    }
     setLoading(true);
     try {
-      await fetch(`${API}/api/optimization/experiments`, {
+      const response = await fetch(`${API}/api/optimization/experiments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, projectId }),
       });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Server returned status ${response.status}`);
+      }
       onCreated();
       onClose();
+    } catch (err: any) {
+      console.error('Failed to create experiment:', err);
+      alert(`Failed to create experiment: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -424,13 +443,24 @@ export function OptimizationLab() {
 
   // Load project and data
   useEffect(() => {
-    if (!user) return;
-    fetch(`${API}/api/projects`, { headers: { 'x-user-id': user.id } })
-      .then(r => r.json())
-      .then((data: any) => {
-        const pid = data.projects?.[0]?.id;
-        if (pid) setProjectId(pid);
-      }).catch(() => {});
+    const fetchProject = async () => {
+      try {
+        const headers: Record<string, string> = {};
+        if (user?.id) {
+          headers['x-user-id'] = user.id;
+        }
+        const res = await fetch(`${API}/api/projects`, { headers });
+        const data = await res.json();
+        // Support both { projects: [...] } and raw array formats
+        const projectsList = data.projects || data;
+        const pid = projectsList?.[0]?.id || '56b8722a-c7c4-47db-a855-b5d3e0ad32cb';
+        setProjectId(pid);
+      } catch (err) {
+        console.error('Failed to fetch projects, falling back to default:', err);
+        setProjectId('56b8722a-c7c4-47db-a855-b5d3e0ad32cb');
+      }
+    };
+    fetchProject();
   }, [user]);
 
   useEffect(() => {
