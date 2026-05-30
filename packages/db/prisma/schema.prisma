@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {
@@ -102,6 +103,11 @@ model Project {
   platformAudits            PlatformAuditEvent[]
   liveSessions              LiveSession[]
   telemetryAudits           TelemetryAuditRecord[]
+  uxAnomalies               UXAnomaly[]
+  behavioralPatterns        BehavioralPattern[]
+  survivabilityMetrics      SurvivabilityMetric[]
+  productionBaselines       ProductionBaseline[]
+  intelligenceAlerts        IntelligenceAlert[]
 }
 
 model WorkflowSession {
@@ -2407,6 +2413,7 @@ model LiveSession {
   interactionEvents TelemetryInteractionEvent[]
   frictionSignals   FrictionSignal[]
   sessionHeartbeats SessionHeartbeat[]
+  anomalyEvidences  AnomalyEvidence[]
 }
 
 model TelemetryEvent {
@@ -2475,4 +2482,104 @@ model TelemetryAuditRecord {
   actionType    String // INGESTION, REDACTION, CONSENT_GRANT, CONSENT_REVOKE
   details       Json
   timestamp     DateTime @default(now())
+}
+
+model UXAnomaly {
+  id                  String               @id @default(uuid())
+  projectId           String
+  project             Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  anomalyType         String // RAGE_CLICK_SPIKE, NAV_LOOP_ESCALATION, CTA_FAILURE_SURGE, FORM_ABANDONMENT_SURGE, SESSION_DROP_OFF_CLUSTER, COGNITIVE_FRICTION_ESCALATION, WORKFLOW_DEGRADATION, WORKFLOW_COLLAPSE, SURVIVABILITY_COLLAPSE
+  severity            String // LOW, MEDIUM, HIGH, CRITICAL
+  description         String
+  isResolved          Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  evidence            AnomalyEvidence[]
+  correlatedBehaviors CorrelatedBehavior[]
+  riskEscalations     RiskEscalation[]
+}
+
+model BehavioralPattern {
+  id                  String               @id @default(uuid())
+  projectId           String
+  project             Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  patternType         String // REPEATED_FAILURES, COGNITIVE_BURDEN, ENGAGEMENT_DEGRADATION, ABANDONMENT_PATH, RAGE_CLICK_LOOP
+  description         String
+  confidence          Float
+  sessionCount        Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  evidence            AnomalyEvidence[]
+  correlatedBehaviors CorrelatedBehavior[]
+}
+
+model SurvivabilityMetric {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  metricType     String // CTA_SURVIVABILITY, ONBOARDING_SURVIVABILITY, NAVIGATION_SURVIVABILITY, WORKFLOW_SURVIVABILITY, COGNITIVE_SURVIVABILITY
+  value          Float // 0.0 to 1.0 representation of completion/stability
+  targetWorkflow String?
+  timestamp      DateTime @default(now())
+}
+
+model ProductionBaseline {
+  id                String   @id @default(uuid())
+  projectId         String
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  baselineType      String // HISTORICAL, WORKSPACE, WORKFLOW, PERSONA, VERSION, DEPLOYMENT
+  scopeKey          String // e.g. "v1.2.0", "persona_buyer", "checkout_workflow"
+  metricName        String // e.g. "rage_click_rate", "form_completion_rate", "average_cognitive_burden"
+  expectedValue     Float
+  standardDeviation Float    @default(0.0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AnomalyEvidence {
+  id            String             @id @default(uuid())
+  anomalyId     String?
+  anomaly       UXAnomaly?         @relation(fields: [anomalyId], references: [id], onDelete: Cascade)
+  patternId     String?
+  pattern       BehavioralPattern? @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  liveSessionId String?
+  liveSession   LiveSession?       @relation(fields: [liveSessionId], references: [id], onDelete: SetNull)
+  evidenceType  String // RAGE_CLICK_COUNT, NAV_LOOP_STEPS, FAILED_CTA
+  details       Json
+  timestamp     DateTime           @default(now())
+}
+
+model CorrelatedBehavior {
+  id              String             @id @default(uuid())
+  anomalyId       String?
+  anomaly         UXAnomaly?         @relation(fields: [anomalyId], references: [id], onDelete: Cascade)
+  patternId       String?
+  pattern         BehavioralPattern? @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  correlationType String // DEPLOYMENT, VERSION, PERSONA, WORKFLOW, SESSION, INVESTIGATION
+  correlationKey  String
+  coefficient     Float
+  evidenceDetails String
+  timestamp       DateTime           @default(now())
+}
+
+model RiskEscalation {
+  id                 String    @id @default(uuid())
+  anomalyId          String
+  anomaly            UXAnomaly @relation(fields: [anomalyId], references: [id], onDelete: Cascade)
+  stage              String // WARNING, CRITICAL, COMPROMISED
+  escalationTrigger  String
+  notifiedChannels   Json
+  timestamp          DateTime  @default(now())
+}
+
+model IntelligenceAlert {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  alertType String // CRITICAL_SURVIVABILITY_FAILURE, FRICTION_ESCALATION, ABANDONMENT_ESCALATION, NAVIGATION_BREAKDOWN, COGNITIVE_RISK_INCREASE, WORKFLOW_COLLAPSE
+  title     String
+  message   String
+  severity  String // LOW, MEDIUM, HIGH, CRITICAL
+  isRead    Boolean  @default(false)
+  timestamp DateTime @default(now())
 }
