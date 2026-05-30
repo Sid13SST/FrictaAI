@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2, Compass, TrendingUp, Zap, Sparkles, Cpu, Link2, GitBranch, MessageSquare, Terminal, Activity } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2, Compass, TrendingUp, Zap, Sparkles, Cpu, Link2, GitBranch, MessageSquare, Terminal, Activity, FlaskConical } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 
 export const DashboardLayout = () => {
@@ -21,6 +21,7 @@ export const DashboardLayout = () => {
     { name: 'Developer',  path: '/app/developer',    icon: Terminal,       desc: 'APIs & SDKs' },
     { name: 'Live Telemetry', path: '/app/telemetry',  icon: Activity,       desc: 'Real User' },
     { name: 'Live Intelligence', path: '/app/live-intelligence', icon: Zap, desc: 'UX Observability' },
+    { name: 'Optimization Lab', path: '/app/optimization', icon: FlaskConical, desc: 'Experiments' },
     { name: 'Simulation', path: '/app/simulation',   icon: Compass,         desc: 'Behavior' },
     { name: 'Workspace',  path: '/app/workspace',    icon: Share2,          desc: 'Collaborate' },
     { name: 'Personas',   path: '/app/personas',     icon: Users,           desc: 'Profiles' },
