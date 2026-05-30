@@ -78,3 +78,65 @@ export interface OptimizationSafetySignalSummary {
   thresholdLimit: number;
   policyPassed: boolean;
 }
+
+// ─── Phase 12 Part 4 Planning Types ───────────────────────────────────────────
+
+export interface OpportunityCandidate {
+  projectId: string;
+  opportunityType: 'HIGH_FRICTION' | 'ONBOARDING' | 'CTA' | 'NAVIGATION' | 'COGNITIVE' | 'WORKFLOW' | 'SURVIVABILITY';
+  title: string;
+  description: string;
+  evidence: any[];
+  score: number;
+  impactPotential: number;
+  userReach: number;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  confidence: number;
+  survivabilityGain: number;
+  implementationComplexity: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+export interface ForecastDefinition {
+  projectId: string;
+  opportunityId?: string;
+  planId?: string;
+  metricName: string;
+  currentValue: number;
+  forecastedValue: number;
+  confidenceIntervalLower: number;
+  confidenceIntervalUpper: number;
+  uncertaintyDetails: string;
+}
+
+export interface RoadmapDefinition {
+  projectId: string;
+  quarter: string;
+  title: string;
+  description: string;
+}
+
+export interface InitiativeCandidate {
+  projectId: string;
+  planId?: string;
+  opportunityId?: string;
+  roadmapId?: string;
+  title: string;
+  description: string;
+  impactArea: string;
+  score: number;
+  complexity: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+export interface DecisionInput {
+  userId?: string;
+  action: 'APPROVED' | 'REJECTED' | 'ARCHIVED' | 'CONVERT_TO_EXPERIMENT' | 'CONVERT_TO_INVESTIGATION' | 'CONVERT_TO_JIRA';
+  comments?: string;
+  externalReference?: string;
+}
+
+export interface SynthesisResult {
+  opportunities: OpportunityCandidate[];
+  initiatives: InitiativeCandidate[];
+  forecasts: ForecastDefinition[];
+}
+
