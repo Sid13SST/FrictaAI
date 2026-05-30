@@ -1,6 +1,11 @@
 import { prisma } from '@fricta/db';
 
 export class TimelineManager {
+  /**
+   * Constructs a historical activity timeline of decisions, outcomes, and discoveries.
+   * This implements complete operational traceability and explainability, so that
+   * any administrator can audit why a recommendation was approved or rejected.
+   */
   static async getProjectTimeline(projectId: string) {
     const [decisions, recommendations, outcomes] = await Promise.all([
       prisma.recommendationDecision.findMany({
