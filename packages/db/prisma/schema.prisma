@@ -2381,3 +2381,96 @@ model PlatformAuditEvent {
   ipAddress String?
   timestamp DateTime @default(now())
 }
+
+model LiveSession {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sessionKey   String   @unique
+  userId       String?
+  browser      String?
+  os           String?
+  device       String?
+  ipAddress    String?
+  location     String?
+  startedAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  status       String   @default("ACTIVE") // ACTIVE, COMPLETED, ABANDONED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  telemetryEvents   TelemetryEvent[]
+  sessionSignals    SessionSignal[]
+  navigationEvents  NavigationEvent[]
+  interactionEvents TelemetryInteractionEvent[]
+  frictionSignals   FrictionSignal[]
+  sessionHeartbeats SessionHeartbeat[]
+}
+
+model TelemetryEvent {
+  id            String      @id @default(uuid())
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  eventType     String
+  payload       Json
+  timestamp     DateTime    @default(now())
+}
+
+model SessionSignal {
+  id            String      @id @default(uuid())
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  signalType    String // RAGE_CLICK, ABANDONMENT, COMPLETION, FRICTION
+  severity      String // LOW, MEDIUM, HIGH, CRITICAL
+  description   String
+  timestamp     DateTime    @default(now())
+}
+
+model NavigationEvent {
+  id            String      @id @default(uuid())
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  fromUrl       String
+  toUrl         String
+  timestamp     DateTime    @default(now())
+  durationMs    Int         @default(0)
+}
+
+model TelemetryInteractionEvent {
+  id            String      @id @default(uuid())
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  target        String
+  elementType   String
+  action        String // CLICK, SCROLL, INPUT
+  timestamp     DateTime    @default(now())
+}
+
+model FrictionSignal {
+  id            String      @id @default(uuid())
+  liveSessionId String
+  liveSession   LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  frictionType  String // RAGE_CLICK, DEAD_CLICK, EXCESSIVE_SCROLL, BACK_BUTTON_SPAM
+  score         Float       @default(0.0)
+  details       Json
+  timestamp     DateTime    @default(now())
+}
+
+model SessionHeartbeat {
+  id                    String      @id @default(uuid())
+  liveSessionId         String
+  liveSession           LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  sequenceNumber        Int
+  activeDurationSeconds Int
+  timestamp             DateTime    @default(now())
+}
+
+model TelemetryAuditRecord {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  liveSessionId String?
+  actionType    String // INGESTION, REDACTION, CONSENT_GRANT, CONSENT_REVOKE
+  details       Json
+  timestamp     DateTime @default(now())
+}
