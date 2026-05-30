@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { ApiKeyManager } from '@fricta/developer-platform';
+import { LiveAnomalyDetector } from '@fricta/live-intelligence';
 
 export const telemetryRoutes = new Hono();
 
@@ -201,6 +202,13 @@ telemetryRoutes.post('/ingest', async (c) => {
       }
     }
   });
+
+  // 5. Trigger live anomaly analysis asynchronously
+  if (liveSession) {
+    LiveAnomalyDetector.analyzeSessionEvents(liveSession.id).catch((err: any) => {
+      console.error('[TelemetryIngest] Background anomaly analysis failed:', err);
+    });
+  }
 
   return c.json({ success: true, processed: events.length });
 });
