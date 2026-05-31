@@ -29,6 +29,7 @@ import { LiveTelemetry } from './pages/LiveTelemetry';
 import { LiveIntelligence } from './pages/LiveIntelligence';
 import { OptimizationLab } from './pages/OptimizationLab';
 import { OptimizationCommandCenter } from './pages/OptimizationCommandCenter';
+import { ProductStrategyDashboard } from './pages/ProductStrategyDashboard';
 
 
 function App() {
@@ -72,6 +73,7 @@ function App() {
           <Route path="redesign" element={<RedesignDashboard />} />
           <Route path="autonomous" element={<AutonomousDashboard />} />
           <Route path="autonomous-strategy" element={<OptimizationCommandCenter />} />
+          <Route path="product-strategy" element={<ProductStrategyDashboard />} />
           <Route path="integrations" element={<IntegrationDashboard />} />
           <Route path="engineering" element={<EngineeringDashboard />} />
           <Route path="collaboration" element={<CollaborationDashboard />} />
