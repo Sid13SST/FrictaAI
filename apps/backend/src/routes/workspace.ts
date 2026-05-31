@@ -571,3 +571,15 @@ workspaceRoutes.get('/presence', async (c) => {
   const activeUsers = presenceManager.getPresenceForScreen(activeScreen);
   return c.json({ activeUsers });
 });
+
+workspaceRoutes.get('/threads', async (c) => {
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const threads = await prisma.investigationThread.findMany({
+    where: { projectId },
+    orderBy: { createdAt: 'desc' },
+  });
+  return c.json({ threads });
+});
+
