@@ -16,6 +16,7 @@ export const DashboardLayout = () => {
     { name: 'Redesign',     path: '/app/redesign',     icon: Sparkles,       desc: 'Remediation' },
     { name: 'Autonomous',   path: '/app/autonomous',   icon: Cpu,            desc: 'Optimization' },
     { name: 'Strategy OS',  path: '/app/autonomous-strategy', icon: Target, desc: 'Planning' },
+    { name: 'Product Strategy', path: '/app/product-strategy', icon: Compass, desc: 'Portfolio OS' },
     { name: 'Integrations', path: '/app/integrations', icon: Link2,          desc: 'Ecosystem' },
     { name: 'Engineering',  path: '/app/engineering',  icon: GitBranch,      desc: 'CI/CD & Deploy' },
     { name: 'Collaboration', path: '/app/collaboration', icon: MessageSquare,   desc: 'War Rooms' },
