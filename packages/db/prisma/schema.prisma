@@ -119,6 +119,12 @@ model Project {
   optimizationForecasts      OptimizationForecast[]
   optimizationRoadmaps       OptimizationRoadmap[]
   initiativeRecommendations  InitiativeRecommendation[]
+  strategicObjectives        StrategicObjective[]
+  productInitiatives         ProductInitiative[]
+  productRoadmaps            ProductRoadmap[]
+  opportunityScores          OpportunityScore[]
+  executiveMetrics           ExecutiveMetric[]
+  productHealthSnapshots     ProductHealthSnapshot[]
 }
 
 model WorkflowSession {
@@ -2842,4 +2848,116 @@ model ForecastAccuracyRecord {
   actualValue Float
   errorPercent Float
   capturedAt  DateTime             @default(now())
+}
+
+// ─── Phase 13 Part 1: Product Strategy Intelligence ───────────────────────────
+
+model StrategicObjective {
+  id           String              @id @default(uuid())
+  projectId    String
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  targetMetric String?
+  targetValue  Float?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  initiatives  ProductInitiative[]
+}
+
+model ProductInitiative {
+  id                 String               @id @default(uuid())
+  projectId          String
+  project            Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  objectiveId        String?
+  objective          StrategicObjective?  @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+  title              String
+  description        String
+  owner              String?
+  status             String               @default("PROPOSED") // PROPOSED | UNDER_REVIEW | APPROVED | REJECTED | ARCHIVED
+  strategicScore     Float
+  userImpactScore    Float
+  survivabilityScore Float
+  riskScore          Float
+  effortScore        Float                @default(1.0)
+  complexity         String               @default("MEDIUM") // LOW | MEDIUM | HIGH | VERY_HIGH
+  targetQuarter      String               @default("2026-Q3")
+  roadmapId          String?
+  roadmap            ProductRoadmap?      @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  evidence           InitiativeEvidence[]
+  risks              StrategicRisk[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model InitiativeEvidence {
+  id           String            @id @default(uuid())
+  initiativeId String
+  initiative   ProductInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  evidenceType String            // REPLAY | INVESTIGATION | ANOMALY | SIGNAL | HISTORY
+  referenceId  String
+  description  String
+  metadata     Json?
+  createdAt    DateTime          @default(now())
+}
+
+model ProductRoadmap {
+  id          String              @id @default(uuid())
+  projectId   String
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quarter     String
+  title       String
+  description String
+  status      String              @default("DRAFT") // DRAFT | APPROVED | ARCHIVED
+  initiatives ProductInitiative[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model StrategicRisk {
+  id             String            @id @default(uuid())
+  initiativeId   String
+  initiative     ProductInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  riskType       String            // DEPENDENCY | COMPLEXITY | RESOURCE | UX_REGRESSION
+  description    String
+  severity       String            // LOW | MEDIUM | HIGH | CRITICAL
+  mitigationPlan String
+  createdAt      DateTime          @default(now())
+}
+
+model OpportunityScore {
+  id              String   @id @default(uuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  opportunityId   String?
+  title           String
+  reachScore      Float
+  impactScore     Float
+  confidenceScore Float
+  effortScore     Float
+  overallScore    Float
+  calculatedAt    DateTime @default(now())
+}
+
+model ExecutiveMetric {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  metricName  String
+  value       Float
+  targetValue Float?
+  trend       String
+  updatedAt   DateTime @updatedAt
+}
+
+model ProductHealthSnapshot {
+  id                       String   @id @default(uuid())
+  projectId                String
+  project                  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  productHealthScore       Float
+  strategicRiskScore       Float
+  uxHealthScore            Float
+  opportunityPipelineCount Int
+  activeInitiativesCount   Int
+  recordedAt               DateTime @default(now())
 }
