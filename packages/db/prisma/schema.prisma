@@ -125,6 +125,9 @@ model Project {
   opportunityScores          OpportunityScore[]
   executiveMetrics           ExecutiveMetric[]
   productHealthSnapshots     ProductHealthSnapshot[]
+  productKPIs                ProductKPI[]
+  productOutcomes            ProductOutcome[]
+  productHealthScores        ProductHealthScore[]
 }
 
 model WorkflowSession {
@@ -2886,6 +2889,7 @@ model ProductInitiative {
   roadmap            ProductRoadmap?      @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
   evidence           InitiativeEvidence[]
   risks              StrategicRisk[]
+  outcomes           ProductOutcome[]
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 }
@@ -2961,3 +2965,105 @@ model ProductHealthSnapshot {
   activeInitiativesCount   Int
   recordedAt               DateTime @default(now())
 }
+
+// ─── Phase 13 Part 2: Outcome Intelligence & Product KPI Operating Layer ───────
+
+model ProductKPI {
+  id           String            @id @default(uuid())
+  projectId    String
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  description  String
+  kpiType      String            // ADOPTION | ACTIVATION | RETENTION | COMPLETION | ENGAGEMENT | SURVIVABILITY | SUCCESS | UX_HEALTH
+  metricKey    String
+  currentValue Float
+  targetValue  Float?
+  owner        String?
+  status       String            @default("ACTIVE") // ACTIVE | ARCHIVED
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  histories    KPIHistory[]
+  forecasts    KPIForecast[]
+  baselines    OutcomeBaseline[]
+  impacts      InitiativeImpact[]
+}
+
+model KPIHistory {
+  id         String     @id @default(uuid())
+  kpiId      String
+  kpi        ProductKPI @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  value      Float
+  recordedAt DateTime   @default(now())
+}
+
+model ProductOutcome {
+  id           String            @id @default(uuid())
+  projectId    String
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId String?
+  initiative   ProductInitiative? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
+  title        String
+  description  String
+  verdict      String            @default("NEUTRAL") // POSITIVE | NEGATIVE | NEUTRAL | INCONCLUSIVE
+  evaluatedAt  DateTime          @default(now())
+  evidence     OutcomeEvidence[]
+  impacts      InitiativeImpact[]
+}
+
+model OutcomeEvidence {
+  id           String         @id @default(uuid())
+  outcomeId    String
+  outcome      ProductOutcome @relation(fields: [outcomeId], references: [id], onDelete: Cascade)
+  evidenceType String         // REPLAY | INVESTIGATION | ANOMALY | SIGNAL
+  referenceId  String
+  description  String
+  metadata     Json?
+  createdAt    DateTime       @default(now())
+}
+
+model InitiativeImpact {
+  id                   String         @id @default(uuid())
+  outcomeId            String
+  outcome              ProductOutcome @relation(fields: [outcomeId], references: [id], onDelete: Cascade)
+  kpiId                String
+  kpi                  ProductKPI     @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  correlationValue     Float
+  baselineValue        Float
+  postValue            Float
+  deltaPercent         Float
+  contributionAnalysis String
+  verified             Boolean        @default(false)
+  createdAt            DateTime       @default(now())
+}
+
+model ProductHealthScore {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  productScore  Float
+  uxScore       Float
+  strategicScore Float
+  recordedAt    DateTime @default(now())
+}
+
+model OutcomeBaseline {
+  id          String     @id @default(uuid())
+  kpiId       String
+  kpi         ProductKPI @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  value       Float
+  windowStart DateTime
+  windowEnd   DateTime
+  createdAt   DateTime   @default(now())
+}
+
+model KPIForecast {
+  id             String     @id @default(uuid())
+  kpiId          String
+  kpi            ProductKPI @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  projectedValue Float
+  confidenceLower Float
+  confidenceUpper Float
+  targetQuarter  String
+  createdAt      DateTime   @default(now())
+}
+
