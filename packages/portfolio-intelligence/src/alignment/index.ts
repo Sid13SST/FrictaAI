@@ -188,3 +188,5 @@ export class AlignmentEngine {
     return gaps;
   }
 }
+
+// Evidence-based link traceability checks for strategic gaps detection.
