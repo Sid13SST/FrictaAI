@@ -87,3 +87,5 @@ export class DependencyAnalyzer {
     return results;
   }
 }
+
+// Risk score modifier scaling rules for BLOCKING, SEQUENTIAL, and CONCURRENT flows.
