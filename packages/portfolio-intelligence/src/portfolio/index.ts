@@ -144,3 +144,5 @@ export class PortfolioManager {
     };
   }
 }
+
+// Advisory logic constraint enforcement: calculations are purely informational.
