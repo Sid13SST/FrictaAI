@@ -32,6 +32,7 @@ import { OptimizationCommandCenter } from './pages/OptimizationCommandCenter';
 import { ProductStrategyDashboard } from './pages/ProductStrategyDashboard';
 import { OutcomeDashboard } from './pages/OutcomeDashboard';
 import { PortfolioDashboard } from './pages/PortfolioDashboard';
+import { ExecutiveDashboard } from './pages/ExecutiveDashboard';
 
 
 function App() {
@@ -78,6 +79,7 @@ function App() {
           <Route path="product-strategy" element={<ProductStrategyDashboard />} />
           <Route path="outcome-intelligence" element={<OutcomeDashboard />} />
           <Route path="portfolio-intelligence" element={<PortfolioDashboard />} />
+          <Route path="executive-governance" element={<ExecutiveDashboard />} />
           <Route path="integrations" element={<IntegrationDashboard />} />
           <Route path="engineering" element={<EngineeringDashboard />} />
           <Route path="collaboration" element={<CollaborationDashboard />} />
