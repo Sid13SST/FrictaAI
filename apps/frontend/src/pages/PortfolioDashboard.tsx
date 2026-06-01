@@ -916,3 +916,5 @@ export function PortfolioDashboard() {
     </div>
   );
 }
+
+// Obsidian HSL premium theme and responsive tabs styling config.
