@@ -128,6 +128,10 @@ model Project {
   productKPIs                ProductKPI[]
   productOutcomes            ProductOutcome[]
   productHealthScores        ProductHealthScore[]
+  portfolios                Portfolio[]
+  portfolioHealthSnapshots  PortfolioHealthSnapshot[]
+  strategicGaps             StrategicGap[]
+  dependencyRecords         DependencyRecord[]
 }
 
 model WorkflowSession {
@@ -2866,6 +2870,8 @@ model StrategicObjective {
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   initiatives  ProductInitiative[]
+  portfolioObjectives PortfolioObjective[]
+  alignmentRecords    AlignmentRecord[]
 }
 
 model ProductInitiative {
@@ -2892,6 +2898,9 @@ model ProductInitiative {
   outcomes           ProductOutcome[]
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
+  sourceDependencies DependencyRecord[] @relation("SourceDependency")
+  targetDependencies DependencyRecord[] @relation("TargetDependency")
+  alignmentRecords    AlignmentRecord[]
 }
 
 model InitiativeEvidence {
@@ -3065,5 +3074,107 @@ model KPIForecast {
   confidenceUpper Float
   targetQuarter  String
   createdAt      DateTime   @default(now())
+}
+
+// ─── Phase 13 Part 3: Product Portfolio Intelligence & Organizational Alignment 
+
+model Portfolio {
+  id               String            @id @default(uuid())
+  projectId        String
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name             String
+  description      String
+  status           String            @default("ACTIVE") // ACTIVE | ARCHIVED
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  objectives       PortfolioObjective[]
+  allocations      InvestmentAllocation[]
+  alignmentRecords AlignmentRecord[]
+  risks            OrganizationalRisk[]
+}
+
+model PortfolioObjective {
+  id          String             @id @default(uuid())
+  portfolioId String
+  portfolio   Portfolio          @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  objectiveId String
+  objective   StrategicObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+}
+
+model AlignmentRecord {
+  id             String             @id @default(uuid())
+  portfolioId    String
+  portfolio      Portfolio          @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     ProductInitiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  objectiveId    String
+  objective      StrategicObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  alignmentScore Float
+  status         String             @default("ALIGNED") // ALIGNED | MISALIGNED | GAPPED
+  comments       String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model StrategicGap {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  gapType     String   // UNCOVERED_OBJECTIVE | UNSUPPORTED_KPI | NEGLECTED_COHORT | HIGH_RISK_AREA
+  title       String
+  description String
+  severity    String   // LOW | MEDIUM | HIGH | CRITICAL
+  status      String   @default("OPEN") // OPEN | RESOLVED | IGNORED
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model DependencyRecord {
+  id                 String            @id @default(uuid())
+  projectId          String
+  project            Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceInitiativeId String
+  sourceInitiative   ProductInitiative @relation("SourceDependency", fields: [sourceInitiativeId], references: [id], onDelete: Cascade)
+  targetInitiativeId String
+  targetInitiative   ProductInitiative @relation("TargetDependency", fields: [targetInitiativeId], references: [id], onDelete: Cascade)
+  dependencyType     String            // BLOCKING | CONCURRENT | SEQUENTIAL
+  status             String            @default("ACTIVE") // ACTIVE | RESOLVED | RISK
+  riskScore          Float             @default(0.0)
+  createdAt          DateTime          @default(now())
+}
+
+model PortfolioHealthSnapshot {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  alignmentScore Float
+  riskIndex      Float
+  coverageScore  Float
+  healthRating   Float
+  recordedAt     DateTime @default(now())
+}
+
+model InvestmentAllocation {
+  id           String    @id @default(uuid())
+  portfolioId  String
+  portfolio    Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  category     String    // R_D | GROWTH | MAINTAIN | RISK_REDUCTION | SECURITY
+  percentage   Float
+  budgetAmount Float?
+  createdAt    DateTime  @default(now())
+}
+
+model OrganizationalRisk {
+  id             String    @id @default(uuid())
+  portfolioId    String
+  portfolio      Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  impactArea     String
+  probability    Float
+  impactScore    Float
+  propagatedRisk Float
+  status         String    @default("MONITORED") // MONITORED | MITIGATED | ACTIVE
+  createdAt      DateTime  @default(now())
 }
 
