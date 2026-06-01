@@ -307,3 +307,5 @@ portfolioRoutes.post('/dependencies', async (c) => {
 
   return c.json(record, 201);
 });
+
+// Hono route RBAC authorization security guard mapping details.
