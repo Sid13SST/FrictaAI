@@ -41,6 +41,7 @@ model User {
   optimizationRollbacks  OptimizationRollback[]
   governanceEvents       OptimizationGovernanceEvent[]
   integrationAuditEvents IntegrationAuditEvent[]
+  decisions              DecisionRecord[]
 }
 
 model Project {
@@ -132,6 +133,11 @@ model Project {
   portfolioHealthSnapshots  PortfolioHealthSnapshot[]
   strategicGaps             StrategicGap[]
   dependencyRecords         DependencyRecord[]
+  executiveRecommendations ExecutiveRecommendation[]
+  governanceReviews        GovernanceReview[]
+  strategicRiskRecords     StrategicRiskRecord[]
+  executiveHealthSnapshots ExecutiveHealthSnapshot[]
+  governancePolicyReviews  GovernancePolicyReview[]
 }
 
 model WorkflowSession {
@@ -3176,5 +3182,107 @@ model OrganizationalRisk {
   propagatedRisk Float
   status         String    @default("MONITORED") // MONITORED | MITIGATED | ACTIVE
   createdAt      DateTime  @default(now())
+}
+
+// ─── Phase 13 Part 4: Executive Decision Intelligence & Product Governance ──────
+
+model ExecutiveRecommendation {
+  id                 String                  @id @default(uuid())
+  projectId          String
+  project            Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title              String
+  description        String
+  recommendationType String                  // INITIATIVE | STRATEGIC | RISK | CAPACITY
+  priority           String                  // LOW | MEDIUM | HIGH | CRITICAL
+  status             String                  @default("ACTIVE") // ACTIVE | APPROVED | REJECTED | SUPERSEDED
+  evidenceCount      Int                     @default(0)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  decisions          DecisionRecord[]
+  evidence           ExecutiveEvidence[]
+}
+
+model DecisionRecord {
+  id               String                  @id @default(uuid())
+  recommendationId String
+  recommendation   ExecutiveRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action           String                  // APPROVE | REJECT | ARCHIVE
+  notes            String?
+  createdAt        DateTime                @default(now())
+  outcomes         DecisionOutcome[]
+}
+
+model GovernanceReview {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reviewType  String   // INITIATIVE | POLICY | COMPLIANCE
+  targetId    String
+  verdict     String   // COMPLIANT | NON_COMPLIANT | WARNING
+  details     String
+  reviewedBy  String
+  reviewedAt  DateTime @default(now())
+}
+
+model StrategicRiskRecord {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  riskSource     String   // INITIATIVE | KPI | GOVERNANCE | UX
+  sourceId       String?
+  title          String
+  description    String
+  severity       String   // LOW | MEDIUM | HIGH | CRITICAL
+  probability    Float
+  impact         Float
+  compositeScore Float
+  status         String   @default("MONITORED") // MONITORED | ESCALATED | RESOLVED
+  createdAt      DateTime @default(now())
+}
+
+model ExecutiveHealthSnapshot {
+  id              String   @id @default(uuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  productHealth   Float
+  strategicHealth Float
+  portfolioHealth Float
+  uxHealth        Float
+  kpiHealth       Float
+  compositeHealth Float
+  recordedAt      DateTime @default(now())
+}
+
+model GovernancePolicyReview {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  policyName     String
+  complianceRate Float
+  status         String   @default("PASSED") // PASSED | WARNING | FAILED
+  checkedAt      DateTime @default(now())
+}
+
+model ExecutiveEvidence {
+  id               String                  @id @default(uuid())
+  recommendationId String
+  recommendation   ExecutiveRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  evidenceType     String                  // INITIATIVE | KPI | OUTCOME | UX_ANOMALY | REPLAY | INVESTIGATION
+  referenceId      String
+  description      String
+  createdAt        DateTime                @default(now())
+}
+
+model DecisionOutcome {
+  id             String         @id @default(uuid())
+  decisionId     String
+  decision       DecisionRecord @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  metricKey      String
+  expectedDelta  Float
+  actualDelta    Float?
+  measuredAt     DateTime?
+  status         String         @default("PENDING") // PENDING | TARGET_ACHIEVED | TARGET_MISSED
 }
 
