@@ -33,6 +33,7 @@ import { ProductStrategyDashboard } from './pages/ProductStrategyDashboard';
 import { OutcomeDashboard } from './pages/OutcomeDashboard';
 import { PortfolioDashboard } from './pages/PortfolioDashboard';
 import { ExecutiveDashboard } from './pages/ExecutiveDashboard';
+import { KnowledgeExplorer } from './pages/KnowledgeExplorer';
 
 
 function App() {
@@ -80,6 +81,7 @@ function App() {
           <Route path="outcome-intelligence" element={<OutcomeDashboard />} />
           <Route path="portfolio-intelligence" element={<PortfolioDashboard />} />
           <Route path="executive-governance" element={<ExecutiveDashboard />} />
+          <Route path="knowledge-network" element={<KnowledgeExplorer />} />
           <Route path="integrations" element={<IntegrationDashboard />} />
           <Route path="engineering" element={<EngineeringDashboard />} />
           <Route path="collaboration" element={<CollaborationDashboard />} />
