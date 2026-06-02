@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2, Compass, TrendingUp, Zap, Sparkles, Cpu, Link2, GitBranch, GitMerge, ShieldCheck, MessageSquare, Terminal, Activity, FlaskConical, Target, Award, Network } from 'lucide-react';
+import { LayoutDashboard, PlaySquare, FileText, Users, Settings, Brain, ChevronRight, Share2, Compass, TrendingUp, Zap, Sparkles, Cpu, Link2, GitBranch, GitMerge, ShieldCheck, MessageSquare, Terminal, Activity, FlaskConical, Target, Award, Network, BookOpen } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 
 export const DashboardLayout = () => {
@@ -23,6 +23,7 @@ export const DashboardLayout = () => {
     { name: 'Knowledge Network', path: '/app/knowledge-network', icon: Network, desc: 'Intelligence Map' },
     { name: 'Learning Center', path: '/app/organizational-learning', icon: Brain, desc: 'Auditable Memory' },
     { name: 'Forecast Center', path: '/app/forecasting-intelligence', icon: TrendingUp, desc: 'Scenario Simulator' },
+    { name: 'Wisdom Center', path: '/app/institutional-wisdom', icon: BookOpen, desc: 'Institutional Wisdom' },
     { name: 'Integrations', path: '/app/integrations', icon: Link2,          desc: 'Ecosystem' },
     { name: 'Engineering',  path: '/app/engineering',  icon: GitBranch,      desc: 'CI/CD & Deploy' },
     { name: 'Collaboration', path: '/app/collaboration', icon: MessageSquare,   desc: 'War Rooms' },
