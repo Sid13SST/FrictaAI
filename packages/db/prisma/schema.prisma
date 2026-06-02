@@ -153,6 +153,14 @@ model Project {
   organizationalLessons    OrganizationalLesson[]
   patternEvidences         PatternEvidence[]
   learningSnapshots        LearningSnapshot[]
+  forecastRecords          ForecastRecord[]
+  strategicForecastEvidences StrategicForecastEvidence[]
+  scenarioAnalyses         ScenarioAnalysis[]
+  scenarioOutcomes         ScenarioOutcome[]
+  forecastAssumptions      ForecastAssumption[]
+  emergingRisks            EmergingRisk[]
+  confidenceRecords        ConfidenceRecord[]
+  forecastSnapshots        ForecastSnapshot[]
 }
 
 model WorkflowSession {
@@ -3503,5 +3511,115 @@ model LearningSnapshot {
   snapshotData  Json
   recordedAt    DateTime @default(now())
 }
+
+model ForecastRecord {
+  id                String               @id @default(uuid())
+  projectId         String
+  project           Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  forecastType      String               // KPI | OUTCOME | INITIATIVE | RISK | OBJECTIVE | PRODUCT_HEALTH
+  targetEntityId    String
+  targetEntityName  String
+  metricName        String
+  currentValue      Float
+  projectedValue    Float
+  lowerBound        Float
+  upperBound        Float
+  confidence        Float
+  targetDate        DateTime
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  evidences         StrategicForecastEvidence[]
+  assumptions       ForecastAssumption[]
+  confidences       ConfidenceRecord[]
+}
+
+model StrategicForecastEvidence {
+  id           String         @id @default(uuid())
+  projectId    String
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  forecastId   String
+  forecast     ForecastRecord @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+  evidenceType String         // HISTORICAL_PATTERN | HISTORICAL_CASE | TELEMETRY_REPLAY | OUTCOME_VERDICT
+  referenceId  String
+  description  String
+  createdAt    DateTime       @default(now())
+}
+
+model ScenarioAnalysis {
+  id           String            @id @default(uuid())
+  projectId    String
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  scenarioType String            // BEST_CASE | EXPECTED | WORST_CASE | DELAYED_INITIATIVE | KPI_REGRESSION | RISK_ESCALATION
+  parameters   Json
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  outcomes     ScenarioOutcome[]
+}
+
+model ScenarioOutcome {
+  id             String           @id @default(uuid())
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenarioId     String
+  scenario       ScenarioAnalysis @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  metricName     String
+  projectedValue Float
+  deltaPercent   Float
+  description    String
+  createdAt      DateTime         @default(now())
+}
+
+model ForecastAssumption {
+  id             String         @id @default(uuid())
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  forecastId     String
+  forecast       ForecastRecord @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+  statement      String
+  validityStatus String         // VALID | INVALID | UNKNOWN
+  impactLevel    String         // LOW | MEDIUM | HIGH
+  createdAt      DateTime       @default(now())
+}
+
+model EmergingRisk {
+  id               String    @id @default(uuid())
+  projectId        String
+  project          Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  riskType         String    // KPI_RISK | UX_RISK | STRATEGIC_RISK | INITIATIVE_RISK | GOVERNANCE_RISK
+  title            String
+  description      String
+  severity         Float
+  probability      Float
+  triggerCondition String
+  isDetected       Boolean   @default(false)
+  detectedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model ConfidenceRecord {
+  id          String         @id @default(uuid())
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  forecastId  String
+  forecast    ForecastRecord @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+  score       Float
+  explanation String
+  factors     Json
+  createdAt   DateTime       @default(now())
+}
+
+model ForecastSnapshot {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  forecastCount Int
+  riskCount     Int
+  snapshotData  Json
+  recordedAt    DateTime @default(now())
+}
+
 
 
