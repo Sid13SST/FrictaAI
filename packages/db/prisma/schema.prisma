@@ -138,6 +138,13 @@ model Project {
   strategicRiskRecords     StrategicRiskRecord[]
   executiveHealthSnapshots ExecutiveHealthSnapshot[]
   governancePolicyReviews  GovernancePolicyReview[]
+  knowledgeEntities        KnowledgeEntity[]
+  knowledgeRelationships   KnowledgeRelationship[]
+  graphSnapshots           GraphSnapshot[]
+  discoveryRecords         DiscoveryRecord[]
+  knowledgeTimelines       KnowledgeTimeline[]
+  graphHealthRecords       GraphHealthRecord[]
+  relationshipEvidences    RelationshipEvidence[]
 }
 
 model WorkflowSession {
@@ -3284,5 +3291,107 @@ model DecisionOutcome {
   actualDelta    Float?
   measuredAt     DateTime?
   status         String         @default("PENDING") // PENDING | TARGET_ACHIEVED | TARGET_MISSED
+}
+
+model KnowledgeEntity {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entityType  String   // PROJECT | WORKSPACE | OBJECTIVE | INITIATIVE | KPI | OUTCOME | RECOMMENDATION | INVESTIGATION | REPLAY | PERSONA | RISK | GOVERNANCE_RECORD
+  referenceId String   // ID of target model
+  name        String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sourceRelationships KnowledgeRelationship[] @relation("SourceEntity")
+  targetRelationships KnowledgeRelationship[] @relation("TargetEntity")
+  discoveryRecords   DiscoveryRecord[]
+  knowledgeTimelines KnowledgeTimeline[]
+}
+
+model KnowledgeRelationship {
+  id               String            @id @default(uuid())
+  projectId        String
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceId         String
+  source           KnowledgeEntity   @relation("SourceEntity", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId         String
+  target           KnowledgeEntity   @relation("TargetEntity", fields: [targetId], references: [id], onDelete: Cascade)
+  relationshipType String            // SUPPORTS | BLOCKS | INFLUENCES | DEPENDS_ON | CORRELATES_WITH | DERIVED_FROM | RELATED_TO | REFERENCES
+  confidence       Float             @default(1.0)
+  description      String?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  evidenceLinks    EvidenceLink[]
+}
+
+model EvidenceLink {
+  id             String                @id @default(uuid())
+  relationshipId String
+  relationship   KnowledgeRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  evidenceType   String                // TELEMETRY | ANOMALY | REPLAY | INVESTIGATION | KPI_HISTORICAL | OUTCOME
+  referenceId    String
+  description    String
+  createdAt      DateTime              @default(now())
+}
+
+model GraphSnapshot {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entityCount   Int
+  relationCount Int
+  snapshotData  Json
+  recordedAt    DateTime @default(now())
+}
+
+model RelationshipEvidence {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceId       String
+  sourceType     String   // REPLAY | UX_ANOMALY | PRODUCT_KPI | OUTCOME
+  description    String
+  confidenceGain Float
+  createdAt      DateTime @default(now())
+}
+
+model DiscoveryRecord {
+  id            String           @id @default(uuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entityId      String?
+  entity        KnowledgeEntity? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  discoveryType String           // FINDING | RISK | INITIATIVE | OUTCOME | PERSONA | OBJECTIVE
+  title         String
+  details       String
+  confidence    Float
+  discoveredAt  DateTime         @default(now())
+}
+
+model KnowledgeTimeline {
+  id          String           @id @default(uuid())
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  entityId    String?
+  entity      KnowledgeEntity? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  eventType   String           // ENTITY_CREATED | RELATIONSHIP_CREATED | DISCOVERY_LOGGED | EVIDENCE_LINKED
+  title       String
+  description String
+  timestamp   DateTime         @default(now())
+}
+
+model GraphHealthRecord {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  density        Float
+  connectivity   Float
+  orphanCount    Int
+  stabilityIndex Float
+  checkedAt      DateTime @default(now())
 }
 
