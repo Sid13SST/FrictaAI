@@ -145,6 +145,14 @@ model Project {
   knowledgeTimelines       KnowledgeTimeline[]
   graphHealthRecords       GraphHealthRecord[]
   relationshipEvidences    RelationshipEvidence[]
+  learningPatterns         LearningPattern[]
+  historicalCases          HistoricalCase[]
+  successPatterns          SuccessPattern[]
+  failurePatterns          FailurePattern[]
+  recurrenceRecords        RecurrenceRecord[]
+  organizationalLessons    OrganizationalLesson[]
+  patternEvidences         PatternEvidence[]
+  learningSnapshots        LearningSnapshot[]
 }
 
 model WorkflowSession {
@@ -3394,4 +3402,106 @@ model GraphHealthRecord {
   stabilityIndex Float
   checkedAt      DateTime @default(now())
 }
+
+model LearningPattern {
+  id            String             @id @default(uuid())
+  projectId     String
+  project       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  patternName   String
+  patternType   String             // SUCCESS | FAILURE | FRICTION | RISK | KPI_MOVEMENT | OUTCOME
+  description   String
+  confidence    Float              @default(1.0)
+  occurrences   Int                @default(1)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  evidences     PatternEvidence[]
+  recurrences   RecurrenceRecord[]
+}
+
+model HistoricalCase {
+  id              String         @id @default(uuid())
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  caseType        String         // SUCCESS | FAILURE | NEUTRAL
+  outcomeValue    Float?
+  recommendationId String?
+  successRate     Float          @default(0.0)
+  failureRate     Float          @default(0.0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model SuccessPattern {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  winCategory String   // CONVERSION | RETENTION | COMPLETION | FRICTION_REDUCTION
+  impactScore Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FailurePattern {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  mistakeType    String   // RAGE_CLICK_LOOP | CTA_ABANDONMENT | NAV_LOOPS | FORM_EXIT
+  impactScore    Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RecurrenceRecord {
+  id          String          @id @default(uuid())
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  patternId   String
+  pattern     LearningPattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  entityType  String          // REPLAY | UX_ANOMALY | PRODUCT_KPI | OUTCOME | RISK
+  referenceId String
+  details     String
+  timestamp   DateTime        @default(now())
+}
+
+model OrganizationalLesson {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  summary     String
+  lessonType  String   // WIN | MISTAKE
+  impactScore Float
+  evidence    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PatternEvidence {
+  id           String          @id @default(uuid())
+  projectId    String
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  patternId    String
+  pattern      LearningPattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  evidenceType String          // TELEMETRY | ANOMALY | REPLAY | INVESTIGATION | KPI_HISTORICAL | OUTCOME
+  referenceId  String
+  description  String
+  createdAt    DateTime        @default(now())
+}
+
+model LearningSnapshot {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  patternCount  Int
+  lessonCount   Int
+  snapshotData  Json
+  recordedAt    DateTime @default(now())
+}
+
 
