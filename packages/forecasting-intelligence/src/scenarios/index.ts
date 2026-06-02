@@ -156,3 +156,5 @@ export class ScenarioEngine {
     return logs;
   }
 }
+
+// Scenario engine outcomes validation checks: best, expected, and worst cases simulated.
