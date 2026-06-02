@@ -115,3 +115,5 @@ export class EmergingRiskDetector {
     return logs;
   }
 }
+
+// Emerging risk severity threshold classifications: KPI, UX, and strategic indicators.
