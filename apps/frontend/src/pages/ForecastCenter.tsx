@@ -707,3 +707,5 @@ export function ForecastCenter() {
     </div>
   );
 }
+
+// Forecast Disclaimer display panel clarifying probabilistic and advisory projections.
