@@ -3,7 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import {
   Brain, RefreshCcw, ShieldCheck, Database, Award, AlertOctagon, TrendingUp,
   Search, ArrowDown, ChevronRight, Activity, Clock, Layers, CheckCircle2,
-  AlertTriangle, FileSpreadsheet, Eye, HelpCircle
+  AlertTriangle, FileSpreadsheet, Eye, HelpCircle, History as HistoryIcon
 } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || '';
@@ -178,10 +178,9 @@ export function LearningCenter() {
       setPersonas(personasRes.personas || []);
       setTimeline(personasRes.timeline || []);
 
-    } catch (err) {
-      console.error('Failed to load organizational learning data:', err);
-    } fontLabel:
-    setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchEvidence = async (patternId: string) => {
@@ -365,7 +364,7 @@ export function LearningCenter() {
               activeTab === 'history' ? 'border-indigo-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <History className="w-3.5 h-3.5" />
+            <HistoryIcon className="w-3.5 h-3.5" />
             <span>Historical Case Matcher</span>
           </button>
           <button
