@@ -196,3 +196,5 @@ forecastsRoutes.post('/evaluate', async (c) => {
     timeline
   });
 });
+
+// REST boundary workspace isolation and RBAC checks enforce user visibility parameters.
