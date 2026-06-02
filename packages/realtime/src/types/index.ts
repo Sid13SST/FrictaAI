@@ -67,7 +67,11 @@ export type RealtimeEventType =
   | 'collab.annotation'
   | 'collab.message'
   | 'alert.triggered'
-  | 'alert.escalated';
+  | 'alert.escalated'
+  | 'wisdom.synthesis.completed'
+  | 'wisdom.principles.updated'
+  | 'wisdom.lessons.updated'
+  | 'wisdom.trends.updated';
 
 export interface RealtimeEvent<T = any> {
   id?: string;
