@@ -22,6 +22,7 @@ export const DashboardLayout = () => {
     { name: 'Executive Governance', path: '/app/executive-governance', icon: ShieldCheck, desc: 'Briefings & Audit' },
     { name: 'Knowledge Network', path: '/app/knowledge-network', icon: Network, desc: 'Intelligence Map' },
     { name: 'Learning Center', path: '/app/organizational-learning', icon: Brain, desc: 'Auditable Memory' },
+    { name: 'Forecast Center', path: '/app/forecasting-intelligence', icon: TrendingUp, desc: 'Scenario Simulator' },
     { name: 'Integrations', path: '/app/integrations', icon: Link2,          desc: 'Ecosystem' },
     { name: 'Engineering',  path: '/app/engineering',  icon: GitBranch,      desc: 'CI/CD & Deploy' },
     { name: 'Collaboration', path: '/app/collaboration', icon: MessageSquare,   desc: 'War Rooms' },
