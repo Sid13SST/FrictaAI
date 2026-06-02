@@ -1,0 +1,21 @@
+{
+  "name": "@fricta/organizational-learning",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@fricta/config": "*",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@fricta/db": "*",
+    "@fricta/types": "*",
+    "@fricta/shared": "*",
+    "@fricta/rbac-core": "*",
+    "@fricta/realtime": "*"
+  }
+}
