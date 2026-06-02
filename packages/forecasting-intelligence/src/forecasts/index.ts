@@ -186,3 +186,5 @@ export class ForecastingEngine {
     };
   }
 }
+
+// Professional forecasting engine cycle tracking rules: every projection is inspectable.
