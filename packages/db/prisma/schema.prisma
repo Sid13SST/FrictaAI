@@ -161,6 +161,14 @@ model Project {
   emergingRisks            EmergingRisk[]
   confidenceRecords        ConfidenceRecord[]
   forecastSnapshots        ForecastSnapshot[]
+  institutionalLessons     InstitutionalLesson[]
+  organizationalPrinciples OrganizationalPrinciple[]
+  wisdomRecords            WisdomRecord[]
+  wisdomEvidences          WisdomEvidence[]
+  historicalSyntheses      HistoricalSynthesis[]
+  longTermTrends           LongTermTrend[]
+  strategicLearnings       StrategicLearning[]
+  wisdomSnapshots          WisdomSnapshot[]
 }
 
 model WorkflowSession {
@@ -3619,6 +3627,106 @@ model ForecastSnapshot {
   riskCount     Int
   snapshotData  Json
   recordedAt    DateTime @default(now())
+}
+
+model InstitutionalLesson {
+  id             String           @id @default(uuid())
+  projectId      String
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title          String
+  summary        String
+  lessonType     String           // UX | STRATEGIC | OUTCOME | GOVERNANCE
+  content        String
+  impactScore    Float
+  occurrences    Int
+  timespanMonths Int
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  evidences      WisdomEvidence[]
+}
+
+model OrganizationalPrinciple {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  statement     String
+  description   String
+  principleType String   // SUCCESS_PATTERN | FAILURE_PATTERN | DESIGN_GUIDELINE
+  supportRate   Float
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WisdomRecord {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category    String   // EXECUTIVE | OPERATIONAL
+  title       String
+  description String
+  wisdomData  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WisdomEvidence {
+  id           String              @id @default(uuid())
+  projectId    String
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       InstitutionalLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  evidenceType String              // HISTORICAL_CASE | OUTCOME_VERDICT | KPI_TREND | TELEMETRY_REPLAY
+  referenceId  String
+  description  String
+  createdAt    DateTime            @default(now())
+}
+
+model HistoricalSynthesis {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  summary       String
+  synthesisType String   // ANNUAL | QUARTERLY | CROSS_PRODUCT
+  details       Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model LongTermTrend {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  metricName    String
+  direction     String   // IMPROVING | DEGRADED | STABLE
+  description   String
+  changePercent Float
+  timespanDays  Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model StrategicLearning {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  learningType String   // COMPETITIVE | REGULATORY | EXECUTIVE
+  impactRating Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WisdomSnapshot {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lessonsCount   Int
+  principlesCount Int
+  snapshotData   Json
+  recordedAt     DateTime @default(now())
 }
 
 
