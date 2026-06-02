@@ -37,6 +37,7 @@
     "@fricta/executive-intelligence": "*",
     "@fricta/knowledge-network": "*",
     "@fricta/organizational-learning": "*",
+    "@fricta/forecasting-intelligence": "*",
     "@fricta/integration-core": "*",
     "@fricta/live-intelligence": "*",
     "@fricta/optimization-intelligence": "*",
