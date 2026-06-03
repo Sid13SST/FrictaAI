@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
+const baseApiUrl = API_BASE.replace('/api', '');
 import {
   Users,
   FolderOpen,
@@ -345,7 +347,7 @@ export const WorkspaceConsole: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const baseApiUrl = 'http://127.0.0.1:3001/api';
+  
 
   useEffect(() => {
     fetchInitialData();
@@ -399,7 +401,7 @@ export const WorkspaceConsole: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const res = await fetch(`${baseApiUrl}/organizations`);
+      const res = await apiFetch(`/organizations`);
       if (!res.ok) throw new Error('Failed to load organizations');
       const data = await res.json();
       
@@ -420,16 +422,16 @@ export const WorkspaceConsole: React.FC = () => {
   const fetchWorkspaceDetails = async (workspaceId: string) => {
     try {
       const [projRes, memberRes, actRes, inviteRes, sharedRes, roleRes, policyRes, securityRes, replayRes, accessRes] = await Promise.all([
-        fetch(`${baseApiUrl}/workspace/projects?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/workspace/members?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/workspace/activity?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/workspace/invites?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/workspace/investigations?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/rbac/roles?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/rbac/policies?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/rbac/security?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/rbac/replays?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/rbac/access?workspaceId=${workspaceId}`)
+        apiFetch(`/workspace/projects?workspaceId=${workspaceId}`),
+        apiFetch(`/workspace/members?workspaceId=${workspaceId}`),
+        apiFetch(`/workspace/activity?workspaceId=${workspaceId}`),
+        apiFetch(`/workspace/invites?workspaceId=${workspaceId}`),
+        apiFetch(`/workspace/investigations?workspaceId=${workspaceId}`),
+        apiFetch(`/rbac/roles?workspaceId=${workspaceId}`),
+        apiFetch(`/rbac/policies?workspaceId=${workspaceId}`),
+        apiFetch(`/rbac/security?workspaceId=${workspaceId}`),
+        apiFetch(`/rbac/replays?workspaceId=${workspaceId}`),
+        apiFetch(`/rbac/access?workspaceId=${workspaceId}`)
       ]);
 
       const projData = await projRes.json();
@@ -485,10 +487,10 @@ export const WorkspaceConsole: React.FC = () => {
   const fetchSecurityCoreDetails = async (workspaceId: string) => {
     try {
       const [auditRes, eventRes, alertRes, complianceRes] = await Promise.all([
-        fetch(`${baseApiUrl}/security/audit?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/security/events?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/security/alerts?workspaceId=${workspaceId}`),
-        fetch(`${baseApiUrl}/security/compliance?workspaceId=${workspaceId}`)
+        apiFetch(`/security/audit?workspaceId=${workspaceId}`),
+        apiFetch(`/security/events?workspaceId=${workspaceId}`),
+        apiFetch(`/security/alerts?workspaceId=${workspaceId}`),
+        apiFetch(`/security/compliance?workspaceId=${workspaceId}`)
       ]);
 
       if (auditRes.ok) {
@@ -515,7 +517,7 @@ export const WorkspaceConsole: React.FC = () => {
   const handleResolveAlert = async (alertId: string) => {
     try {
       setIsResolvingAlert(true);
-      const res = await fetch(`${baseApiUrl}/security/alerts/resolve`, {
+      const res = await apiFetch(`/security/alerts/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ alertId, workspaceId: selectedWorkspaceId })
@@ -535,7 +537,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!retentionResourceId) return;
     try {
       setIsApplyingRetention(true);
-      const res = await fetch(`${baseApiUrl}/security/compliance/retention`, {
+      const res = await apiFetch(`/security/compliance/retention`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -561,8 +563,8 @@ export const WorkspaceConsole: React.FC = () => {
   const fetchProjectDetails = async (projectId: string) => {
     try {
       const [revRes, annRes] = await Promise.all([
-        fetch(`${baseApiUrl}/workspace/reviews?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/workspace/annotations?projectId=${projectId}`)
+        apiFetch(`/workspace/reviews?projectId=${projectId}`),
+        apiFetch(`/workspace/annotations?projectId=${projectId}`)
       ]);
 
       const revData = await revRes.json();
@@ -583,7 +585,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const fetchAnalytics = async (workspaceId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/analytics?workspaceId=${workspaceId}`);
+      const res = await apiFetch(`/workspace/analytics?workspaceId=${workspaceId}`);
       if (res.ok) {
         const data = await res.json();
         setAnalytics(data.analytics);
@@ -595,8 +597,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const fetchInvestigationAccesses = async (workspaceId: string, sharedInvestigationId: string) => {
     try {
-      const res = await fetch(
-        `${baseApiUrl}/rbac/investigations?workspaceId=${workspaceId}&sharedInvestigationId=${sharedInvestigationId}`
+      const res = await apiFetch(`/rbac/investigations?workspaceId=${workspaceId}&sharedInvestigationId=${sharedInvestigationId}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -692,7 +693,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const sendPresenceHeartbeat = async (workspaceId: string, screen = 'console') => {
     try {
-      await fetch(`${baseApiUrl}/workspace/presence`, {
+      await apiFetch(`/workspace/presence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -710,7 +711,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!newOrgName.trim()) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/organizations`, {
+      const res = await apiFetch(`/organizations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newOrgName })
@@ -737,7 +738,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!currentWorkspace) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspaces`, {
+      const res = await apiFetch(`/workspaces`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -767,7 +768,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!inviteEmail) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/invites`, {
+      const res = await apiFetch(`/workspace/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -795,7 +796,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!acceptToken.trim()) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/invites/accept`, {
+      const res = await apiFetch(`/workspace/invites/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: acceptToken })
@@ -819,7 +820,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!shareSessionId || !shareSessionName.trim()) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/investigations`, {
+      const res = await apiFetch(`/workspace/investigations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -849,7 +850,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!newCommentContent.trim() || !selectedInvestigationId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/investigations/${selectedInvestigationId}/comments`, {
+      const res = await apiFetch(`/workspace/investigations/${selectedInvestigationId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newCommentContent })
@@ -868,7 +869,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!newAnnotationContent || !newAnnotationTargetId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/annotations`, {
+      const res = await apiFetch(`/workspace/annotations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -896,7 +897,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleResolveAnnotation = async (id: string, currentStatus: boolean) => {
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/annotations/${id}/resolve`, {
+      const res = await apiFetch(`/workspace/annotations/${id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resolved: !currentStatus })
@@ -915,7 +916,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!newAnnotationCommentContent || !selectedAnnotationId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/annotations/${selectedAnnotationId}/comments`, {
+      const res = await apiFetch(`/workspace/annotations/${selectedAnnotationId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newAnnotationCommentContent })
@@ -934,7 +935,7 @@ export const WorkspaceConsole: React.FC = () => {
   const handleReviewAction = async (sessionId: string, actionStatus: string) => {
     const notes = prompt('Enter review summary notes (optional):');
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/reviews/status`, {
+      const res = await apiFetch(`/workspace/reviews/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -957,7 +958,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleAssignReview = async (sessionId: string, memberId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/workspace/reviews/assign`, {
+      const res = await apiFetch(`/workspace/reviews/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -979,7 +980,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!shareTargetId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/sharing`, {
+      const res = await apiFetch(`/sharing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1010,7 +1011,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!customRoleName.trim()) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/rbac/roles`, {
+      const res = await apiFetch(`/rbac/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1039,7 +1040,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!confirm('Are you sure you want to delete this custom role? This will revoke membership roles assigned to it.')) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/rbac/roles/${roleId}?workspaceId=${selectedWorkspaceId}`, {
+      const res = await apiFetch(`/rbac/roles/${roleId}?workspaceId=${selectedWorkspaceId}`, {
         method: 'DELETE'
       });
 
@@ -1086,7 +1087,7 @@ export const WorkspaceConsole: React.FC = () => {
         currentPerms.push({ domain, action, isAllowed });
       }
 
-      const res = await fetch(`${baseApiUrl}/rbac/roles`, {
+      const res = await apiFetch(`/rbac/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1110,7 +1111,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleUpdatePolicy = async (key: string, value: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/rbac/policies`, {
+      const res = await apiFetch(`/rbac/policies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1136,7 +1137,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!selectedInvestigationId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/rbac/investigations`, {
+      const res = await apiFetch(`/rbac/investigations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1163,7 +1164,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleSetReplayScope = async (sessionId: string, scopeType: string, allowedRoles: string[]) => {
     try {
-      const res = await fetch(`${baseApiUrl}/rbac/replays`, {
+      const res = await apiFetch(`/rbac/replays`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1188,7 +1189,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleRevokeExternalAccess = async (grantId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/rbac/access/revoke`, {
+      const res = await apiFetch(`/rbac/access/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1213,16 +1214,16 @@ export const WorkspaceConsole: React.FC = () => {
     try {
       const workspaceParam = workspaceId ? `workspaceId=${workspaceId}` : '';
       const projectParam = projectId ? `&projectId=${projectId}` : '';
-      const listRes = await fetch(`${baseApiUrl}/reports/executive/list?${workspaceParam}${projectParam}`);
+      const listRes = await apiFetch(`/reports/executive/list?${workspaceParam}${projectParam}`);
       const listData = await listRes.json();
       setReports(listData.reports || []);
 
-      const tempRes = await fetch(`${baseApiUrl}/reports/templates?${workspaceParam}`);
+      const tempRes = await apiFetch(`/reports/templates?${workspaceParam}`);
       const tempData = await tempRes.json();
       setTemplates(tempData.templates || []);
 
       if (workspaceId) {
-        const digRes = await fetch(`${baseApiUrl}/reports/analytics/digests?workspaceId=${workspaceId}`);
+        const digRes = await apiFetch(`/reports/analytics/digests?workspaceId=${workspaceId}`);
         const digData = await digRes.json();
         setDigests(digData.digests || []);
       }
@@ -1234,12 +1235,12 @@ export const WorkspaceConsole: React.FC = () => {
   const fetchReportMetadata = async (reportId: string) => {
     try {
       const [deckRes, pdfRes, expRes, shareRes, distRes, evRes] = await Promise.all([
-        fetch(`${baseApiUrl}/reports/executive/${reportId}/deck`),
-        fetch(`${baseApiUrl}/reports/executive/${reportId}/pdf-layout`),
-        fetch(`${baseApiUrl}/reports/exports?reportId=${reportId}`),
-        fetch(`${baseApiUrl}/reports/sharing?reportId=${reportId}`),
-        fetch(`${baseApiUrl}/reports/distribution?reportId=${reportId}`),
-        fetch(`${baseApiUrl}/reports/evidence?reportId=${reportId}`)
+        apiFetch(`/reports/executive/${reportId}/deck`),
+        apiFetch(`/reports/executive/${reportId}/pdf-layout`),
+        apiFetch(`/reports/exports?reportId=${reportId}`),
+        apiFetch(`/reports/sharing?reportId=${reportId}`),
+        apiFetch(`/reports/distribution?reportId=${reportId}`),
+        apiFetch(`/reports/evidence?reportId=${reportId}`)
       ]);
 
       const deckData = await deckRes.json();
@@ -1266,7 +1267,7 @@ export const WorkspaceConsole: React.FC = () => {
 
     try {
       setReportBuilding(true);
-      const res = await fetch(`${baseApiUrl}/reports/executive`, {
+      const res = await apiFetch(`/reports/executive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1295,7 +1296,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleCreateTemplate = async (name: string, description: string, layout: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/reports/templates`, {
+      const res = await apiFetch(`/reports/templates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1320,7 +1321,7 @@ export const WorkspaceConsole: React.FC = () => {
 
     try {
       setReportExporting(true);
-      const res = await fetch(`${baseApiUrl}/reports/exports`, {
+      const res = await apiFetch(`/reports/exports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1343,7 +1344,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!selectedReportId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/reports/sharing`, {
+      const res = await apiFetch(`/reports/sharing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1365,7 +1366,7 @@ export const WorkspaceConsole: React.FC = () => {
 
   const handleRevokeReportShare = async (shareId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/reports/sharing/revoke`, {
+      const res = await apiFetch(`/reports/sharing/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shareId })
@@ -1384,7 +1385,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!selectedReportId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/reports/distribution`, {
+      const res = await apiFetch(`/reports/distribution`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1407,7 +1408,7 @@ export const WorkspaceConsole: React.FC = () => {
     if (!selectedWorkspaceId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/reports/analytics/digests`, {
+      const res = await apiFetch(`/reports/analytics/digests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
