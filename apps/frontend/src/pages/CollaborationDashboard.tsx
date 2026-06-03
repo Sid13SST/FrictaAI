@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
+const baseApiUrl = API_BASE.replace('/api', '');
 import {
   MessageSquare,
   Users,
@@ -21,7 +23,6 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-const baseApiUrl = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 interface Project {
   id: string;
@@ -157,7 +158,7 @@ export const CollaborationDashboard = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const list = data.projects || [];
       setProjects(list);
@@ -175,9 +176,9 @@ export const CollaborationDashboard = () => {
     try {
       setLoading(true);
       const [threadsRes, sharedRes, alertsRes] = await Promise.all([
-        fetch(`${baseApiUrl}/collaboration/investigations?projectId=${projId}`),
-        fetch(`${baseApiUrl}/collaboration/replays?projectId=${projId}`),
-        fetch(`${baseApiUrl}/collaboration/alerts/escalations?projectId=${projId}`)
+        apiFetch(`/collaboration/investigations?projectId=${projId}`),
+        apiFetch(`/collaboration/replays?projectId=${projId}`),
+        apiFetch(`/collaboration/alerts/escalations?projectId=${projId}`)
       ]);
 
       const threadsData = await threadsRes.json();
@@ -205,7 +206,7 @@ export const CollaborationDashboard = () => {
     if (!newThreadTitle.trim() || !activeProjectId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/investigations`, {
+      const res = await apiFetch(`/collaboration/investigations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -226,7 +227,7 @@ export const CollaborationDashboard = () => {
 
   const handleResolveThread = async (threadId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/investigations/resolve/${threadId}`, {
+      const res = await apiFetch(`/collaboration/investigations/resolve/${threadId}`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -243,7 +244,7 @@ export const CollaborationDashboard = () => {
     if (!selectedThread || !commentText.trim()) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/threads/discussions`, {
+      const res = await apiFetch(`/collaboration/threads/discussions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -260,7 +261,7 @@ export const CollaborationDashboard = () => {
         setCommentText('');
         setPlacementCoords(null);
         // Refresh active thread inside state
-        const threadsRes = await fetch(`${baseApiUrl}/collaboration/investigations?projectId=${activeProjectId}`);
+        const threadsRes = await apiFetch(`/collaboration/investigations?projectId=${activeProjectId}`);
         const threadsData = await threadsRes.json();
         const updatedList: InvestigationThread[] = threadsData.threads || [];
         setThreads(updatedList);
@@ -283,7 +284,7 @@ export const CollaborationDashboard = () => {
       if (alertChannels.includes('SLACK')) recipients.SLACK = alertSlackHook;
       if (alertChannels.includes('EMAIL')) recipients.EMAIL = alertEmail;
 
-      const res = await fetch(`${baseApiUrl}/collaboration/alerts/escalations`, {
+      const res = await apiFetch(`/collaboration/alerts/escalations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -307,7 +308,7 @@ export const CollaborationDashboard = () => {
 
   const handleResolveAlert = async (alertId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/alerts/resolve/${alertId}`, {
+      const res = await apiFetch(`/collaboration/alerts/resolve/${alertId}`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -324,7 +325,7 @@ export const CollaborationDashboard = () => {
     if (!activeProjectId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/replays`, {
+      const res = await apiFetch(`/collaboration/replays`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -351,7 +352,7 @@ export const CollaborationDashboard = () => {
     if (!digestEmail.trim() || !activeProjectId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/digests/executive`, {
+      const res = await apiFetch(`/collaboration/digests/executive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -375,7 +376,7 @@ export const CollaborationDashboard = () => {
     if (!activeProjectId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/collaboration/digests/executive?projectId=${activeProjectId}`);
+      const res = await apiFetch(`/collaboration/digests/executive?projectId=${activeProjectId}`);
       const data = await res.json();
       setCompiledDigest(data.digest);
     } catch (err) {
