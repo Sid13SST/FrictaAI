@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import {
   GitBranch, CheckCircle2, AlertTriangle, Play, RefreshCw, Layers,
   AlertCircle, Cpu, ExternalLink, GitPullRequest, Timer, FileCode,
   Shield, Eye, Terminal, Sparkles, ChevronRight, X, BarChart3, Activity
 } from 'lucide-react';
 
-const baseApiUrl = 'http://127.0.0.1:3001/api';
 
 export function EngineeringDashboard() {
   const [projectId, setProjectId] = useState<string>('');
@@ -35,7 +35,7 @@ export function EngineeringDashboard() {
   const fetchInitialContext = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const projectList = data.projects || [];
       setProjects(projectList);
@@ -56,12 +56,12 @@ export function EngineeringDashboard() {
     try {
       setLoading(true);
       const [runsRes, prevRes, regRes, prRes, riskRes, timelineRes] = await Promise.all([
-        fetch(`${baseApiUrl}/engineering/observability?projectId=${projId}`).then(r => r.json()),
-        fetch(`${baseApiUrl}/deployments/previews?projectId=${projId}`).then(r => r.json()),
-        fetch(`${baseApiUrl}/ci/regressions?projectId=${projId}`).then(r => r.json()),
-        fetch(`${baseApiUrl}/pull-requests/intelligence?projectId=${projId}`).then(r => r.json()),
-        fetch(`${baseApiUrl}/engineering/risk?projectId=${projId}`).then(r => r.json()),
-        fetch(`${baseApiUrl}/deployments/releases?projectId=${projId}`).then(r => r.json())
+        apiFetch(`/engineering/observability?projectId=${projId}`).then(r => r.json()),
+        apiFetch(`/deployments/previews?projectId=${projId}`).then(r => r.json()),
+        apiFetch(`/ci/regressions?projectId=${projId}`).then(r => r.json()),
+        apiFetch(`/pull-requests/intelligence?projectId=${projId}`).then(r => r.json()),
+        apiFetch(`/engineering/risk?projectId=${projId}`).then(r => r.json()),
+        apiFetch(`/deployments/releases?projectId=${projId}`).then(r => r.json())
       ]);
 
       setRuns(runsRes.summary?.recentRuns || []);
@@ -80,7 +80,7 @@ export function EngineeringDashboard() {
   const triggerCiReplay = async () => {
     try {
       setRunningCi(true);
-      const res = await fetch(`${baseApiUrl}/ci/replays`, {
+      const res = await apiFetch(`/ci/replays`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
