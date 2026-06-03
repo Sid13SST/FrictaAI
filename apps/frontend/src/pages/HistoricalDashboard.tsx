@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import { 
   TrendingUp, 
   Layers, 
@@ -98,13 +99,12 @@ export const HistoricalDashboard: React.FC = () => {
   type SubTab = 'overview' | 'regressions' | 'personas' | 'adaptation';
   const [activeTab, setActiveTab] = useState<SubTab>('overview');
 
-  const baseApiUrl = 'http://127.0.0.1:3001/api';
-
+  
   const fetchInitialData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       if (!res.ok) throw new Error('Failed to load projects');
       const data = await res.json();
       const projectList = data.projects || [];
@@ -132,12 +132,12 @@ export const HistoricalDashboard: React.FC = () => {
         profilesRes,
         sessionsRes
       ] = await Promise.all([
-        fetch(`${baseApiUrl}/historical/patterns?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/historical/regressions?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/historical/personas?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/historical/trends?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/historical/adaptive-signals?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/workflows?projectId=${projectId}`) // fetches all workflow sessions
+        apiFetch(`/historical/patterns?projectId=${projectId}`),
+        apiFetch(`/historical/regressions?projectId=${projectId}`),
+        apiFetch(`/historical/personas?projectId=${projectId}`),
+        apiFetch(`/historical/trends?projectId=${projectId}`),
+        apiFetch(`/historical/adaptive-signals?projectId=${projectId}`),
+        apiFetch(`/workflows?projectId=${projectId}`) // fetches all workflow sessions
       ]);
 
       const [pData, rData, perData, tData, profData, sData] = await Promise.all([
@@ -189,7 +189,7 @@ export const HistoricalDashboard: React.FC = () => {
     if (!selectedProjectId) return;
     try {
       setAnalyzing(true);
-      const res = await fetch(`${baseApiUrl}/historical/analyze/${selectedProjectId}`, {
+      const res = await apiFetch(`/historical/analyze/${selectedProjectId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
