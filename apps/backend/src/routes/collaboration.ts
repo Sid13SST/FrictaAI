@@ -8,6 +8,14 @@ import {
   MentionManager,
   DiscussionManager
 } from '@fricta/integration-core';
+import { getCurrentUser } from '../middleware/authContext';
+import {
+  requireProjectOwnerQuery,
+  requireProjectOwnerBody,
+  verifyInvestigationOwnership,
+  verifyAlertOwnership,
+  assertProjectOwnership
+} from '../guards/ownership';
 
 export const collaborationRoutes = new Hono();
 
@@ -15,7 +23,7 @@ export const collaborationRoutes = new Hono();
  * POST /api/collaboration/replays
  * Generate a share link/token for a replay session.
  */
-collaborationRoutes.post('/replays', async (c) => {
+collaborationRoutes.post('/replays', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, workflowSessionId, sharedWithEmail, notes, expiresInDays } = body;
 
@@ -62,12 +70,8 @@ collaborationRoutes.get('/replays/validate/:token', async (c) => {
  * GET /api/collaboration/replays
  * List active shared sessions for a project.
  */
-collaborationRoutes.get('/replays', async (c) => {
-  const projectId = c.req.query('projectId');
-  if (!projectId) {
-    return c.json({ error: 'projectId is required' }, 400);
-  }
-
+collaborationRoutes.get('/replays', requireProjectOwnerQuery('projectId'), async (c) => {
+  const projectId = c.req.query('projectId')!;
   try {
     const sessions = await SharingManager.listSharedSessions(projectId);
     return c.json({ sessions });
@@ -80,12 +84,8 @@ collaborationRoutes.get('/replays', async (c) => {
  * GET /api/collaboration/investigations
  * Fetch all investigation threads (war rooms) for a project.
  */
-collaborationRoutes.get('/investigations', async (c) => {
-  const projectId = c.req.query('projectId');
-  if (!projectId) {
-    return c.json({ error: 'projectId is required' }, 400);
-  }
-
+collaborationRoutes.get('/investigations', requireProjectOwnerQuery('projectId'), async (c) => {
+  const projectId = c.req.query('projectId')!;
   try {
     const threads = await ThreadManager.getThreads(projectId);
     return c.json({ threads });
@@ -98,7 +98,7 @@ collaborationRoutes.get('/investigations', async (c) => {
  * POST /api/collaboration/investigations
  * Create a new collaborative discussion thread.
  */
-collaborationRoutes.post('/investigations', async (c) => {
+collaborationRoutes.post('/investigations', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, title, workflowSessionId, uxFindingId } = body;
 
@@ -124,12 +124,19 @@ collaborationRoutes.post('/investigations', async (c) => {
  * Add a comment or annotation to an investigation thread.
  */
 collaborationRoutes.post('/threads/discussions', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const body = await c.req.json().catch(() => ({}));
   const { threadId, stepIndex, author, content, x, y } = body;
 
   if (!threadId || !author || !content) {
     return c.json({ error: 'threadId, author, and content are required' }, 400);
   }
+
+  const result = await verifyInvestigationOwnership(user.userId, threadId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Thread not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   try {
     const annotation = await ThreadManager.addAnnotation({
@@ -151,10 +158,17 @@ collaborationRoutes.post('/threads/discussions', async (c) => {
  * Mark an investigation thread as resolved.
  */
 collaborationRoutes.post('/investigations/resolve/:id', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const threadId = c.req.param('id');
   if (!threadId) {
     return c.json({ error: 'threadId is required' }, 400);
   }
+
+  const result = await verifyInvestigationOwnership(user.userId, threadId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Thread not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   try {
     const thread = await ThreadManager.resolveThread(threadId);
@@ -168,7 +182,7 @@ collaborationRoutes.post('/investigations/resolve/:id', async (c) => {
  * POST /api/collaboration/alerts/escalations
  * Trigger and escalate a manual alert.
  */
-collaborationRoutes.post('/alerts/escalations', async (c) => {
+collaborationRoutes.post('/alerts/escalations', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, alertType, severity, message, workflowSessionId, channels, recipients } = body;
 
@@ -183,7 +197,7 @@ collaborationRoutes.post('/alerts/escalations', async (c) => {
       severity,
       message,
       workflowSessionId,
-      channels: channels || ['SLACK', 'EMAIL'],
+      channels,
       recipients,
     });
     return c.json({ success: true, alert });
@@ -194,14 +208,10 @@ collaborationRoutes.post('/alerts/escalations', async (c) => {
 
 /**
  * GET /api/collaboration/alerts/escalations
- * List active operational alerts for a project.
+ * Fetch active alerts for a project.
  */
-collaborationRoutes.get('/alerts/escalations', async (c) => {
-  const projectId = c.req.query('projectId');
-  if (!projectId) {
-    return c.json({ error: 'projectId is required' }, 400);
-  }
-
+collaborationRoutes.get('/alerts/escalations', requireProjectOwnerQuery('projectId'), async (c) => {
+  const projectId = c.req.query('projectId')!;
   try {
     const alerts = await AlertManager.getAlerts(projectId);
     return c.json({ alerts });
@@ -212,13 +222,20 @@ collaborationRoutes.get('/alerts/escalations', async (c) => {
 
 /**
  * POST /api/collaboration/alerts/resolve/:id
- * Resolve an operational alert.
+ * Mark an alert as resolved.
  */
 collaborationRoutes.post('/alerts/resolve/:id', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const alertId = c.req.param('id');
   if (!alertId) {
     return c.json({ error: 'alertId is required' }, 400);
   }
+
+  const result = await verifyAlertOwnership(user.userId, alertId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Alert not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   try {
     const alert = await AlertManager.resolveAlert(alertId);
@@ -230,14 +247,10 @@ collaborationRoutes.post('/alerts/resolve/:id', async (c) => {
 
 /**
  * GET /api/collaboration/digests/executive
- * Compile and fetch the weekly executive summary digest.
+ * Fetch executive digests for a project.
  */
-collaborationRoutes.get('/digests/executive', async (c) => {
-  const projectId = c.req.query('projectId');
-  if (!projectId) {
-    return c.json({ error: 'projectId is required' }, 400);
-  }
-
+collaborationRoutes.get('/digests/executive', requireProjectOwnerQuery('projectId'), async (c) => {
+  const projectId = c.req.query('projectId')!;
   try {
     const digest = await DigestManager.compileWeeklyDigest(projectId);
     return c.json({ digest });
@@ -248,9 +261,9 @@ collaborationRoutes.get('/digests/executive', async (c) => {
 
 /**
  * POST /api/collaboration/digests/executive
- * Subscribe to weekly/daily executive digests.
+ * Subscribe to project executive digests.
  */
-collaborationRoutes.post('/digests/executive', async (c) => {
+collaborationRoutes.post('/digests/executive', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, email, frequency } = body;
 
@@ -271,6 +284,9 @@ collaborationRoutes.post('/digests/executive', async (c) => {
  * Fetch @mentions for a specific user.
  */
 collaborationRoutes.get('/mentions/:username', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const username = c.req.param('username');
   if (!username) {
     return c.json({ error: 'username is required' }, 400);
@@ -278,7 +294,17 @@ collaborationRoutes.get('/mentions/:username', async (c) => {
 
   try {
     const mentions = await MentionManager.getUserMentions(username);
-    return c.json({ mentions });
+    
+    // Scopes notifications to projects owned by the user
+    const filteredMentions = [];
+    for (const mention of mentions) {
+      const result = await verifyInvestigationOwnership(user.userId, mention.threadId);
+      if (result === 'OWNED') {
+        filteredMentions.push(mention);
+      }
+    }
+
+    return c.json({ mentions: filteredMentions });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -289,14 +315,30 @@ collaborationRoutes.get('/mentions/:username', async (c) => {
  * Mark a mention event as read.
  */
 collaborationRoutes.post('/mentions/read/:id', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const mentionId = c.req.param('id');
   if (!mentionId) {
     return c.json({ error: 'mentionId is required' }, 400);
   }
 
   try {
-    const mention = await MentionManager.markAsRead(mentionId);
-    return c.json({ success: true, mention });
+    const mention = await prisma.teamMentionEvent.findUnique({
+      where: { id: mentionId },
+      select: { threadId: true }
+    });
+    if (!mention) {
+      return c.json({ error: 'Mention not found' }, 404);
+    }
+
+    const result = await verifyInvestigationOwnership(user.userId, mention.threadId);
+    if (result === 'NOT_OWNED') {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    const updatedMention = await MentionManager.markAsRead(mentionId);
+    return c.json({ success: true, mention: updatedMention });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
@@ -304,9 +346,9 @@ collaborationRoutes.post('/mentions/read/:id', async (c) => {
 
 /**
  * POST /api/collaboration/activity/log
- * Log custom collaborative room activities like presence joins and scrub changes.
+ * Log custom collaborative room activities.
  */
-collaborationRoutes.post('/activity/log', async (c) => {
+collaborationRoutes.post('/activity/log', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, roomType, roomId, userEmail, actionType, payload } = body;
 
