@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import {
   Sparkles,
   ArrowRight,
@@ -18,7 +19,6 @@ import {
   Cpu
 } from 'lucide-react';
 
-const baseApiUrl = 'http://127.0.0.1:3001/api';
 
 export function RedesignDashboard() {
   const [projectId, setProjectId] = useState<string>('');
@@ -52,7 +52,7 @@ export function RedesignDashboard() {
   const fetchInitialContext = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const projectList = data.projects || [];
       setProjects(projectList);
@@ -76,10 +76,10 @@ export function RedesignDashboard() {
       const wQuery = wId ? `&workspaceId=${wId}` : '';
 
       const [recRes, optRes, cogRes, sugRes] = await Promise.all([
-        fetch(`${baseApiUrl}/redesign/recommendations?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/redesign/optimization?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/redesign/cognitive?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/redesign/suggestions?projectId=${projId}${wQuery}`)
+        apiFetch(`/redesign/recommendations?projectId=${projId}${wQuery}`),
+        apiFetch(`/redesign/optimization?projectId=${projId}${wQuery}`),
+        apiFetch(`/redesign/cognitive?projectId=${projId}${wQuery}`),
+        apiFetch(`/redesign/suggestions?projectId=${projId}${wQuery}`)
       ]);
 
       const recData = await recRes.json();
@@ -101,7 +101,7 @@ export function RedesignDashboard() {
   const triggerPipeline = async () => {
     try {
       setRunningPipeline(true);
-      const res = await fetch(`${baseApiUrl}/redesign/generate`, {
+      const res = await apiFetch(`/redesign/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, workspaceId })
@@ -135,8 +135,8 @@ export function RedesignDashboard() {
     try {
       setLoadingDetails(true);
       const [evRes, impRes] = await Promise.all([
-        fetch(`${baseApiUrl}/redesign/evidence?recommendationId=${rec.id}`),
-        fetch(`${baseApiUrl}/redesign/impact?recommendationId=${rec.id}`)
+        apiFetch(`/redesign/evidence?recommendationId=${rec.id}`),
+        apiFetch(`/redesign/impact?recommendationId=${rec.id}`)
       ]);
       const evData = await evRes.json();
       const impData = await impRes.json();

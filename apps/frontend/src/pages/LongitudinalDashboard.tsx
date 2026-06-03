@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import {
   TrendingUp,
   Activity,
@@ -18,7 +19,6 @@ import {
   Search
 } from 'lucide-react';
 
-const baseApiUrl = 'http://127.0.0.1:3001/api';
 
 export default function LongitudinalDashboard() {
   const [projectId, setProjectId] = useState<string>('');
@@ -54,7 +54,7 @@ export default function LongitudinalDashboard() {
     try {
       setLoading(true);
       // Fetch projects
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const projectList = data.projects || [];
       setProjects(projectList);
@@ -75,7 +75,7 @@ export default function LongitudinalDashboard() {
 
   const fetchSessions = async (projId: string) => {
     try {
-      const res = await fetch(`${baseApiUrl}/workflows?projectId=${projId}`);
+      const res = await apiFetch(`/workflows?projectId=${projId}`);
       const data = await res.json();
       const list = data.sessions || [];
       setSessions(list);
@@ -94,12 +94,12 @@ export default function LongitudinalDashboard() {
       const wQuery = wId ? `&workspaceId=${wId}` : '';
 
       const [trendRes, patternRes, regRes, personaRes, snapRes, survivabilityRes] = await Promise.all([
-        fetch(`${baseApiUrl}/intelligence/trends?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/intelligence/cross-session?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/intelligence/regressions?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/intelligence/personas?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/intelligence/history?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/intelligence/survivability?projectId=${projId}${wQuery}`)
+        apiFetch(`/intelligence/trends?projectId=${projId}${wQuery}`),
+        apiFetch(`/intelligence/cross-session?projectId=${projId}${wQuery}`),
+        apiFetch(`/intelligence/regressions?projectId=${projId}${wQuery}`),
+        apiFetch(`/intelligence/personas?projectId=${projId}${wQuery}`),
+        apiFetch(`/intelligence/history?projectId=${projId}${wQuery}`),
+        apiFetch(`/intelligence/survivability?projectId=${projId}${wQuery}`)
       ]);
 
       const trendData = await trendRes.json();
@@ -125,7 +125,7 @@ export default function LongitudinalDashboard() {
   const triggerSynthesis = async () => {
     try {
       setSynthesizing(true);
-      const res = await fetch(`${baseApiUrl}/intelligence/synthesis`, {
+      const res = await apiFetch(`/intelligence/synthesis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, workspaceId })
@@ -146,7 +146,7 @@ export default function LongitudinalDashboard() {
     try {
       setLoading(true);
       // Mock or fetch correlation results
-      const res = await fetch(`${baseApiUrl}/intelligence/cross-session?projectId=${projectId}${workspaceId ? `&workspaceId=${workspaceId}` : ''}`);
+      const res = await apiFetch(`/intelligence/cross-session?projectId=${projectId}${workspaceId ? `&workspaceId=${workspaceId}` : ''}`);
       const data = await res.json();
       
       // Filter or generate side-by-side overlap

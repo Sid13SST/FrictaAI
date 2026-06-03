@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import {
   TrendingUp,
   Activity,
@@ -17,7 +18,6 @@ import {
   X
 } from 'lucide-react';
 
-const baseApiUrl = 'http://127.0.0.1:3001/api';
 
 export function PredictiveDashboard() {
   const [projectId, setProjectId] = useState<string>('');
@@ -48,7 +48,7 @@ export function PredictiveDashboard() {
   const fetchInitialContext = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const projectList = data.projects || [];
       setProjects(projectList);
@@ -72,12 +72,12 @@ export function PredictiveDashboard() {
       const wQuery = wId ? `&workspaceId=${wId}` : '';
 
       const [riskRes, survRes, cogRes, failRes, trendRes, predRes] = await Promise.all([
-        fetch(`${baseApiUrl}/predictive/risks?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/predictive/survivability?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/predictive/cognitive?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/predictive/failures?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/predictive/trends?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/predictive/forecasts?projectId=${projId}${wQuery}`)
+        apiFetch(`/predictive/risks?projectId=${projId}${wQuery}`),
+        apiFetch(`/predictive/survivability?projectId=${projId}${wQuery}`),
+        apiFetch(`/predictive/cognitive?projectId=${projId}${wQuery}`),
+        apiFetch(`/predictive/failures?projectId=${projId}${wQuery}`),
+        apiFetch(`/predictive/trends?projectId=${projId}${wQuery}`),
+        apiFetch(`/predictive/forecasts?projectId=${projId}${wQuery}`)
       ]);
 
       const riskData = await riskRes.json();
@@ -103,7 +103,7 @@ export function PredictiveDashboard() {
   const triggerForecast = async () => {
     try {
       setForecasting(true);
-      const res = await fetch(`${baseApiUrl}/predictive/forecast`, {
+      const res = await apiFetch(`/predictive/forecast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, workspaceId })
@@ -134,7 +134,7 @@ export function PredictiveDashboard() {
     setSelectedFailure(failure);
     try {
       setLoadingEvidence(true);
-      const res = await fetch(`${baseApiUrl}/predictive/evidence?predictionId=${failure.id}`);
+      const res = await apiFetch(`/predictive/evidence?predictionId=${failure.id}`);
       const data = await res.json();
       setEvidenceList(data.evidence || []);
     } catch (err) {
