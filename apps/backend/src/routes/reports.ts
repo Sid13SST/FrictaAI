@@ -14,7 +14,15 @@ import {
   ReportDistributionDispatcher,
   WorkspaceAnalyticsEngine
 } from '@fricta/enterprise-reporting';
-import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { getCurrentUser } from '../middleware/authContext';
+import {
+  verifyReportOwnership,
+  assertProjectOwnership,
+  assertReportOwnership,
+  requireWorkflowOwner
+} from '../guards/ownership';
+
+export const reportRoutes = new Hono();
 
 async function generateReportForSession(sessionId: string) {
   const session = await prisma.workflowSession.findUnique({
@@ -108,14 +116,14 @@ async function generateReportForSession(sessionId: string) {
     if (existingReport) {
       await tx.uXReport.update({
         where: { id: existingReport.id },
-        data: { summary: reportData.summary, score: reportData.scores.overallScore }
+        data: { summary: reportData.summary, score: Math.round(reportData.scores.overallScore * 100) }
       });
     } else {
       await tx.uXReport.create({
         data: {
           sessionId,
           summary: reportData.summary,
-          score: reportData.scores.overallScore
+          score: Math.round(reportData.scores.overallScore * 100)
         }
       });
     }
@@ -268,128 +276,154 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
   };
 }
 
-export const reportRoutes = new Hono()
-  .get('/', async (c) => {
-    const reports = await prisma.uXReport.findMany();
-    return c.json({ reports });
-  })
-  .post('/:sessionId/generate', async (c) => {
-    const sessionId = c.req.param('sessionId');
-    const reportData = await generateReportForSession(sessionId);
-    if (!reportData) return c.json({ error: 'Session not found' }, 404);
-    return c.json({ success: true, reportData });
-  })
-  .get('/:id', async (c) => {
-    const id = c.req.param('id');
-    
-    // Auto-generate legacy report if it doesn't exist
-    const legacyReport = await prisma.uXReport.findFirst({ where: { sessionId: id } });
-    if (!legacyReport) {
-      await generateReportForSession(id);
+// ─── GET / - List all reports owned by user ───────────────────────────────────
+reportRoutes.get('/', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
+  const reports = await prisma.uXReport.findMany({
+    where: {
+      session: {
+        project: {
+          userId: user.userId
+        }
+      }
     }
+  });
+  return c.json({ reports });
+});
 
-    const payload = await compileUnifiedReport(id);
-    if (!payload) return c.json({ error: 'Report not found' }, 404);
+// ─── POST /:sessionId/generate - Generate UX report (Session ownership required) 
+reportRoutes.post('/:sessionId/generate', requireWorkflowOwner('sessionId'), async (c) => {
+  const sessionId = c.req.param('sessionId');
+  const reportData = await generateReportForSession(sessionId);
+  if (!reportData) return c.json({ error: 'Session not found' }, 404);
+  return c.json({ success: true, reportData });
+});
 
-    return c.json(payload);
-  })
-  .get('/:id/executive', async (c) => {
-    const id = c.req.param('id');
-    const payload = await compileUnifiedReport(id);
-    if (!payload) return c.json({ error: 'Report not found' }, 404);
+// ─── GET /:id - Fetch unified report payload (Session ownership required) ──────
+reportRoutes.get('/:id', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  
+  // Auto-generate legacy report if it doesn't exist
+  const legacyReport = await prisma.uXReport.findFirst({ where: { sessionId: id } });
+  if (!legacyReport) {
+    await generateReportForSession(id);
+  }
 
-    const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
-    return c.json(executiveSummary);
-  })
-  .get('/:id/export', async (c) => {
-    const id = c.req.param('id');
-    const payload = await compileUnifiedReport(id);
-    if (!payload) return c.json({ error: 'Report not found' }, 404);
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
 
-    const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
-    return c.json({
-      markdown: ExportEngine.toMarkdown(payload, executiveSummary),
-      textSheet: ExportEngine.toTextSheet(payload, executiveSummary),
-      developerJson: ExportEngine.toDeveloperJson(payload, executiveSummary)
-    });
-  })
-  .get('/:id/personas', async (c) => {
-    const id = c.req.param('id');
-    const payload = await compileUnifiedReport(id);
-    if (!payload) return c.json({ error: 'Report not found' }, 404);
+  return c.json(payload);
+});
 
-    return c.json({
-      personaProfiles: payload.personaProfiles,
-      uxFindings: payload.uxFindings
-    });
-  })
-  .get('/:id/timeline', async (c) => {
-    const id = c.req.param('id');
-    const actions = await prisma.agentAction.findMany({
-      where: { workflowSessionId: id },
-      orderBy: { timestamp: 'asc' }
-    });
-    const thoughts = await prisma.agentThought.findMany({
-      where: { workflowSessionId: id },
-      orderBy: { timestamp: 'asc' }
-    });
-    const uxFindings = await prisma.uXFinding.findMany({
-      where: { workflowSessionId: id },
-      orderBy: { timestamp: 'asc' }
-    });
-    const cognitiveSignals = await prisma.cognitiveSignal.findMany({
-      where: { workflowSessionId: id },
-      orderBy: { timestamp: 'asc' }
-    });
-    const visualFindings = await prisma.visualFinding.findMany({
-      where: { workflowSessionId: id },
-      orderBy: { timestamp: 'asc' }
-    });
-    const screenshots = await prisma.workflowScreenshot.findMany({
-      where: { workflowSessionId: id },
-      orderBy: { stepIndex: 'asc' }
-    });
+// ─── GET /:id/executive - Fetch synthesized executive summary (Session ownership required)
+reportRoutes.get('/:id/executive', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
 
-    const compiledTimeline = TimelineCompiler.compile(
-      actions,
-      thoughts,
-      uxFindings,
-      cognitiveSignals,
-      visualFindings
-    );
+  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+  return c.json(executiveSummary);
+});
 
-    return c.json({
-      timeline: compiledTimeline,
-      screenshots: screenshots.map(s => ({
-        id: s.id,
-        stepIndex: s.stepIndex,
-        filePath: s.filePath,
-        thumbnailPath: s.thumbnailPath,
-        pageUrl: s.pageUrl,
-        viewportWidth: s.viewportWidth,
-        viewportHeight: s.viewportHeight,
-        actionContext: s.actionContext,
-        metadata: s.metadata
-      }))
-    });
+// ─── GET /:id/export - Export report payload (Session ownership required) ─────
+reportRoutes.get('/:id/export', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+  return c.json({
+    markdown: ExportEngine.toMarkdown(payload, executiveSummary),
+    textSheet: ExportEngine.toTextSheet(payload, executiveSummary),
+    developerJson: ExportEngine.toDeveloperJson(payload, executiveSummary)
+  });
+});
+
+// ─── GET /:id/personas - Fetch personas list (Session ownership required) ─────
+reportRoutes.get('/:id/personas', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  return c.json({
+    personaProfiles: payload.personaProfiles,
+    uxFindings: payload.uxFindings
+  });
+});
+
+// ─── GET /:id/timeline - Fetch compiled timeline (Session ownership required) ────
+reportRoutes.get('/:id/timeline', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const actions = await prisma.agentAction.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const thoughts = await prisma.agentThought.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const uxFindings = await prisma.uXFinding.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const cognitiveSignals = await prisma.cognitiveSignal.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const visualFindings = await prisma.visualFinding.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const screenshots = await prisma.workflowScreenshot.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { stepIndex: 'asc' }
   });
 
-// User Resolver Helper
+  const compiledTimeline = TimelineCompiler.compile(
+    actions,
+    thoughts,
+    uxFindings,
+    cognitiveSignals,
+    visualFindings
+  );
+
+  return c.json({
+    timeline: compiledTimeline,
+    screenshots: screenshots.map(s => ({
+      id: s.id,
+      stepIndex: s.stepIndex,
+      filePath: s.filePath,
+      thumbnailPath: s.thumbnailPath,
+      pageUrl: s.pageUrl,
+      viewportWidth: s.viewportWidth,
+      viewportHeight: s.viewportHeight,
+      actionContext: s.actionContext,
+      metadata: s.metadata
+    }))
+  });
+});
+
+// ─── Resolve User Helper ──────────────────────────────────────────────────────
+
 async function resolveUser(c: any): Promise<any> {
-  const userId = c.req.query('userId') || c.req.header('X-User-Id');
-  if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (user) return user;
-  }
-  const email = c.req.query('email') || c.req.header('X-User-Email');
-  if (email) {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (user) return user;
-  }
-  return prisma.user.findFirst();
+  const clerkUser = getCurrentUser(c);
+  if (!clerkUser) return null;
+  const user = await prisma.user.findUnique({ where: { id: clerkUser.userId } });
+  if (user) return user;
+  
+  // Create user locally if they don't exist
+  return prisma.user.create({
+    data: {
+      id: clerkUser.userId,
+      email: clerkUser.email || `user-${clerkUser.userId}@fricta.ai`,
+      name: 'Clerk User',
+    }
+  });
 }
 
-const guard = new RBACAuthorizationGuard(prisma);
+// Global engine instantiations
 const compiler = new ExecutiveReportingCompiler(prisma as any);
 const summaryEngine = new SummarySynthesisEngine(prisma as any);
 const evidenceManager = new EvidenceLinkManager(prisma as any);
@@ -403,19 +437,32 @@ const analyticsEngine = new WorkspaceAnalyticsEngine(prisma as any);
  * Returns compiled reports for workspace/project
  */
 reportRoutes.get('/executive/list', async (c) => {
-  const workspaceId = c.req.query('workspaceId') || null;
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const projectId = c.req.query('projectId');
-  
-  const user = await resolveUser(c);
-  if (workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
+  const workspaceId = c.req.query('workspaceId');
+
+  if (projectId) {
+    const isOwner = await assertProjectOwnership(user.userId, projectId);
+    if (!isOwner) return c.json({ error: 'Access denied' }, 403);
+  } else if (workspaceId) {
+    // Traverse: user must own at least one project in this workspace
+    const ownedProjects = await prisma.project.findMany({
+      where: { workspaceId, userId: user.userId },
+      select: { id: true }
+    });
+    if (ownedProjects.length === 0) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+  } else {
+    return c.json({ error: 'projectId or workspaceId is required' }, 400);
   }
 
   const reports = await prisma.executiveReport.findMany({
     where: {
-      projectId: projectId ? projectId : undefined,
-      workspaceId: workspaceId
+      projectId: projectId || undefined,
+      workspaceId: workspaceId || undefined
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -428,20 +475,21 @@ reportRoutes.get('/executive/list', async (c) => {
  * Compiles a new report
  */
 reportRoutes.post('/executive', async (c) => {
-  const user = await resolveUser(c);
-  const { workspaceId, projectId, title } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { workspaceId, projectId, title } = await c.req.json().catch(() => ({}));
   if (!projectId || !title) {
     return c.json({ error: 'projectId and title are required' }, 400);
   }
 
-  if (workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'ANALYTICS', 'WRITE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const isOwner = await assertProjectOwnership(user.userId, projectId);
+  if (!isOwner) return c.json({ error: 'Access denied' }, 403);
+
+  const localDbUser = await resolveUser(c);
 
   try {
-    const report = await compiler.compileReport(projectId, title, user?.id || '', workspaceId || null);
+    const report = await compiler.compileReport(projectId, title, localDbUser?.id || '', workspaceId || null);
     return c.json({ report });
   } catch (err: any) {
     return c.json({ error: err.message }, 400);
@@ -453,18 +501,18 @@ reportRoutes.post('/executive', async (c) => {
  * Returns slides format representation
  */
 reportRoutes.get('/executive/:id/deck', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const id = c.req.param('id');
+  const result = await verifyReportOwnership(user.userId, id);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
+
   const report = await prisma.executiveReport.findUnique({
     where: { id }
   });
-
   if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const user = await resolveUser(c);
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
-  }
 
   const deck = PresentationDeckBuilder.generatePresentation(report);
   return c.json({ deck });
@@ -475,18 +523,18 @@ reportRoutes.get('/executive/:id/deck', async (c) => {
  * Returns PDF layout representation
  */
 reportRoutes.get('/executive/:id/pdf-layout', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const id = c.req.param('id');
+  const result = await verifyReportOwnership(user.userId, id);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
+
   const report = await prisma.executiveReport.findUnique({
     where: { id }
   });
-
   if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const user = await resolveUser(c);
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
-  }
 
   const pdfLayout = PDFLayoutEngine.compilePDFLayout(report);
   return c.json({ pdfLayout });
@@ -497,17 +545,15 @@ reportRoutes.get('/executive/:id/pdf-layout', async (c) => {
  * Returns exports history
  */
 reportRoutes.get('/exports', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const reportId = c.req.query('reportId');
   if (!reportId) return c.json({ error: 'reportId is required' }, 400);
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const user = await resolveUser(c);
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'EXPORT', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
-  }
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   const exports = await prisma.reportExport.findMany({
     where: { reportId },
@@ -522,23 +568,22 @@ reportRoutes.get('/exports', async (c) => {
  * Triggers document export (PDF/Presentation)
  */
 reportRoutes.post('/exports', async (c) => {
-  const user = await resolveUser(c);
-  const { reportId, format } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { reportId, format } = await c.req.json().catch(() => ({}));
   if (!reportId || !format) {
     return c.json({ error: 'reportId and format are required' }, 400);
   }
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
-  if (report.workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'EXPORT', 'WRITE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const localDbUser = await resolveUser(c);
 
   try {
-    const exportRecord = await exportService.triggerExport(reportId, format, user?.id || '');
+    const exportRecord = await exportService.triggerExport(reportId, format, localDbUser?.id || '');
     return c.json({ export: exportRecord });
   } catch (err: any) {
     return c.json({ error: err.message }, 400);
@@ -550,7 +595,20 @@ reportRoutes.post('/exports', async (c) => {
  * Returns templates list
  */
 reportRoutes.get('/templates', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const workspaceId = c.req.query('workspaceId') || null;
+
+  if (workspaceId) {
+    const ownedProjects = await prisma.project.findMany({
+      where: { workspaceId, userId: user.userId },
+      select: { id: true }
+    });
+    if (ownedProjects.length === 0) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+  }
 
   const templates = await prisma.reportTemplate.findMany({
     where: { workspaceId }
@@ -564,16 +622,22 @@ reportRoutes.get('/templates', async (c) => {
  * Creates custom report template
  */
 reportRoutes.post('/templates', async (c) => {
-  const user = await resolveUser(c);
-  const { workspaceId, name, description, layoutType, structure } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { workspaceId, name, description, layoutType, structure } = await c.req.json().catch(() => ({}));
   if (!name || !layoutType) {
     return c.json({ error: 'name and layoutType are required' }, 400);
   }
 
   if (workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'WORKSPACE', 'MANAGE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+    const ownedProjects = await prisma.project.findMany({
+      where: { workspaceId, userId: user.userId },
+      select: { id: true }
+    });
+    if (ownedProjects.length === 0) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
   }
 
   const template = await prisma.reportTemplate.create({
@@ -594,17 +658,15 @@ reportRoutes.post('/templates', async (c) => {
  * Returns shared report tokens
  */
 reportRoutes.get('/sharing', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const reportId = c.req.query('reportId');
   if (!reportId) return c.json({ error: 'reportId is required' }, 400);
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const user = await resolveUser(c);
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   const shares = await prisma.sharedReport.findMany({
     where: { reportId },
@@ -619,20 +681,19 @@ reportRoutes.get('/sharing', async (c) => {
  * Creates share link
  */
 reportRoutes.post('/sharing', async (c) => {
-  const user = await resolveUser(c);
-  const { reportId, expiresHours, maxUses, email } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { reportId, expiresHours, maxUses, email } = await c.req.json().catch(() => ({}));
   if (!reportId) return c.json({ error: 'reportId is required' }, 400);
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
-  if (report.workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'WRITE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const localDbUser = await resolveUser(c);
 
-  const share = await shareManager.generateShare(reportId, user?.id || '', { expiresHours, maxUses, email });
+  const share = await shareManager.generateShare(reportId, localDbUser?.id || '', { expiresHours, maxUses, email });
   return c.json({ share });
 });
 
@@ -641,22 +702,20 @@ reportRoutes.post('/sharing', async (c) => {
  * Revokes share token
  */
 reportRoutes.post('/sharing/revoke', async (c) => {
-  const user = await resolveUser(c);
-  const { shareId } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { shareId } = await c.req.json().catch(() => ({}));
   if (!shareId) return c.json({ error: 'shareId is required' }, 400);
 
   const share = await prisma.sharedReport.findUnique({
     where: { id: shareId },
-    include: { report: true }
+    select: { reportId: true }
   });
-
   if (!share) return c.json({ error: 'Shared link not found' }, 404);
 
-  if (share.report.workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, share.report.workspaceId, 'ANALYTICS', 'WRITE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const result = await verifyReportOwnership(user.userId, share.reportId);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   await shareManager.revokeShare(shareId);
   return c.json({ success: true });
@@ -683,17 +742,15 @@ reportRoutes.get('/sharing/resolve/:token', async (c) => {
  * Returns linked evidence
  */
 reportRoutes.get('/evidence', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const reportId = c.req.query('reportId');
   if (!reportId) return c.json({ error: 'reportId is required' }, 400);
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const user = await resolveUser(c);
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   const links = await evidenceManager.getLinkedEvidence(reportId);
   return c.json({ links });
@@ -704,20 +761,17 @@ reportRoutes.get('/evidence', async (c) => {
  * Links evidence items
  */
 reportRoutes.post('/evidence', async (c) => {
-  const user = await resolveUser(c);
-  const { reportId, links } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { reportId, links } = await c.req.json().catch(() => ({}));
   if (!reportId || !Array.isArray(links)) {
     return c.json({ error: 'reportId and links array are required' }, 400);
   }
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'WRITE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   const createdLinks = await evidenceManager.linkEvidence(reportId, links);
   return c.json({ links: createdLinks });
@@ -728,17 +782,15 @@ reportRoutes.post('/evidence', async (c) => {
  * Returns distributions history
  */
 reportRoutes.get('/distribution', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const reportId = c.req.query('reportId');
   if (!reportId) return c.json({ error: 'reportId is required' }, 400);
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
-
-  if (report.workspaceId) {
-    const user = await resolveUser(c);
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
   const distributions = await prisma.reportDistributionEvent.findMany({
     where: { reportId },
@@ -753,23 +805,22 @@ reportRoutes.get('/distribution', async (c) => {
  * Distributes report to recipient
  */
 reportRoutes.post('/distribution', async (c) => {
-  const user = await resolveUser(c);
-  const { reportId, channel, recipient } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { reportId, channel, recipient } = await c.req.json().catch(() => ({}));
   if (!reportId || !channel || !recipient) {
     return c.json({ error: 'reportId, channel, and recipient are required' }, 400);
   }
 
-  const report = await prisma.executiveReport.findUnique({ where: { id: reportId } });
-  if (!report) return c.json({ error: 'Report not found' }, 404);
+  const result = await verifyReportOwnership(user.userId, reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
 
-  if (report.workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id, report.workspaceId, 'ANALYTICS', 'WRITE');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const localDbUser = await resolveUser(c);
 
   try {
-    const distribution = await distributionDispatcher.distributeReport(reportId, channel, recipient, user?.id || '');
+    const distribution = await distributionDispatcher.distributeReport(reportId, channel, recipient, localDbUser?.id || '');
     return c.json({ distribution });
   } catch (err: any) {
     return c.json({ error: err.message }, 400);
@@ -781,12 +832,19 @@ reportRoutes.post('/distribution', async (c) => {
  * Returns workspace analytical curves
  */
 reportRoutes.get('/analytics/curves', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
 
-  const user = await resolveUser(c);
-  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'ANALYTICS', 'READ');
-  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
+  const ownedProjects = await prisma.project.findMany({
+    where: { workspaceId, userId: user.userId },
+    select: { id: true }
+  });
+  if (ownedProjects.length === 0) {
+    return c.json({ error: 'Access denied' }, 403);
+  }
 
   const curves = await analyticsEngine.getCrossProjectStabilityTimeline(workspaceId);
   return c.json({ curves });
@@ -797,12 +855,19 @@ reportRoutes.get('/analytics/curves', async (c) => {
  * Returns digests list
  */
 reportRoutes.get('/analytics/digests', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
 
-  const user = await resolveUser(c);
-  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'ANALYTICS', 'READ');
-  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
+  const ownedProjects = await prisma.project.findMany({
+    where: { workspaceId, userId: user.userId },
+    select: { id: true }
+  });
+  if (ownedProjects.length === 0) {
+    return c.json({ error: 'Access denied' }, 403);
+  }
 
   const digests = await prisma.workspaceInsightDigest.findMany({
     where: { workspaceId },
@@ -817,15 +882,21 @@ reportRoutes.get('/analytics/digests', async (c) => {
  * Generates a new workspace digest
  */
 reportRoutes.post('/analytics/digests', async (c) => {
-  const user = await resolveUser(c);
-  const { workspaceId, title, period } = await c.req.json().catch(() => ({}));
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
 
+  const { workspaceId, title, period } = await c.req.json().catch(() => ({}));
   if (!workspaceId || !title || !period) {
     return c.json({ error: 'workspaceId, title, and period are required' }, 400);
   }
 
-  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'ANALYTICS', 'WRITE');
-  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient permissions' }, 403);
+  const ownedProjects = await prisma.project.findMany({
+    where: { workspaceId, userId: user.userId },
+    select: { id: true }
+  });
+  if (ownedProjects.length === 0) {
+    return c.json({ error: 'Access denied' }, 403);
+  }
 
   try {
     const digest = await analyticsEngine.generateDigest(workspaceId, title, period);
