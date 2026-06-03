@@ -1,33 +1,38 @@
 import { Hono } from 'hono';
 import { BrowserManager, SessionManager } from '@fricta/agent';
-import { PrismaClient } from '@fricta/db';
+import { prisma } from '@fricta/db';
 import { VisualTimelineManager, VisualStorageManager } from '@fricta/visual-engine';
 import { promises as fs } from 'fs';
+import { getCurrentUser } from '../middleware/authContext';
+import {
+  requireProjectOwnerQuery,
+  requireProjectOwnerBody,
+  requireWorkflowOwner,
+  assertWorkflowOwnership
+} from '../guards/ownership';
+import {
+  activeSessions,
+  memorySessions,
+  memoryInteractions,
+  memoryScreenshots
+} from '../utils/memoryDb';
 
 export const workflowRoutes = new Hono();
-const prisma = new PrismaClient();
 const browserManager = new BrowserManager();
 const timelineManager = new VisualTimelineManager(prisma);
 const storageManager = new VisualStorageManager();
 
-// Simple in-memory store mapping sessionId to SessionManager for active sessions
-const activeSessions = new Map<string, SessionManager>();
-
-// In-memory store for workflow sessions and events
-const memorySessions = new Map<string, any>();
-const memoryInteractions = new Map<string, any[]>();
-const memoryScreenshots = new Map<string, any[]>();
-
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC ROUTES — MUST come BEFORE any /:id/* parameterized routes.
-// Hono matches params greedily: /:id would capture "screenshots" as an id value,
-// shadow these routes, and return a JSON 404 instead of serving image bytes.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Serve raw screenshot files from disk
+// Serve raw screenshot files from disk (with ownership checks)
 workflowRoutes.get('/screenshots/raw/*', async (c) => {
-  // c.req.param('*') can be unreliable with the hono/node-server adapter when
-  // the router is sub-mounted. Extract the relative path from the raw URL instead.
+  const user = getCurrentUser(c);
+  if (!user) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
   const rawPath = c.req.path; // e.g. /api/workflows/screenshots/raw/sessions/abc/file.webp
   const prefix = '/screenshots/raw/';
   const prefixIndex = rawPath.indexOf(prefix);
@@ -35,6 +40,19 @@ workflowRoutes.get('/screenshots/raw/*', async (c) => {
 
   if (!relativePath) {
     return c.json({ error: 'Screenshot file path is required' }, 400);
+  }
+
+  // Parse session ID from path to perform ownership check: e.g. sessions/session-xxx/... or just session-xxx/...
+  const sessionMatch = relativePath.match(/(?:sessions\/)?([^\/]+)/);
+  const sessionId = sessionMatch ? sessionMatch[1] : null;
+
+  if (sessionId) {
+    const isOwner = await assertWorkflowOwnership(user.userId, sessionId);
+    if (!isOwner) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+  } else {
+    return c.json({ error: 'Access denied' }, 403);
   }
 
   const absolutePath = storageManager.resolvePath(relativePath);
@@ -50,8 +68,13 @@ workflowRoutes.get('/screenshots/raw/*', async (c) => {
   }
 });
 
-// Fetch screenshot metadata by ID
+// Fetch screenshot metadata by ID (with ownership checks)
 workflowRoutes.get('/screenshots/:screenshotId', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) {
+    return c.json({ error: 'Authentication required' }, 401);
+  }
+
   const screenshotId = c.req.param('screenshotId');
   try {
     const screenshot = await prisma.workflowScreenshot.findUnique({
@@ -60,18 +83,22 @@ workflowRoutes.get('/screenshots/:screenshotId', async (c) => {
     if (!screenshot) {
       return c.json({ error: 'Screenshot not found' }, 404);
     }
+
+    // Verify ownership of parent workflow session
+    const isOwner = await assertWorkflowOwnership(user.userId, screenshot.workflowSessionId);
+    if (!isOwner) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
     return c.json({ screenshot });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
 });
 
-workflowRoutes.get('/', async (c) => {
-  const projectId = c.req.query('projectId');
-  if (!projectId) {
-    return c.json({ error: 'Missing projectId query parameter' }, 400);
-  }
-
+// GET / - List all workflow sessions for a project (Project ownership required)
+workflowRoutes.get('/', requireProjectOwnerQuery('projectId'), async (c) => {
+  const projectId = c.req.query('projectId')!;
   try {
     const sessions = await prisma.workflowSession.findMany({
       where: { projectId },
@@ -85,7 +112,8 @@ workflowRoutes.get('/', async (c) => {
   }
 });
 
-workflowRoutes.post('/start', async (c) => {
+// POST /start - Start a new workflow session (Project ownership required)
+workflowRoutes.post('/start', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, url, goal, persona } = body;
 
@@ -97,13 +125,6 @@ workflowRoutes.post('/start', async (c) => {
   let usePrisma = true;
 
   try {
-    if (projectId !== 'default-mem-project-id' && !projectId.startsWith('project-')) {
-      const project = await prisma.project.findUnique({ where: { id: projectId } });
-      if (!project) {
-        return c.json({ error: 'Project not found' }, 404);
-      }
-    }
-
     const sessionRecord = await prisma.workflowSession.create({
       data: {
         projectId,
@@ -180,7 +201,8 @@ workflowRoutes.post('/start', async (c) => {
   }
 });
 
-workflowRoutes.get('/:id/context', async (c) => {
+// GET /:id/context - Fetch context of active session (Workflow ownership required)
+workflowRoutes.get('/:id/context', requireWorkflowOwner('id'), async (c) => {
   const id = c.req.param('id');
   const sessionManager = activeSessions.get(id);
   if (!sessionManager) {
@@ -194,7 +216,8 @@ workflowRoutes.get('/:id/context', async (c) => {
   }
 });
 
-workflowRoutes.get('/:id/interactions', async (c) => {
+// GET /:id/interactions - Fetch interactions (Workflow ownership required)
+workflowRoutes.get('/:id/interactions', requireWorkflowOwner('id'), async (c) => {
   const id = c.req.param('id');
   const sessionManager = activeSessions.get(id);
 
@@ -216,7 +239,8 @@ workflowRoutes.get('/:id/interactions', async (c) => {
   }
 });
 
-workflowRoutes.get('/:id/screenshots', async (c) => {
+// GET /:id/screenshots - Fetch screenshots list (Workflow ownership required)
+workflowRoutes.get('/:id/screenshots', requireWorkflowOwner('id'), async (c) => {
   const id = c.req.param('id');
   try {
     const screenshots = await prisma.screenshot.findMany({
@@ -231,7 +255,8 @@ workflowRoutes.get('/:id/screenshots', async (c) => {
   }
 });
 
-workflowRoutes.post('/:id/end', async (c) => {
+// POST /:id/end - End active workflow session (Workflow ownership required)
+workflowRoutes.post('/:id/end', requireWorkflowOwner('id'), async (c) => {
   const id = c.req.param('id');
   const sessionManager = activeSessions.get(id);
 
@@ -255,8 +280,8 @@ workflowRoutes.post('/:id/end', async (c) => {
   }
 });
 
-// Visual Intelligence Routes
-workflowRoutes.get('/:id/visual-replay', async (c) => {
+// GET /:id/visual-replay - Visual replay timeline (Workflow ownership required)
+workflowRoutes.get('/:id/visual-replay', requireWorkflowOwner('id'), async (c) => {
   const sessionId = c.req.param('id');
   try {
     const timeline = await timelineManager.getSessionTimeline(sessionId);
@@ -266,7 +291,8 @@ workflowRoutes.get('/:id/visual-replay', async (c) => {
   }
 });
 
-workflowRoutes.get('/:id/visual-timeline', async (c) => {
+// GET /:id/visual-timeline - Visual screenshots timeline (Workflow ownership required)
+workflowRoutes.get('/:id/visual-timeline', requireWorkflowOwner('id'), async (c) => {
   const sessionId = c.req.param('id');
   try {
     const timelineEvents = await prisma.screenshotTimelineEvent.findMany({
