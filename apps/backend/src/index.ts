@@ -65,10 +65,21 @@ const app = new Hono();
 app.use('*', logger());
 app.use('*', cors());
 
+// SSE query token rewrite middleware: intercepts ?token=... query parameter
+// and rewrites it to the Authorization header to support SSE clients.
+app.use('*', async (c, next) => {
+  const token = c.req.query('token');
+  if (token) {
+    c.req.raw.headers.set('Authorization', `Bearer ${token}`);
+  }
+  await next();
+});
+
 // Clerk JWT decoding — non-blocking. Decodes the JWT from the Authorization
 // header if present and attaches claims to the Hono context. Does NOT reject
 // requests without tokens. This allows public routes to work normally.
 app.use('*', clerkMiddleware());
+
 
 // ─── PUBLIC Routes (No Authentication Required) ──────────────────────────────
 // Health checks — infrastructure monitoring, no user data
