@@ -27,7 +27,7 @@ app.use('*', async (c, next) => {
       userId = token;
     }
   }
-  c.set('clerkAuth', () => ({ userId }));
+  c.set('clerkAuth', (() => ({ userId })) as any);
   await next();
 });
 
@@ -47,15 +47,32 @@ interface TestResult {
 
 const testResults: TestResult[] = [];
 
-function recordResult(section: string, name: string, expectedStatus: number, actualStatus: number, notes?: string) {
+function recordResult(section: string, name: string, expectedStatus: number, actualStatus: number, passed: boolean, notes?: string) {
   testResults.push({
     section,
     name,
     expectedStatus,
     actualStatus,
-    passed: expectedStatus === actualStatus,
+    passed,
     notes
   });
+}
+
+async function verifyErrorResponse(res: Response, expectedError: string): Promise<{ passed: boolean, actual: string }> {
+  try {
+    const json = await res.clone().json();
+    const passed = json.error === expectedError;
+    return {
+      passed,
+      actual: json.error ? `"${json.error}"` : JSON.stringify(json)
+    };
+  } catch (e) {
+    const text = await res.clone().text();
+    return {
+      passed: false,
+      actual: text ? `Text: ${text.slice(0, 50)}` : 'Empty body'
+    };
+  }
 }
 
 async function runTests() {
@@ -167,7 +184,15 @@ async function runTests() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ projectId, name: 'API Key A', scopes: ['read'] })
   });
-  recordResult('API Key Generation', 'Unauthenticated request rejected', 401, res1A.status);
+  const err1A = await verifyErrorResponse(res1A, 'Authentication required');
+  recordResult(
+    'API Key Generation', 
+    'Unauthenticated request rejected', 
+    401, 
+    res1A.status,
+    res1A.status === 401 && err1A.passed,
+    `Error JSON: ${err1A.actual}`
+  );
 
   // Scenario B: Authenticated request, but not project owner
   const res1B = await app.request('/api/public/keys', {
@@ -178,7 +203,15 @@ async function runTests() {
     },
     body: JSON.stringify({ projectId, name: 'API Key B', scopes: ['read'] })
   });
-  recordResult('API Key Generation', 'Non-owner request rejected', 403, res1B.status);
+  const err1B = await verifyErrorResponse(res1B, 'Access denied');
+  recordResult(
+    'API Key Generation', 
+    'Non-owner request rejected', 
+    403, 
+    res1B.status,
+    res1B.status === 403 && err1B.passed,
+    `Error JSON: ${err1B.actual}`
+  );
 
   // Scenario C: Authenticated request, project owner
   const res1C = await app.request('/api/public/keys', {
@@ -189,7 +222,13 @@ async function runTests() {
     },
     body: JSON.stringify({ projectId, name: 'API Key C', scopes: ['read'] })
   });
-  recordResult('API Key Generation', 'Project owner request allowed', 200, res1C.status);
+  recordResult(
+    'API Key Generation', 
+    'Project owner request allowed', 
+    200, 
+    res1C.status,
+    res1C.status === 200
+  );
 
   // Scenario D: Non-existent project
   const res1D = await app.request('/api/public/keys', {
@@ -200,7 +239,15 @@ async function runTests() {
     },
     body: JSON.stringify({ projectId: 'non-existent-project-id', name: 'API Key D', scopes: ['read'] })
   });
-  recordResult('API Key Generation', 'Non-existent project rejected', 404, res1D.status);
+  const err1D = await verifyErrorResponse(res1D, 'Not found');
+  recordResult(
+    'API Key Generation', 
+    'Non-existent project rejected', 
+    404, 
+    res1D.status,
+    res1D.status === 404 && err1D.passed,
+    `Error JSON: ${err1D.actual}`
+  );
 
 
   // ==========================================
@@ -210,11 +257,27 @@ async function runTests() {
 
   // Scenario A: Unauthenticated (no token)
   const res2A = await app.request(`/api/realtime/orchestration/${sessionId}`);
-  recordResult('SSE Realtime Streams', 'Unauthenticated request rejected', 401, res2A.status);
+  const err2A = await verifyErrorResponse(res2A, 'Authentication required');
+  recordResult(
+    'SSE Realtime Streams', 
+    'Unauthenticated request rejected', 
+    401, 
+    res2A.status,
+    res2A.status === 401 && err2A.passed,
+    `Error JSON: ${err2A.actual}`
+  );
 
   // Scenario B: Authenticated, but not session owner
   const res2B = await app.request(`/api/realtime/orchestration/${sessionId}?token=${nonOwnerId}`);
-  recordResult('SSE Realtime Streams', 'Non-owner request rejected', 403, res2B.status);
+  const err2B = await verifyErrorResponse(res2B, 'Access denied');
+  recordResult(
+    'SSE Realtime Streams', 
+    'Non-owner request rejected', 
+    403, 
+    res2B.status,
+    res2B.status === 403 && err2B.passed,
+    `Error JSON: ${err2B.actual}`
+  );
 
   // Scenario C: Authenticated, session owner (using query parameter token rewrite)
   const res2C = await app.request(`/api/realtime/orchestration/${sessionId}?token=${ownerId}`);
@@ -224,6 +287,7 @@ async function runTests() {
     'Session owner request allowed (SSE)',
     200,
     res2C.status,
+    res2C.status === 200 && !!isSSE,
     isSSE ? 'Content-Type: text/event-stream' : `Content-Type: ${res2C.headers.get('Content-Type')}`
   );
 
@@ -264,6 +328,7 @@ async function runTests() {
     'Ignore X-User-Id and query spoofing headers',
     200,
     spoofingStatus,
+    spoofingPassed,
     spoofingPassed 
       ? 'Successfully returned ONLY the authenticated user\'s workspaces'
       : `Returned workspaces: ${JSON.stringify(workspaces.map((w: any) => w.id))}`

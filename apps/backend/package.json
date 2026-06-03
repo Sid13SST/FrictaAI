@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test:security": "tsx src/tests/test-security-hardening.ts && tsx src/tests/test-authorization.ts"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.14",

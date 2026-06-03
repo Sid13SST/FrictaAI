@@ -2,6 +2,8 @@ import { prisma } from '@fricta/db';
 import type { Context, MiddlewareHandler } from 'hono';
 import { getCurrentUser } from '../middleware/authContext';
 import { memoryProjects, memorySessions } from '../utils/memoryDb';
+import { ApiErrors } from '../utils/errors';
+
 
 /**
  * Standardized ownership verification results:
@@ -187,10 +189,10 @@ export async function assertInvestigationOwnership(userId: string, threadId: str
 
 function handleOwnershipResult(c: Context, result: OwnershipResult) {
   if (result === 'NOT_FOUND') {
-    return c.json({ error: 'Resource not found' }, 404);
+    return ApiErrors.notFound(c);
   }
   if (result === 'NOT_OWNED') {
-    return c.json({ error: 'Access denied' }, 403);
+    return ApiErrors.forbidden(c);
   }
   return null;
 }
@@ -201,7 +203,7 @@ function handleOwnershipResult(c: Context, result: OwnershipResult) {
 export const requireProjectOwner = (paramName = 'id'): MiddlewareHandler => {
   return async (c, next) => {
     const user = getCurrentUser(c);
-    if (!user) return c.json({ error: 'Authentication required' }, 401);
+    if (!user) return ApiErrors.unauthorized(c);
 
     const projectId = c.req.param(paramName);
     if (!projectId) {
@@ -222,7 +224,7 @@ export const requireProjectOwner = (paramName = 'id'): MiddlewareHandler => {
 export const requireProjectOwnerQuery = (queryName = 'projectId'): MiddlewareHandler => {
   return async (c, next) => {
     const user = getCurrentUser(c);
-    if (!user) return c.json({ error: 'Authentication required' }, 401);
+    if (!user) return ApiErrors.unauthorized(c);
 
     const projectId = c.req.query(queryName);
     if (!projectId) {
@@ -243,7 +245,7 @@ export const requireProjectOwnerQuery = (queryName = 'projectId'): MiddlewareHan
 export const requireProjectOwnerBody = (bodyFieldName = 'projectId'): MiddlewareHandler => {
   return async (c, next) => {
     const user = getCurrentUser(c);
-    if (!user) return c.json({ error: 'Authentication required' }, 401);
+    if (!user) return ApiErrors.unauthorized(c);
 
     // Read body without consuming stream using cloned raw request
     const body = await c.req.raw.clone().json().catch(() => ({}));
@@ -266,7 +268,7 @@ export const requireProjectOwnerBody = (bodyFieldName = 'projectId'): Middleware
 export const requireWorkflowOwner = (paramName = 'id'): MiddlewareHandler => {
   return async (c, next) => {
     const user = getCurrentUser(c);
-    if (!user) return c.json({ error: 'Authentication required' }, 401);
+    if (!user) return ApiErrors.unauthorized(c);
 
     const sessionId = c.req.param(paramName);
     if (!sessionId) {
@@ -287,7 +289,7 @@ export const requireWorkflowOwner = (paramName = 'id'): MiddlewareHandler => {
 export const requireReportOwner = (paramName = 'id'): MiddlewareHandler => {
   return async (c, next) => {
     const user = getCurrentUser(c);
-    if (!user) return c.json({ error: 'Authentication required' }, 401);
+    if (!user) return ApiErrors.unauthorized(c);
 
     const reportId = c.req.param(paramName);
     if (!reportId) {
