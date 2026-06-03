@@ -5,6 +5,7 @@ import {
   Activity, ShieldAlert, CheckCircle, TrendingUp, Settings, Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiFetch, API_BASE } from '../../lib/api';
 
 interface VisualReplayViewerProps {
   sessionId: string;
@@ -40,7 +41,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
       setLoading(true);
       
       // 1. Fetch main replay data
-      const replayRes = await fetch(`http://127.0.0.1:3001/api/workflows/${sessionId}/visual-replay`);
+      const replayRes = await apiFetch(`/workflows/${sessionId}/visual-replay`);
       if (!replayRes.ok) throw new Error('Failed to load visual replay data');
       const replayData = await replayRes.json();
       
@@ -51,14 +52,14 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
       }
 
       // 2. Fetch visual findings
-      const findingsRes = await fetch(`http://127.0.0.1:3001/api/visual/findings/${sessionId}`);
+      const findingsRes = await apiFetch(`/visual/findings/${sessionId}`);
       if (findingsRes.ok) {
         const findingsData = await findingsRes.json();
         setVisualFindings(findingsData.findings || []);
       }
 
       // 3. Fetch visual scores
-      const scoresRes = await fetch(`http://127.0.0.1:3001/api/visual/scores/${sessionId}`);
+      const scoresRes = await apiFetch(`/visual/scores/${sessionId}`);
       if (scoresRes.ok) {
         const scoresData = await scoresRes.json();
         setVisualScores(scoresData.score || null);
@@ -145,7 +146,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
   const handleRunScan = async () => {
     try {
       setScanning(true);
-      const res = await fetch(`http://127.0.0.1:3001/api/visual/analyze/${sessionId}`, {
+      const res = await apiFetch(`/visual/analyze/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -156,13 +157,13 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
       if (!res.ok) throw new Error('Visual intelligence scan failed');
       
       // Refresh findings and scores after completion
-      const findingsRes = await fetch(`http://127.0.0.1:3001/api/visual/findings/${sessionId}`);
+      const findingsRes = await apiFetch(`/visual/findings/${sessionId}`);
       if (findingsRes.ok) {
         const findingsData = await findingsRes.json();
         setVisualFindings(findingsData.findings || []);
       }
 
-      const scoresRes = await fetch(`http://127.0.0.1:3001/api/visual/scores/${sessionId}`);
+      const scoresRes = await apiFetch(`/visual/scores/${sessionId}`);
       if (scoresRes.ok) {
         const scoresData = await scoresRes.json();
         setVisualScores(scoresData.score || null);
@@ -277,7 +278,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
           <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-slate-900 bg-slate-950 flex items-center justify-center shadow-inner group">
             {/* The actual screenshot image */}
             <img 
-              src={`http://127.0.0.1:3001/api/workflows/screenshots/raw/${currentScreenshot.filePath}`}
+              src={`${API_BASE}/workflows/screenshots/raw/${currentScreenshot.filePath}`}
               alt={`Replay step ${currentScreenshot.stepIndex}`}
               className="max-h-full max-w-full object-contain transition-all duration-300 select-none"
             />

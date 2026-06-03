@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../../lib/api';
 import { 
   Brain, User, AlertCircle, CheckCircle2, Gauge, 
   Clock, Shuffle, HelpCircle, TrendingUp, HelpCircle as HelpIcon, ArrowRight
@@ -48,7 +49,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
       setError(null);
 
       // Trigger analysis first to make sure findings are compiled
-      const analyzeRes = await fetch(`http://127.0.0.1:3001/api/ux/analyze/${sessionId}`, {
+      const analyzeRes = await apiFetch(`/ux/analyze/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -62,7 +63,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
       setCognitiveSignals(analyzeData.cognitiveSignals || []);
 
       // Fetch recommendations
-      const recRes = await fetch(`http://127.0.0.1:3001/api/ux/recommendations/${sessionId}`);
+      const recRes = await apiFetch(`/ux/recommendations/${sessionId}`);
       const recData = await recRes.json();
       setRecommendations(recData.recommendations || []);
     } catch (err: any) {
