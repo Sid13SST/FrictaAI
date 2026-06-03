@@ -6,8 +6,7 @@ import {
   PlusCircle, RefreshCw
 } from 'lucide-react';
 import { AgentOrchestrationConsole } from '../features/orchestrator/AgentOrchestrationConsole';
-
-const API_BASE = 'http://127.0.0.1:3001/api';
+import { apiFetch, API_BASE } from '../lib/api';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -210,7 +209,7 @@ export const WorkflowRunner = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`${API_BASE}/projects`);
+      const res = await apiFetch('/projects');
       const data = await res.json();
       const projectList = data.projects ?? [];
       setProjects(projectList);
@@ -225,7 +224,7 @@ export const WorkflowRunner = () => {
     e.preventDefault();
     if (!newProjectName || !newProjectUrl) return;
     try {
-      const res = await fetch(`${API_BASE}/projects`, {
+      const res = await apiFetch('/projects', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectName: newProjectName, websiteUrl: newProjectUrl }),
       });
@@ -251,9 +250,9 @@ export const WorkflowRunner = () => {
     pollingRef.current = setInterval(async () => {
       try {
         const [statusRes, thoughtsRes, actionsRes] = await Promise.all([
-          fetch(`${API_BASE}/agent/workflow/${id}/status`),
-          fetch(`${API_BASE}/agent/workflow/${id}/thoughts`),
-          fetch(`${API_BASE}/agent/workflow/${id}/actions`),
+          apiFetch(`/agent/workflow/${id}/status`),
+          apiFetch(`/agent/workflow/${id}/thoughts`),
+          apiFetch(`/agent/workflow/${id}/actions`),
         ]);
         const [statusData, thoughtsData, actionsData] = await Promise.all([
           statusRes.json(), thoughtsRes.json(), actionsRes.json(),
@@ -277,7 +276,7 @@ export const WorkflowRunner = () => {
     setLoading(true);
     setThoughts([]); setActions([]); setSessionStatus(null);
     try {
-      const res = await fetch(`${API_BASE}/agent/workflow/run`, {
+      const res = await apiFetch('/agent/workflow/run', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId: selectedProjectId, url: targetUrl, goal, persona, variables }),
       });
