@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, ChevronLeft, ChevronRight, Monitor } from 'lucide-react';
+import { apiFetch, API_BASE } from '../../lib/api';
 
 interface VisualFinding {
   id: string;
@@ -107,7 +108,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
 
   const imageUrl = currentFrame.screenshot.filePath.startsWith('http')
     ? currentFrame.screenshot.filePath
-    : `http://127.0.0.1:3001/api/workflows/screenshots/raw/${currentFrame.screenshot.filePath}`;
+    : `${API_BASE}/workflows/screenshots/raw/${currentFrame.screenshot.filePath}`;
 
   // Find visual findings bounding boxes to display
   const stepVisualFindings = visualFindings.filter(vf => vf.id === currentFrame.screenshot?.id || 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { MousePointer, Brain, Eye, Zap, AlertCircle } from 'lucide-react';
+import { apiFetch, API_BASE } from '../../lib/api';
 
 interface TimelineEvent {
   id: string;
@@ -70,7 +71,7 @@ export const CorrelatedTimeline: React.FC<CorrelatedTimelineProps> = ({
           const screenshotUrl = screenshot
             ? screenshot.filePath.startsWith('http')
               ? screenshot.filePath
-              : `http://127.0.0.1:3001/api/workflows/screenshots/raw/${screenshot.filePath}`
+              : `${API_BASE}/workflows/screenshots/raw/${screenshot.filePath}`
             : null;
 
           return (
