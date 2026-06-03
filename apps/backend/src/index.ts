@@ -8,6 +8,10 @@ import * as path from 'path';
 // Load root .env
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+// ─── Auth Middleware ──────────────────────────────────────────────────────────
+import { clerkMiddleware, requireAuth } from './middleware';
+
+// ─── Route Imports ────────────────────────────────────────────────────────────
 import { authRoutes } from './routes/auth';
 import { projectRoutes } from './routes/projects';
 import { workflowRoutes } from './routes/workflows';
@@ -57,80 +61,128 @@ import { prisma } from '@fricta/db';
 // Trigger reload for EADDRINUSE resolution
 const app = new Hono();
 
-// Middlewares
+// ─── Global Middlewares ───────────────────────────────────────────────────────
 app.use('*', logger());
 app.use('*', cors());
 
-// Routes
-app.route('/api/auth', authRoutes);
-app.route('/api/projects', projectRoutes);
-app.route('/api/workflows', workflowRoutes);
-app.route('/api/reports', reportRoutes);
+// Clerk JWT decoding — non-blocking. Decodes the JWT from the Authorization
+// header if present and attaches claims to the Hono context. Does NOT reject
+// requests without tokens. This allows public routes to work normally.
+app.use('*', clerkMiddleware());
+
+// ─── PUBLIC Routes (No Authentication Required) ──────────────────────────────
+// Health checks — infrastructure monitoring, no user data
 app.route('/api/health', healthRoutes);
-app.route('/api/personas', personaRoutes);
-app.route('/api/agent', agentRoutes);
-app.route('/api/visual', visualRoutes);
-app.route('/api/ux', uxRoutes);
-app.route('/api/orchestrator', orchestratorRoutes);
-app.route('/orchestrator', orchestratorRoutes);
-app.route('/api/agents', agentsRoutes);
-app.route('/agents', agentsRoutes);
-app.route('/api/memory', memoryRoutes);
-app.route('/api/console', consoleRoutes);
-app.route('/console', consoleRoutes);
-app.route('/realtime', realtimeRoutes);
-app.route('/api/realtime', realtimeRoutes);
-app.route('/api/runtime', runtimeRoutes);
-app.route('/api/historical', historicalRoutes);
-app.route('/historical', historicalRoutes);
-app.route('/api/workspace', workspaceRoutes);
-app.route('/api/simulation', simulationRoutes);
-app.route('/api/cognition', cognitionRoutes);
-app.route('/api/swarm', swarmRoutes);
-app.route('/swarm', swarmRoutes);
-app.route('/api/predictive', predictiveRoutes);
-app.route('/predictive', predictiveRoutes);
-app.route('/api/rbac', rbacCoreRoutes);
-app.route('/rbac', rbacCoreRoutes);
-app.route('/api/security', securityRoutes);
-app.route('/api/intelligence', intelligenceRoutes);
-app.route('/api/redesign', redesignRoutes);
-app.route('/redesign', redesignRoutes);
-app.route('/api/autonomous', autonomousRoutes);
-app.route('/autonomous', autonomousRoutes);
-app.route('/api/strategy', strategyRoutes);
-app.route('/strategy', strategyRoutes);
-app.route('/api/outcomes', outcomesRoutes);
-app.route('/outcomes', outcomesRoutes);
-app.route('/api/portfolio', portfolioRoutes);
-app.route('/portfolio', portfolioRoutes);
-app.route('/api/executive', executiveRoutes);
-app.route('/executive', executiveRoutes);
-app.route('/api/knowledge', knowledgeRoutes);
-app.route('/knowledge', knowledgeRoutes);
-app.route('/api/learning', learningRoutes);
-app.route('/learning', learningRoutes);
-app.route('/api/forecasts', forecastsRoutes);
-app.route('/forecasts', forecastsRoutes);
-app.route('/api/wisdom', wisdomRoutes);
-app.route('/wisdom', wisdomRoutes);
-app.route('/api/integrations', integrationRoutes);
-app.route('/integrations', integrationRoutes);
-app.route('/api/collaboration', collaborationRoutes);
-app.route('/collaboration', collaborationRoutes);
+app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
+
+// Auth endpoints — login/register (placeholder, logically public)
+app.route('/api/auth', authRoutes);
+
+// Public API — uses its own API key authentication via ApiKeyManager
 app.route('/api/public', publicRoutes);
 app.route('/public', publicRoutes);
-app.route('/api/telemetry', telemetryRoutes);
-app.route('/telemetry', telemetryRoutes);
-app.route('/api/live', liveIntelligenceRoutes);
-app.route('/api/optimization', optimizationRoutes);
-app.route('/optimization', optimizationRoutes);
-app.route('/api', engineeringRoutes);
-app.route('/', engineeringRoutes);
-app.route('/api', workspaceCoreRoutes);
-app.route('/', workspaceCoreRoutes);
 
-app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
+// Realtime/SSE — temporary exemption for Phase 1 Part 1
+// SSE connections cannot easily send Authorization headers.
+// Will be addressed in Phase 1 Part 2 with proper realtime auth strategy.
+app.route('/realtime', realtimeRoutes);
+app.route('/api/realtime', realtimeRoutes);
+
+// ─── PROTECTED Routes (Clerk Authentication Required) ─────────────────────────
+// All routes below this point require a valid Clerk JWT.
+// The requireAuth middleware checks that clerkMiddleware() produced a valid
+// userId. If not, it returns a standardized 401 JSON response.
+
+const protectedApi = new Hono();
+protectedApi.use('*', requireAuth);
+
+// Core platform
+protectedApi.route('/projects', projectRoutes);
+protectedApi.route('/workflows', workflowRoutes);
+protectedApi.route('/reports', reportRoutes);
+protectedApi.route('/personas', personaRoutes);
+protectedApi.route('/agent', agentRoutes);
+protectedApi.route('/visual', visualRoutes);
+protectedApi.route('/ux', uxRoutes);
+
+// Orchestration & agents
+protectedApi.route('/orchestrator', orchestratorRoutes);
+protectedApi.route('/agents', agentsRoutes);
+protectedApi.route('/memory', memoryRoutes);
+protectedApi.route('/console', consoleRoutes);
+protectedApi.route('/runtime', runtimeRoutes);
+
+// Intelligence systems
+protectedApi.route('/historical', historicalRoutes);
+protectedApi.route('/cognition', cognitionRoutes);
+protectedApi.route('/predictive', predictiveRoutes);
+protectedApi.route('/intelligence', intelligenceRoutes);
+protectedApi.route('/redesign', redesignRoutes);
+protectedApi.route('/autonomous', autonomousRoutes);
+protectedApi.route('/strategy', strategyRoutes);
+protectedApi.route('/outcomes', outcomesRoutes);
+protectedApi.route('/portfolio', portfolioRoutes);
+protectedApi.route('/executive', executiveRoutes);
+protectedApi.route('/knowledge', knowledgeRoutes);
+protectedApi.route('/learning', learningRoutes);
+protectedApi.route('/forecasts', forecastsRoutes);
+protectedApi.route('/wisdom', wisdomRoutes);
+protectedApi.route('/live', liveIntelligenceRoutes);
+protectedApi.route('/optimization', optimizationRoutes);
+
+// Enterprise systems
+protectedApi.route('/workspace', workspaceRoutes);
+protectedApi.route('/simulation', simulationRoutes);
+protectedApi.route('/swarm', swarmRoutes);
+protectedApi.route('/rbac', rbacCoreRoutes);
+protectedApi.route('/security', securityRoutes);
+
+// Integrations & collaboration
+protectedApi.route('/integrations', integrationRoutes);
+protectedApi.route('/collaboration', collaborationRoutes);
+protectedApi.route('/telemetry', telemetryRoutes);
+
+// Mount all protected routes under /api
+app.route('/api', protectedApi);
+
+// ─── Protected Non-Prefixed Routes ───────────────────────────────────────────
+// These duplicate mounts (without /api prefix) also need protection.
+const protectedRoot = new Hono();
+protectedRoot.use('*', requireAuth);
+
+protectedRoot.route('/orchestrator', orchestratorRoutes);
+protectedRoot.route('/agents', agentsRoutes);
+protectedRoot.route('/console', consoleRoutes);
+protectedRoot.route('/historical', historicalRoutes);
+protectedRoot.route('/swarm', swarmRoutes);
+protectedRoot.route('/predictive', predictiveRoutes);
+protectedRoot.route('/rbac', rbacCoreRoutes);
+protectedRoot.route('/redesign', redesignRoutes);
+protectedRoot.route('/autonomous', autonomousRoutes);
+protectedRoot.route('/strategy', strategyRoutes);
+protectedRoot.route('/outcomes', outcomesRoutes);
+protectedRoot.route('/portfolio', portfolioRoutes);
+protectedRoot.route('/executive', executiveRoutes);
+protectedRoot.route('/knowledge', knowledgeRoutes);
+protectedRoot.route('/learning', learningRoutes);
+protectedRoot.route('/forecasts', forecastsRoutes);
+protectedRoot.route('/wisdom', wisdomRoutes);
+protectedRoot.route('/integrations', integrationRoutes);
+protectedRoot.route('/collaboration', collaborationRoutes);
+protectedRoot.route('/telemetry', telemetryRoutes);
+protectedRoot.route('/optimization', optimizationRoutes);
+
+app.route('/', protectedRoot);
+
+// Engineering & workspace core routes (mounted at /api and / root)
+// These need special handling since they mount at the root path
+const protectedEngineering = new Hono();
+protectedEngineering.use('*', requireAuth);
+protectedEngineering.route('/', engineeringRoutes);
+protectedEngineering.route('/', workspaceCoreRoutes);
+
+app.route('/api', protectedEngineering);
+app.route('/', protectedEngineering);
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 console.log(`Server is running on port ${port}`);
