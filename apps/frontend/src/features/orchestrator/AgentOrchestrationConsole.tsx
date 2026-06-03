@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiFetch, API_BASE } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, 
@@ -262,10 +263,10 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
   const fetchSessionData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const backendBase = 'http://127.0.0.1:3001';
+      const backendBase = API_BASE.replace('/api', '');
       
       // Fetch session status and agents
-      const sessionRes = await fetch(`${backendBase}/api/orchestrator/${sessionId}`);
+      const sessionRes = await apiFetch(`/orchestrator/${sessionId}`);
       if (!sessionRes.ok) {
         if (sessionRes.status === 404) {
           setOrchestrationSession(null);
@@ -285,63 +286,63 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       setAgents(session.agentExecutions || []);
 
       // Fetch timeline logs
-      const timelineRes = await fetch(`${backendBase}/api/orchestrator/${sessionId}/timeline`);
+      const timelineRes = await apiFetch(`/orchestrator/${sessionId}/timeline`);
       if (timelineRes.ok) {
         const { timeline } = await timelineRes.json();
         setTimeline(timeline);
       }
 
       // Fetch specialized telemetry (findings, signals, traces)
-      const findingsRes = await fetch(`${backendBase}/api/agents/${sessionId}/findings`);
+      const findingsRes = await apiFetch(`/agents/${sessionId}/findings`);
       if (findingsRes.ok) {
         const data = await findingsRes.json();
         setFindings(data.findings || {});
       }
 
-      const reasoningRes = await fetch(`${backendBase}/api/agents/${sessionId}/reasoning`);
+      const reasoningRes = await apiFetch(`/agents/${sessionId}/reasoning`);
       if (reasoningRes.ok) {
         const data = await reasoningRes.json();
         setReasoning(data.traces || []);
       }
 
-      const signalsRes = await fetch(`${backendBase}/api/agents/${sessionId}/signals`);
+      const signalsRes = await apiFetch(`/agents/${sessionId}/signals`);
       if (signalsRes.ok) {
         const data = await signalsRes.json();
         setSignals(data.signals || []);
       }
 
       // Fetch shared memory data
-      const memoryRes = await fetch(`${backendBase}/api/memory/${sessionId}`);
+      const memoryRes = await apiFetch(`/memory/${sessionId}`);
       if (memoryRes.ok) {
         const { events } = await memoryRes.json();
         setMemoryEvents(events || []);
       }
 
-      const correlationsRes = await fetch(`${backendBase}/api/memory/${sessionId}/correlations`);
+      const correlationsRes = await apiFetch(`/memory/${sessionId}/correlations`);
       if (correlationsRes.ok) {
         const { correlations } = await correlationsRes.json();
         setMemoryCorrelations(correlations || []);
       }
 
-      const insightsRes = await fetch(`${backendBase}/api/memory/${sessionId}/insights`);
+      const insightsRes = await apiFetch(`/memory/${sessionId}/insights`);
       if (insightsRes.ok) {
         const { insights } = await insightsRes.json();
         setMemoryInsights(insights || []);
       }
 
-      const snapshotsRes = await fetch(`${backendBase}/api/memory/${sessionId}/snapshots`);
+      const snapshotsRes = await apiFetch(`/memory/${sessionId}/snapshots`);
       if (snapshotsRes.ok) {
         const { snapshots } = await snapshotsRes.json();
         setMemorySnapshots(snapshots || []);
       }
 
-      const memoryTimelineRes = await fetch(`${backendBase}/api/memory/${sessionId}/timeline`);
+      const memoryTimelineRes = await apiFetch(`/memory/${sessionId}/timeline`);
       if (memoryTimelineRes.ok) {
         const { timeline } = await memoryTimelineRes.json();
         setMemoryTimeline(timeline || []);
       }
 
-      const recommendationsRes = await fetch(`${backendBase}/api/memory/${sessionId}/recommendations`);
+      const recommendationsRes = await apiFetch(`/memory/${sessionId}/recommendations`);
       if (recommendationsRes.ok) {
         const { recommendations } = await recommendationsRes.json();
         setMemoryRecommendations(recommendations || []);
@@ -360,8 +361,8 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
     setStarting(true);
     setError(null);
     try {
-      const backendBase = 'http://127.0.0.1:3001';
-      const res = await fetch(`${backendBase}/api/orchestrator/start/${sessionId}`, {
+      const backendBase = API_BASE.replace('/api', '');
+      const res = await apiFetch(`/orchestrator/start/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

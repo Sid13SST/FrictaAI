@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { apiFetch, API_BASE } from '../../lib/api';
 import {
   Download, Clipboard, Brain, ShieldAlert, Sparkles,
   Code, FileText, Check, RefreshCw, ChevronRight,
@@ -96,13 +97,13 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     if (showLoading) setLoading(true);
     setError(null);
     try {
-      const base = 'http://127.0.0.1:3001';
+      const backendBase = API_BASE.replace('/api', '');
       const [repRes, execRes, expRes, timeRes, recRes] = await Promise.all([
-        fetch(`${base}/api/reports/${sessionId}`),
-        fetch(`${base}/api/reports/${sessionId}/executive`),
-        fetch(`${base}/api/reports/${sessionId}/export`),
-        fetch(`${base}/api/reports/${sessionId}/timeline`),
-        fetch(`${base}/api/ux/recommendations/${sessionId}`),
+        apiFetch(`/reports/${sessionId}`),
+        apiFetch(`/reports/${sessionId}/executive`),
+        apiFetch(`/reports/${sessionId}/export`),
+        apiFetch(`/reports/${sessionId}/timeline`),
+        apiFetch(`/ux/recommendations/${sessionId}`),
       ]);
       if (!repRes.ok) throw new Error('Report dataset not found');
       const [rep, exec, exp, time, rec] = await Promise.all([
@@ -125,7 +126,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const handleRunDiagnostics = async () => {
     setAnalyzing(true);
     try {
-      const res = await fetch(`http://127.0.0.1:3001/api/orchestrator/start/${sessionId}`, {
+      const res = await apiFetch(`/orchestrator/start/${sessionId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }
       });
       if (!res.ok) {
