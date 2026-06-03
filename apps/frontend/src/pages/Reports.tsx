@@ -6,7 +6,7 @@ import {
   RefreshCw, Layers
 } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:3001/api';
+import { apiFetch } from '../lib/api';
 
 // ─── Score Ring ───────────────────────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ export const Reports = () => {
 
   const fetchReports = () => {
     setLoading(true);
-    fetch(`${API_BASE}/reports`)
+    apiFetch('/reports')
       .then(r => r.json())
       .then(d => { setReports(d.reports || []); setLoading(false); })
       .catch(() => setLoading(false));
