@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import {
   Cpu,
   ArrowRight,
@@ -18,7 +19,6 @@ import {
   HelpCircle
 } from 'lucide-react';
 
-const baseApiUrl = 'http://127.0.0.1:3001/api';
 
 export function AutonomousDashboard() {
   const [projectId, setProjectId] = useState<string>('');
@@ -54,7 +54,7 @@ export function AutonomousDashboard() {
   const fetchInitialContext = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const projectList = data.projects || [];
       setProjects(projectList);
@@ -78,9 +78,9 @@ export function AutonomousDashboard() {
       const wQuery = wId ? `&workspaceId=${wId}` : '';
 
       const [runsRes, rulesRes, govRes] = await Promise.all([
-        fetch(`${baseApiUrl}/autonomous/optimization?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/autonomous/adaptation?projectId=${projId}${wQuery}`),
-        fetch(`${baseApiUrl}/autonomous/governance?workspaceId=${wId || ''}`)
+        apiFetch(`/autonomous/optimization?projectId=${projId}${wQuery}`),
+        apiFetch(`/autonomous/adaptation?projectId=${projId}${wQuery}`),
+        apiFetch(`/autonomous/governance?workspaceId=${wId || ''}`)
       ]);
 
       const runsData = await runsRes.json();
@@ -114,7 +114,7 @@ export function AutonomousDashboard() {
   const triggerProposal = async () => {
     try {
       setRunningProposal(true);
-      const res = await fetch(`${baseApiUrl}/autonomous/optimization/run`, {
+      const res = await apiFetch(`/autonomous/optimization/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -141,7 +141,7 @@ export function AutonomousDashboard() {
     if (!selectedRun) return;
     try {
       setSubmittingReview(true);
-      const res = await fetch(`${baseApiUrl}/autonomous/approval`, {
+      const res = await apiFetch(`/autonomous/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -168,7 +168,7 @@ export function AutonomousDashboard() {
     if (!selectedRun || !rollbackReason) return;
     try {
       setExecutingRollback(true);
-      const res = await fetch(`${baseApiUrl}/autonomous/rollback`, {
+      const res = await apiFetch(`/autonomous/rollback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
