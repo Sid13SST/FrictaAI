@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { prisma } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
+import { resolveUser } from '../middleware';
 import {
   OrganizationManager,
   PermissionManager,
@@ -26,24 +27,6 @@ const presenceManager = new PresenceManager(); // in-memory
 const activityManager = new ActivityLogManager(prisma);
 const governanceManager = new GovernanceManager(prisma);
 
-// Helper to get active user
-async function resolveUser(c: any): Promise<any> {
-  const userId = c.req.query('userId') || c.req.header('X-User-Id');
-  if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (user) return user;
-  }
-  
-  const email = c.req.query('email') || c.req.header('X-User-Email');
-  if (email) {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (user) return user;
-  }
-
-  // Fallback to first user in db
-  const defaultUser = await prisma.user.findFirst();
-  return defaultUser;
-}
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
