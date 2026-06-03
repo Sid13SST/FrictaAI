@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test:security": "tsx src/tests/test-security-hardening.ts && tsx src/tests/test-authorization.ts"
+    "test:security": "tsx src/tests/test-security-hardening.ts && tsx src/tests/test-authorization.ts",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.14",
@@ -53,7 +55,9 @@
   },
   "devDependencies": {
     "@fricta/config": "*",
+    "@vitest/coverage-v8": "^4.1.8",
     "tsx": "^4.10.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.8"
   }
 }
