@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { ApiKeyManager, RateLimiter } from '@fricta/developer-platform';
+import { requireProjectOwnerBody } from '../guards/ownership';
 
 export const publicRoutes = new Hono<{
   Variables: {
@@ -207,7 +208,7 @@ publicRoutes.post('/webhooks', async (c) => {
  * POST /api/public/keys
  * Plain endpoint to generate an API key (used by developer playground console).
  */
-publicRoutes.post('/keys', async (c) => {
+publicRoutes.post('/keys', requireProjectOwnerBody('projectId'), async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { projectId, name, scopes } = body;
 
