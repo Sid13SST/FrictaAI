@@ -6,15 +6,11 @@
  *
  * All functions extract from the Clerk-verified JWT claims attached
  * by clerkMiddleware() and validated by requireAuth.
- *
- * Prepares for Phase 1 Part 2 ownership checks by exposing:
- *   - request.user.id
- *   - request.user.email
- *   - request.user.sessionId
  */
 
 import { getAuth } from '@hono/clerk-auth';
 import type { Context } from 'hono';
+import { prisma } from '@fricta/db';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,7 +37,6 @@ export function getCurrentUser(c: Context): AuthenticatedUser | null {
     sessionId: auth.sessionId ?? undefined,
     // Note: Clerk JWTs do not include email by default.
     // To include email in JWT claims, configure Clerk Dashboard → Sessions → Customize session token.
-    // For now, email can be resolved via Clerk's Users API if needed.
     email: undefined,
   };
 }
@@ -70,4 +65,35 @@ export function requireUser(c: Context): AuthenticatedUser {
 export function getCurrentUserId(c: Context): string | null {
   const auth = getAuth(c);
   return auth?.userId ?? null;
+}
+
+// ─── resolveUser ──────────────────────────────────────────────────────────────
+/**
+ * Resolves the authenticated user's Prisma record from the local database
+ * using their Clerk verified identity, automatically bootstrapping a local record
+ * if they are logging in for the first time.
+ */
+export async function resolveUser(c: Context): Promise<any> {
+  const clerkUser = getCurrentUser(c);
+  if (!clerkUser) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: clerkUser.userId }
+  });
+
+  if (user) return user;
+
+  // Bootstrap a local user record to maintain foreign key integrity
+  try {
+    return await prisma.user.create({
+      data: {
+        id: clerkUser.userId,
+        email: clerkUser.email || `user-${clerkUser.userId}@fricta.ai`,
+        name: 'Clerk User',
+      }
+    });
+  } catch (error: any) {
+    console.error(`Failed to bootstrap local user ${clerkUser.userId}:`, error.message);
+    return null;
+  }
 }
