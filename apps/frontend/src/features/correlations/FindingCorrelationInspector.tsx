@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, ShieldAlert, Layers, Activity } from 'lucide-react';
+import { apiFetch, API_BASE } from '../../lib/api';
 
 interface Screenshot {
   id: string;
@@ -150,7 +151,7 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
             const hasVisualFinding = visualFindings.some(vf => vf.id === s.id);
             const imageUrl = s.filePath.startsWith('http')
               ? s.filePath
-              : `http://127.0.0.1:3001/api/workflows/screenshots/raw/${s.filePath}`;
+              : `${API_BASE}/workflows/screenshots/raw/${s.filePath}`;
 
             return (
               <div

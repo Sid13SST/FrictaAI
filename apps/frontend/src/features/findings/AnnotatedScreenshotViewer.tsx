@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch, API_BASE } from '../../lib/api';
 
 interface BoundingBox {
   x: number;
@@ -82,7 +83,7 @@ export const AnnotatedScreenshotViewer: React.FC<AnnotatedScreenshotViewerProps>
 
   const imageUrl = screenshot.filePath.startsWith('http')
     ? screenshot.filePath
-    : `http://127.0.0.1:3001/api/workflows/screenshots/raw/${screenshot.filePath}`;
+    : `${API_BASE}/workflows/screenshots/raw/${screenshot.filePath}`;
 
   return (
     <div className="relative border border-[#222226] rounded-xl overflow-hidden bg-[#0d0d0f] flex flex-col items-center">
