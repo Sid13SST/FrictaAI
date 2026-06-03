@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
+const baseApiUrl = API_BASE.replace('/api', '');
 import {
   Play,
   Settings,
@@ -201,7 +203,7 @@ export const SimulationConsole: React.FC = () => {
   const [predictiveTimelines, setPredictiveTimelines] = useState<any[]>([]);
   const [predictiveRunning, setPredictiveRunning] = useState<boolean>(false);
 
-  const baseApiUrl = 'http://127.0.0.1:3001/api';
+  
 
   useEffect(() => {
     fetchInitialData();
@@ -235,7 +237,7 @@ export const SimulationConsole: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       if (!res.ok) throw new Error('Failed to load projects');
       const data = await res.json();
       const list = data.projects || [];
@@ -254,12 +256,12 @@ export const SimulationConsole: React.FC = () => {
   const fetchProjectSimulationDetails = async (projectId: string) => {
     try {
       const [profilesRes, pathsRes, swarmSessionsRes, swarmPresetsRes, forecastsRes, regressionsRes] = await Promise.all([
-        fetch(`${baseApiUrl}/simulation/personas?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/simulation/exploration?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/swarm/sessions?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/swarm/personas`),
-        fetch(`${baseApiUrl}/predictive/forecasts?projectId=${projectId}`),
-        fetch(`${baseApiUrl}/predictive/regressions?projectId=${projectId}`)
+        apiFetch(`/simulation/personas?projectId=${projectId}`),
+        apiFetch(`/simulation/exploration?projectId=${projectId}`),
+        apiFetch(`/swarm/sessions?projectId=${projectId}`),
+        apiFetch(`/swarm/personas`),
+        apiFetch(`/predictive/forecasts?projectId=${projectId}`),
+        apiFetch(`/predictive/regressions?projectId=${projectId}`)
       ]);
 
       const profData = await profilesRes.json();
@@ -298,10 +300,10 @@ export const SimulationConsole: React.FC = () => {
   const fetchSwarmSessionDetails = async (swarmSessionId: string) => {
     try {
       const [divRes, survRes, anRes, heatRes] = await Promise.all([
-        fetch(`${baseApiUrl}/swarm/divergence?swarmSessionId=${swarmSessionId}`),
-        fetch(`${baseApiUrl}/swarm/survivability?swarmSessionId=${swarmSessionId}`),
-        fetch(`${baseApiUrl}/swarm/analytics?swarmSessionId=${swarmSessionId}`),
-        fetch(`${baseApiUrl}/swarm/heatmaps?swarmSessionId=${swarmSessionId}`)
+        apiFetch(`/swarm/divergence?swarmSessionId=${swarmSessionId}`),
+        apiFetch(`/swarm/survivability?swarmSessionId=${swarmSessionId}`),
+        apiFetch(`/swarm/analytics?swarmSessionId=${swarmSessionId}`),
+        apiFetch(`/swarm/heatmaps?swarmSessionId=${swarmSessionId}`)
       ]);
 
       const divData = await divRes.json();
@@ -322,10 +324,10 @@ export const SimulationConsole: React.FC = () => {
   const fetchPredictiveDetails = async (forecastId: string) => {
     try {
       const [riskRes, survRes, abandonRes, timelineRes] = await Promise.all([
-        fetch(`${baseApiUrl}/predictive/risk?workflowForecastId=${forecastId}`),
-        fetch(`${baseApiUrl}/predictive/survivability?workflowForecastId=${forecastId}`),
-        fetch(`${baseApiUrl}/predictive/abandonment?workflowForecastId=${forecastId}`),
-        fetch(`${baseApiUrl}/predictive/timelines?workflowForecastId=${forecastId}`)
+        apiFetch(`/predictive/risk?workflowForecastId=${forecastId}`),
+        apiFetch(`/predictive/survivability?workflowForecastId=${forecastId}`),
+        apiFetch(`/predictive/abandonment?workflowForecastId=${forecastId}`),
+        apiFetch(`/predictive/timelines?workflowForecastId=${forecastId}`)
       ]);
 
       const riskData = await riskRes.json();
@@ -350,7 +352,7 @@ export const SimulationConsole: React.FC = () => {
       setPredictiveRunning(true);
       setError(null);
       
-      const res = await fetch(`${baseApiUrl}/predictive/forecasting`, {
+      const res = await apiFetch(`/predictive/forecasting`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -422,15 +424,15 @@ export const SimulationConsole: React.FC = () => {
         decRes,
         timeRes
       ] = await Promise.all([
-        fetch(`${baseApiUrl}/simulation/behavior?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/simulation/replay?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/load?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/confidence?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/attention?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/expectation?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/abandonment?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/decisioning?sessionId=${sessionId}`),
-        fetch(`${baseApiUrl}/cognition/timeline?sessionId=${sessionId}`)
+        apiFetch(`/simulation/behavior?sessionId=${sessionId}`),
+        apiFetch(`/simulation/replay?sessionId=${sessionId}`),
+        apiFetch(`/cognition/load?sessionId=${sessionId}`),
+        apiFetch(`/cognition/confidence?sessionId=${sessionId}`),
+        apiFetch(`/cognition/attention?sessionId=${sessionId}`),
+        apiFetch(`/cognition/expectation?sessionId=${sessionId}`),
+        apiFetch(`/cognition/abandonment?sessionId=${sessionId}`),
+        apiFetch(`/cognition/decisioning?sessionId=${sessionId}`),
+        apiFetch(`/cognition/timeline?sessionId=${sessionId}`)
       ]);
 
       const behaviorData = await behaviorRes.json();
@@ -489,7 +491,7 @@ export const SimulationConsole: React.FC = () => {
       setDecisionComplexities([]);
       setCognitiveTimeline([]);
       
-      const res = await fetch(`${baseApiUrl}/simulation/start`, {
+      const res = await apiFetch(`/simulation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -657,7 +659,7 @@ export const SimulationConsole: React.FC = () => {
       setError(null);
       setLiveSwarmProgress([]);
 
-      const res = await fetch(`${baseApiUrl}/swarm/executions`, {
+      const res = await apiFetch(`/swarm/executions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
