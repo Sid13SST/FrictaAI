@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch, API_BASE } from '../lib/api';
 import {
   Key,
   Terminal,
@@ -20,7 +21,6 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-const baseApiUrl = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 interface Project {
   id: string;
@@ -97,7 +97,7 @@ export const DeveloperPortal = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${baseApiUrl}/projects`);
+      const res = await apiFetch(`/projects`);
       const data = await res.json();
       const list = data.projects || [];
       setProjects(list);
@@ -116,9 +116,9 @@ export const DeveloperPortal = () => {
       setLoading(true);
       // Retrieve keys & webhooks from our Hono endpoints
       const [keysRes, webhooksRes] = await Promise.all([
-        fetch(`${baseApiUrl}/collaboration/replays?projectId=${projId}`), // Shared sessions act as simple keys or we query DB
+        apiFetch(`/collaboration/replays?projectId=${projId}`), // Shared sessions act as simple keys or we query DB
         // Fetch keys from backend public router
-        fetch(`${baseApiUrl}/public/keys?projectId=${projId}`).catch(() => null)
+        apiFetch(`/public/keys?projectId=${projId}`).catch(() => null)
       ]);
 
       // If keys API is available, we load them
@@ -177,7 +177,7 @@ export const DeveloperPortal = () => {
     if (!newKeyName.trim() || !activeProjectId) return;
 
     try {
-      const res = await fetch(`${baseApiUrl}/public/keys`, {
+      const res = await apiFetch(`/public/keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -214,7 +214,7 @@ export const DeveloperPortal = () => {
     const keyToUse = playgroundKey || 'fricta_live_mock_token_key_123';
 
     try {
-      const res = await fetch(`${baseApiUrl}/public/webhooks`, {
+      const res = await apiFetch(`/public/webhooks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ export const DeveloperPortal = () => {
     setPlaygroundResponse('');
 
     try {
-      const res = await fetch(`${baseApiUrl}/public${selectedEndpoint}`, {
+      const res = await apiFetch(`/public${selectedEndpoint}`, {
         method: 'GET',
         headers: {
           'x-api-key': playgroundKey
