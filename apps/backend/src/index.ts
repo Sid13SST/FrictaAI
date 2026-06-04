@@ -219,3 +219,34 @@ const server = serve({
   port
 });
 
+// Graceful Shutdown Handlers
+async function gracefulShutdown(signal: string) {
+  console.log(`\n[Graceful Shutdown] Received ${signal}. Starting shutdown sequence...`);
+
+  // Stop accepting new connections
+  server.close();
+  console.log('[Graceful Shutdown] HTTP Server closed.');
+
+  // Disconnect Redis
+  try {
+    await connection.quit();
+    console.log('[Graceful Shutdown] Redis connection closed.');
+  } catch (err) {
+    console.error('[Graceful Shutdown] Error closing Redis connection:', err);
+  }
+
+  // Disconnect Prisma
+  try {
+    await prisma.$disconnect();
+    console.log('[Graceful Shutdown] Prisma connection closed.');
+  } catch (err) {
+    console.error('[Graceful Shutdown] Error disconnecting Prisma:', err);
+  }
+
+  console.log('[Graceful Shutdown] Shutdown sequence complete. Exiting.');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
