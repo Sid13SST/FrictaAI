@@ -321,6 +321,45 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
     });
 
     it('should handle undefined parameter names in guards gracefully', async () => {
+      const { requireProjectOwner, requireWorkflowOwner, requireReportOwner } = await import('../../guards/ownership');
+      const guardProj = requireProjectOwner('non_existent_param');
+      const guardFlow = requireWorkflowOwner('non_existent_param');
+      const guardRep = requireReportOwner('non_existent_param');
+      
+      const appWithMissingParam = new Hono();
+      appWithMissingParam.get('/test/proj/:id', guardProj, (c) => c.json({ success: true }));
+      appWithMissingParam.get('/test/flow/:id', guardFlow, (c) => c.json({ success: true }));
+      appWithMissingParam.get('/test/rep/:id', guardRep, (c) => c.json({ success: true }));
+      
+      mockAuth.userId = 'user_123';
+      expect((await appWithMissingParam.request('/test/proj/project_123')).status).toBe(400);
+      expect((await appWithMissingParam.request('/test/flow/session_123')).status).toBe(400);
+      expect((await appWithMissingParam.request('/test/rep/report_123')).status).toBe(400);
+    });
+
+    it('should fallback to in-memory project and session check when DB has no record', async () => {
+      const { verifyWorkflowOwnership } = await import('../../guards/ownership');
+      const { memoryProjects, memorySessions } = await import('../../utils/memoryDb');
+
+      // Add project and session to memory store
+      memoryProjects.push({ id: 'mem-p1', projectName: 'Mem Proj', userId: null });
+      memorySessions.set('mem-s1', { id: 'mem-s1', projectId: 'mem-p1' });
+
+      // DB queries return null
+      mockPrisma.workflowSession.findUnique.mockResolvedValue(null);
+      mockPrisma.project.findUnique.mockResolvedValue(null);
+
+      // Trigger traversal
+      const result = await verifyWorkflowOwnership('user_123', 'mem-s1');
+      expect(result).toBe('OWNED'); // bootstrapped to user_123 on first check
+
+      // Check second user gets NOT_OWNED
+      const resultOther = await verifyWorkflowOwnership('user_different', 'mem-s1');
+      expect(resultOther).toBe('NOT_OWNED');
+    });
+  });
+
+  describe('authContext Helper Functions', () => {
     });
   });
 });
