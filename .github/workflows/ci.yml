@@ -68,3 +68,12 @@ jobs:
       - name: Database Schema Setup (Prisma Migrate Deploy)
         run: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
 
+      - name: Run Unit Tests with Coverage
+        run: npm run test:coverage --workspace=@fricta/backend
+
+      - name: Run Integration & Resilience Tests
+        run: npm run test:integration --workspace=@fricta/backend
+
+      - name: Security and Vulnerability Audit
+        run: npm audit --audit-level=high
+
