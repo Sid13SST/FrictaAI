@@ -62,9 +62,37 @@ import { publicRoutes } from './routes/public';
 import { telemetryRoutes } from './routes/telemetry';
 import { liveIntelligenceRoutes } from './routes/liveIntelligence';
 import { optimizationRoutes } from './routes/optimization';
+import { observabilityRoutes } from './routes/observability';
 import { startWorker, connection } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
+import { addAlert } from './utils/alerting';
+
+// Global error handlers for Uncaught Exceptions and Unhandled Rejections
+process.on('uncaughtException', (err) => {
+  console.error(JSON.stringify({
+    level: 'FATAL',
+    timestamp: new Date().toISOString(),
+    message: 'Uncaught Exception',
+    error: err.message,
+    stack: err.stack,
+    classification: 'SYSTEM_CRASH'
+  }));
+  addAlert('Uncaught Exception', 'CRITICAL', err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(JSON.stringify({
+    level: 'FATAL',
+    timestamp: new Date().toISOString(),
+    message: 'Unhandled Rejection',
+    reason: String(reason),
+    classification: 'SYSTEM_CRASH'
+  }));
+  addAlert('Unhandled Rejection', 'CRITICAL', String(reason));
+  process.exit(1);
+});
 
 // Trigger reload for EADDRINUSE resolution
 const app = new Hono();
@@ -161,6 +189,9 @@ protectedApi.route('/security', securityRoutes);
 protectedApi.route('/integrations', integrationRoutes);
 protectedApi.route('/collaboration', collaborationRoutes);
 protectedApi.route('/telemetry', telemetryRoutes);
+
+// Mount observability routes (protected by Clerk but useful for internal tools)
+protectedApi.route('/observability', observabilityRoutes);
 
 // Mount all protected routes under /api
 app.route('/api', protectedApi);
