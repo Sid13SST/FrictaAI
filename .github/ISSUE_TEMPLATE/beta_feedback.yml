@@ -1,0 +1,36 @@
+name: Beta Feedback
+description: General feedback on the Fricta Beta experience
+title: "[FEEDBACK] "
+labels: ["feedback", "beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome to the Fricta Beta! We want to hear your thoughts—good, bad, or confusing.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your Feedback
+      description: What did you love? What was confusing? What felt missing?
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feedback Category
+      description: Which area of the platform is this about?
+      options:
+        - UX/UI
+        - Audit Accuracy
+        - Onboarding
+        - Performance
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: suggestions
+    attributes:
+      label: Suggestions for Improvement
+      description: How could we make this better?
+    validations:
+      required: false

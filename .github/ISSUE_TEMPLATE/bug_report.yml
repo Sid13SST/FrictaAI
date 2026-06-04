@@ -1,0 +1,47 @@
+name: Bug Report
+description: Create a report to help us improve Fricta's stability
+title: "[BUG] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! Please check [Known Issues](../../docs/known_issues.md) before submitting.
+  - type: input
+    id: workflow_id
+    attributes:
+      label: Workflow ID or Request ID (Optional)
+      description: If this happened during a specific audit or request, paste the ID here.
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: What happened? What did you expect to happen?
+      placeholder: Tell us what went wrong...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      value: |
+        1. Go to '...'
+        2. Click on '....'
+        3. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How badly does this affect your workflow?
+      options:
+        - Critical (Cannot proceed)
+        - High (Major feature broken, workaround possible)
+        - Medium (Minor feature broken, annoying)
+        - Low (Cosmetic issue)
+    validations:
+      required: true
