@@ -3,4 +3,6 @@
  */
 export { clerkMiddleware, requireAuth, getAuth } from './clerkAuth';
 export { getCurrentUser, requireUser, getCurrentUserId, resolveUser } from './authContext';
+export { customLogger } from './customLogger';
 export type { AuthenticatedUser } from './authContext';
+
