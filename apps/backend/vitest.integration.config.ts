@@ -6,7 +6,6 @@ export default defineConfig({
     globals: true,
     fileParallelism: false,
     maxWorkers: 1,
-    minWorkers: 1,
     include: ['src/tests/integration/**/*.test.ts'],
     env: {
       DATABASE_URL: 'postgresql://fricta:fricta_dev@localhost:5432/fricta_test?schema=public',
