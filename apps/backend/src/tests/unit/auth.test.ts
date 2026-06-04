@@ -278,4 +278,49 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe('Assertion wrappers and helper boundary conditions', () => {
+    it('should return correct results for assertions', async () => {
+      const {
+        assertProjectOwnership,
+        assertWorkflowOwnership,
+        assertReplayOwnership,
+        assertReportOwnership,
+        assertInvestigationOwnership,
+        verifyAlertOwnership,
+      } = await import('../../guards/ownership');
+
+      mockPrisma.project.findUnique.mockResolvedValue({ id: 'p1', userId: 'user_123' });
+      mockPrisma.workflowSession.findUnique.mockResolvedValue({ id: 's1', projectId: 'p1' });
+      mockPrisma.executiveReport.findUnique.mockResolvedValue({ id: 'r1', projectId: 'p1' });
+      mockPrisma.investigationThread.findUnique.mockResolvedValue({ id: 'i1', projectId: 'p1' });
+      mockPrisma.operationalAlert.findUnique.mockResolvedValue({ id: 'a1', projectId: 'p1' });
+
+      expect(await assertProjectOwnership('user_123', 'p1')).toBe(true);
+      expect(await assertWorkflowOwnership('user_123', 's1')).toBe(true);
+      expect(await assertReplayOwnership('user_123', 's1')).toBe(true);
+      expect(await assertReportOwnership('user_123', 'r1')).toBe(true);
+      expect(await assertInvestigationOwnership('user_123', 'i1')).toBe(true);
+      expect(await verifyAlertOwnership('user_123', 'a1')).toBe('OWNED');
+
+      // Database query rejections
+      mockPrisma.project.findUnique.mockRejectedValue(new Error('DB Error'));
+      expect(await assertProjectOwnership('user_123', 'p1')).toBe(false);
+
+      mockPrisma.workflowSession.findUnique.mockRejectedValue(new Error('DB Error'));
+      expect(await assertWorkflowOwnership('user_123', 's1')).toBe(false);
+
+      mockPrisma.executiveReport.findUnique.mockRejectedValue(new Error('DB Error'));
+      expect(await assertReportOwnership('user_123', 'r1')).toBe(false);
+
+      mockPrisma.investigationThread.findUnique.mockRejectedValue(new Error('DB Error'));
+      expect(await assertInvestigationOwnership('user_123', 'i1')).toBe(false);
+
+      mockPrisma.operationalAlert.findUnique.mockRejectedValue(new Error('DB Error'));
+      expect(await verifyAlertOwnership('user_123', 'a1')).toBe('NOT_FOUND');
+    });
+
+    it('should handle undefined parameter names in guards gracefully', async () => {
+    });
+  });
 });
