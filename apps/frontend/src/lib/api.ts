@@ -26,7 +26,7 @@
 
 // ─── API Base URL ─────────────────────────────────────────────────────────────
 // Centralized base URL — all pages should import this instead of hardcoding.
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:3001/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 // ─── Clerk Token Accessor ─────────────────────────────────────────────────────
 // We use Clerk's global __clerk__ instance to get the session token.
