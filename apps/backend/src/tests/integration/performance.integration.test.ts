@@ -6,7 +6,7 @@ import { clerkMiddleware } from '@hono/clerk-auth';
 import { createServer } from 'http';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { workflowQueue } from '../../../../../packages/agent/src/queue';
+import { workflowQueue } from '@fricta/agent';
 
 // Mock Clerk auth statically to intercept Bearer token and bypass Clerk network calls
 vi.mock('@hono/clerk-auth', () => {

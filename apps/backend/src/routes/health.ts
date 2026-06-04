@@ -1,11 +1,10 @@
 import { Hono } from 'hono';
-import { PrismaClient } from '@prisma/client';
-import { connection } from '@fricta/agent/src/queue/connection';
+import { prisma } from '@fricta/db';
+import { connection } from '@fricta/agent';
 // Assuming we have some browser health check in agent, or we just try to launch one
 import { chromium } from 'playwright-core';
 
 const health = new Hono();
-const prisma = new PrismaClient();
 
 health.get('/', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });

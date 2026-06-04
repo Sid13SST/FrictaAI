@@ -16,3 +16,5 @@ export * from './core/runner';
 
 export * from './scheduler';
 export * from './workers';
+export * from './queue';
+export * from './queue/connection';
