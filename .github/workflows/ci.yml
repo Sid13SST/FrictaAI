@@ -65,3 +65,6 @@ jobs:
       - name: Lint Gate
         run: npm run lint
 
+      - name: Database Schema Setup (Prisma Migrate Deploy)
+        run: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
+
