@@ -46,3 +46,16 @@ jobs:
       CLERK_SECRET_KEY: sk_test_dummy_clerk_secret_key_for_tests
       CLERK_PUBLISHABLE_KEY: pk_test_dummy_clerk_publishable_key_for_tests
 
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
