@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Dashboard } from './pages/Dashboard';
 import { WorkflowRunner } from './pages/WorkflowRunner';
+import { WorkflowMonitor } from './pages/WorkflowMonitor';
 import { Reports } from './pages/Reports';
 import { Personas } from './pages/Personas';
 import { Settings } from './pages/Settings';
@@ -72,6 +73,7 @@ function App() {
         }>
           <Route index element={<Dashboard />} />
           <Route path="workflow" element={<WorkflowRunner />} />
+          <Route path="monitor/:id" element={<WorkflowMonitor />} />
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:id" element={<ReportDetails />} />
           <Route path="historical" element={<HistoricalDashboard />} />
