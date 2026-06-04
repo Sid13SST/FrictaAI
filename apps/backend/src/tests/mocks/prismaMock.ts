@@ -96,6 +96,14 @@ export const mockPrisma = {
     findMany: vi.fn(),
     create: vi.fn(),
   },
+  investigationThread: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
+  operationalAlert: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
   $queryRaw: vi.fn(),
   $transaction: vi.fn().mockImplementation((cb) => {
     if (typeof cb === 'function') {
