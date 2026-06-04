@@ -283,14 +283,27 @@ agentRoutes.post('/workflow/run', async (c) => {
 
   // ── Enqueue Job to BullMQ ────────────────────────────────────────────────
 
-  await scheduleWorkflow({
-    sessionId,
-    projectId,
-    goal,
-    persona: resolvedPersona,
-    model: modelName,
-    url: normalizedUrl,
-  });
+  try {
+    await scheduleWorkflow({
+      sessionId,
+      projectId,
+      goal,
+      persona: resolvedPersona,
+      model: modelName,
+      url: normalizedUrl,
+    });
+  } catch (err: any) {
+    console.error(`[AgentRoutes] Failed to schedule workflow: ${err.message}`);
+    try {
+      await prisma.workflowSession.update({
+        where: { id: sessionId },
+        data: { status: 'FAILED', endedAt: new Date() }
+      });
+    } catch (dbErr: any) {
+      console.error(`[AgentRoutes] Failed to mark session as FAILED: ${dbErr.message}`);
+    }
+    return c.json({ error: `Failed to schedule workflow: ${err.message}` }, 500);
+  }
 
   return c.json({
     message: 'Autonomous workflow queued successfully',

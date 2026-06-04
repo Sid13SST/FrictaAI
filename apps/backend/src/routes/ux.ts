@@ -64,6 +64,14 @@ uxRoutes.post('/analyze/:sessionId', async (c) => {
     return c.json(result);
   } catch (error: any) {
     console.error(`[Backend] UX analysis failed for session ${sessionId}:`, error.message);
+    try {
+      await prisma.workflowSession.update({
+        where: { id: sessionId },
+        data: { status: 'FAILED' }
+      });
+    } catch (dbErr: any) {
+      console.error(`[Backend] Failed to transition session to FAILED status:`, dbErr.message);
+    }
     return c.json({ error: error.message }, 500);
   }
 });

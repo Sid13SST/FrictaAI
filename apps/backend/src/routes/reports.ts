@@ -296,9 +296,22 @@ reportRoutes.get('/', async (c) => {
 // ─── POST /:sessionId/generate - Generate UX report (Session ownership required) 
 reportRoutes.post('/:sessionId/generate', requireWorkflowOwner('sessionId'), async (c) => {
   const sessionId = c.req.param('sessionId');
-  const reportData = await generateReportForSession(sessionId);
-  if (!reportData) return c.json({ error: 'Session not found' }, 404);
-  return c.json({ success: true, reportData });
+  try {
+    const reportData = await generateReportForSession(sessionId);
+    if (!reportData) return c.json({ error: 'Session not found' }, 404);
+    return c.json({ success: true, reportData });
+  } catch (error: any) {
+    console.error(`[Backend] Report generation failed for session ${sessionId}:`, error.message);
+    try {
+      await prisma.workflowSession.update({
+        where: { id: sessionId },
+        data: { status: 'FAILED' }
+      });
+    } catch (dbErr: any) {
+      console.error(`[Backend] Failed to transition session to FAILED status after report failure:`, dbErr.message);
+    }
+    return c.json({ error: error.message }, 500);
+  }
 });
 
 // ─── GET /:id - Fetch unified report payload (Session ownership required) ──────
