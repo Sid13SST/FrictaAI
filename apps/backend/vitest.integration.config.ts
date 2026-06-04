@@ -15,5 +15,10 @@ export default defineConfig({
     },
     testTimeout: 30000,
     hookTimeout: 30000,
+    reporters: ['default', 'junit', 'json'],
+    outputFile: {
+      junit: 'test-results/integration-junit.xml',
+      json: 'test-results/integration-results.json',
+    },
   },
 });
