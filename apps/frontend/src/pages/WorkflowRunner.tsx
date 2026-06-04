@@ -1,730 +1,600 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Play, Square, Loader2, Brain, Zap, CheckCircle, XCircle,
-  Clock, ChevronRight, Eye, List, AlertTriangle, Activity,
-  PlusCircle, RefreshCw
+  Globe, Plus, ChevronRight, ChevronDown, ChevronUp,
+  Loader2, ArrowRight, Zap, CheckCircle, AlertCircle, X,
 } from 'lucide-react';
-import { AgentOrchestrationConsole } from '../features/orchestrator/AgentOrchestrationConsole';
-import { apiFetch, API_BASE } from '../lib/api';
+import { useProjects } from '../hooks/api/useProjects';
+import { useCreateProject } from '../hooks/api/useCreateProject';
+import { useSubmitWorkflow } from '../hooks/api/useSubmitWorkflow';
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Thought { id: string; thought: string; stepNumber: number; timestamp: string; }
-interface Action { id: string; action: string; target: string; value?: string; status: string; stepNumber: number; errorMessage?: string; timestamp: string; }
-interface SessionStatus { id: string; status: string; stepCount: number; model: string; goal: string; persona: string; startedAt: string; endedAt?: string; }
+interface Project {
+  id: string;
+  projectName: string;
+  websiteUrl: string;
+}
 
-// ─── Action color map (Fricta palette) ──────────────────────────────────────
+// ─── URL helpers ──────────────────────────────────────────────────────────────
 
-const ACTION_COLORS: Record<string, string> = {
-  click:    'text-[#6366f1] bg-[#6366f1]/8 border-[#6366f1]/20',
-  type:     'text-sky-400 bg-sky-500/8 border-sky-500/20',
-  scroll:   'text-amber-400 bg-amber-500/8 border-amber-500/20',
-  navigate: 'text-violet-400 bg-violet-500/8 border-violet-500/20',
-  wait:     'text-zinc-400 bg-zinc-500/8 border-zinc-500/20',
-  goBack:   'text-orange-400 bg-orange-500/8 border-orange-500/20',
+function isValidUrl(raw: string): boolean {
+  const s = raw.trim();
+  return /^https?:\/\/.+/.test(s) || /^localhost(:\d+)?(\/.*)?$/.test(s);
+}
+
+function normalizeUrl(raw: string): string {
+  let s = raw.trim().replace(/\/+$/, ''); // strip trailing slashes
+  if (!/^https?:\/\//i.test(s)) {
+    s = /^localhost/i.test(s) ? `http://${s}` : `https://${s}`;
+  }
+  return s;
+}
+
+// ─── Design atoms ─────────────────────────────────────────────────────────────
+
+const inputBase =
+  'w-full text-sm text-white placeholder-zinc-600 px-3.5 py-2.5 rounded-xl transition-all focus:outline-none';
+const inputStyle = {
+  background: 'rgba(9,9,11,0.8)',
+  border: '1px solid rgba(255,255,255,0.08)',
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  idle:          { label: 'Idle',          color: 'text-zinc-400',    icon: <Clock className="w-4 h-4" /> },
-  RUNNING:       { label: 'Running',       color: 'text-[#6366f1]',   icon: <Activity className="w-4 h-4 animate-pulse" /> },
-  COMPLETED:     { label: 'Completed',     color: 'text-[#6366f1]',   icon: <CheckCircle className="w-4 h-4" /> },
-  FAILED:        { label: 'Failed',        color: 'text-rose-400',    icon: <XCircle className="w-4 h-4" /> },
-  TIMEOUT:       { label: 'Timeout',       color: 'text-orange-400',  icon: <AlertTriangle className="w-4 h-4" /> },
-  LOOP_DETECTED: { label: 'Loop Detected', color: 'text-yellow-400',  icon: <AlertTriangle className="w-4 h-4" /> },
-};
+const FieldLabel = ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
+  <label className="block text-[11px] font-bold uppercase tracking-widest font-mono mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+    {children}{required && <span className="text-rose-500 ml-0.5">*</span>}
+  </label>
+);
 
-// ─── Input component ───────────────────────────────────────────────────────────
+const FieldError = ({ msg }: { msg?: string }) =>
+  msg ? (
+    <p className="flex items-center gap-1 text-xs text-rose-400 mt-1.5">
+      <AlertCircle className="w-3 h-3 flex-shrink-0" /> {msg}
+    </p>
+  ) : null;
 
-const FieldInput = ({
-  label, value, onChange, type = 'text', placeholder, rows
-}: {
-  label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; rows?: number;
-}) => (
-  <div className="flex flex-col gap-1.5">
-    <label
-      className="text-[9px] font-black uppercase tracking-widest font-mono"
-      style={{ color: 'rgba(255,255,255,0.35)' }}
-    >
-      {label}
-    </label>
-    {rows ? (
-      <textarea
-        rows={rows}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full text-sm text-white placeholder-zinc-600 resize-none px-3 py-2 rounded-lg font-mono transition-all focus:outline-none"
-        style={{
-          background: 'rgba(9,9,11,0.8)',
-          border: '1px solid rgba(255,255,255,0.08)',
-        }}
-        onFocus={e => (e.target.style.borderColor = 'rgba(99, 102, 241,0.4)')}
-        onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
-      />
-    ) : (
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full text-sm text-white placeholder-zinc-600 px-3 py-2 rounded-lg transition-all focus:outline-none"
-        style={{
-          background: 'rgba(9,9,11,0.8)',
-          border: '1px solid rgba(255,255,255,0.08)',
-        }}
-        onFocus={e => (e.target.style.borderColor = 'rgba(99, 102, 241,0.4)')}
-        onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
-      />
-    )}
+// ─── Step indicator ───────────────────────────────────────────────────────────
+
+const StepBar = ({ step }: { step: 1 | 2 }) => (
+  <div className="flex items-center gap-3 mb-8">
+    {[1, 2].map((n) => {
+      const done = n < step;
+      const active = n === step;
+      return (
+        <React.Fragment key={n}>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+              style={{
+                background: done ? '#6366f1' : active ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.05)',
+                border: done || active ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                color: done || active ? (done ? '#fff' : '#818cf8') : 'rgba(255,255,255,0.3)',
+              }}
+            >
+              {done ? <CheckCircle className="w-3.5 h-3.5" /> : n}
+            </div>
+            <span
+              className="text-xs font-semibold"
+              style={{ color: active ? '#fff' : done ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.3)' }}
+            >
+              {n === 1 ? 'Select Project' : 'Configure Audit'}
+            </span>
+          </div>
+          {n < 2 && (
+            <div
+              className="flex-1 h-px transition-all duration-500"
+              style={{ background: step > 1 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.06)' }}
+            />
+          )}
+        </React.Fragment>
+      );
+    })}
   </div>
 );
 
-const FieldSelect = ({
-  label, value, onChange, children
-}: {
-  label: string; value: string; onChange: (v: string) => void;
-  children: React.ReactNode;
-}) => (
-  <div className="flex flex-col gap-1.5">
-    <label
-      className="text-[9px] font-black uppercase tracking-widest font-mono"
-      style={{ color: 'rgba(255,255,255,0.35)' }}
-    >
-      {label}
-    </label>
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="w-full text-sm text-white px-3 py-2 rounded-lg transition-all focus:outline-none"
-      style={{
-        background: 'rgba(9,9,11,0.9)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        color: '#fafafa',
-      }}
-    >
-      {children}
-    </select>
-  </div>
-);
+// ─── Project radio card ───────────────────────────────────────────────────────
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
-
-const ThoughtBubble = ({ thought, step }: { thought: Thought; step: number }) => (
-  <div className="flex gap-3 items-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-    <div
-      className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-      style={{
-        background: 'rgba(99, 102, 241,0.1)',
-        border: '1px solid rgba(99, 102, 241,0.25)',
-      }}
-    >
-      <Brain className="w-3.5 h-3.5" style={{ color: '#6366f1' }} />
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2 mb-1">
-        <span
-          className="text-[10px] font-bold uppercase tracking-wider font-mono"
-          style={{ color: '#6366f1' }}
-        >
-          Step {step}
-        </span>
-        <span className="text-[10px] text-white/30">{new Date(thought.timestamp).toLocaleTimeString()}</span>
+const ProjectCard = ({
+  project, selected, onClick,
+}: { project: Project; selected: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left p-4 rounded-2xl transition-all duration-200 relative group"
+    style={{
+      background: selected ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
+      border: selected ? '1px solid rgba(99,102,241,0.45)' : '1px solid rgba(255,255,255,0.06)',
+      boxShadow: selected ? '0 0 24px rgba(99,102,241,0.12)' : 'none',
+    }}
+  >
+    {selected && (
+      <div className="absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#6366f1' }}>
+        <CheckCircle className="w-3 h-3 text-white" />
       </div>
-      <p className="text-sm text-white/80 leading-relaxed">{thought.thought}</p>
+    )}
+    <div
+      className="w-8 h-8 rounded-xl flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105"
+      style={{
+        background: selected ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
+        border: selected ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.06)',
+      }}
+    >
+      <Globe className="w-4 h-4" style={{ color: selected ? '#818cf8' : 'rgba(255,255,255,0.4)' }} />
     </div>
-  </div>
+    <p className="text-sm font-bold text-white leading-tight truncate pr-6">{project.projectName}</p>
+    <p className="text-xs mt-1 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{project.websiteUrl}</p>
+  </button>
 );
 
-const ActionChip = ({ action }: { action: Action }) => {
-  const colors = ACTION_COLORS[action.action] ?? 'text-white/60 bg-white/5 border-white/10';
-  const statusIcon = action.status === 'success'
-    ? <CheckCircle className="w-3 h-3 text-[#6366f1]" />
-    : action.status === 'failed'
-    ? <XCircle className="w-3 h-3 text-rose-400" />
-    : <Clock className="w-3 h-3 text-yellow-400" />;
+// ─── Create project inline form ───────────────────────────────────────────────
+
+const CreateProjectForm = ({
+  isPending, error, onCancel, showCancel,
+  onSubmit,
+}: {
+  isPending: boolean;
+  error?: string;
+  showCancel: boolean;
+  onCancel: () => void;
+  onSubmit: (name: string, url: string) => void;
+}) => {
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [errs, setErrs] = useState<{ name?: string; url?: string }>({});
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrs: { name?: string; url?: string } = {};
+    if (!name.trim() || name.trim().length < 2) newErrs.name = 'Project name is required (min 2 characters)';
+    if (!isValidUrl(url)) newErrs.url = 'Enter a valid URL (e.g. https://yoursite.com)';
+    if (Object.keys(newErrs).length > 0) { setErrs(newErrs); return; }
+    setErrs({});
+    onSubmit(name.trim(), normalizeUrl(url));
+  };
 
   return (
-    <div className={`flex items-center gap-2 p-3 rounded-lg border text-xs ${colors} animate-in fade-in duration-300`}>
-      <span className="font-bold uppercase tracking-wider font-mono">{action.action}</span>
-      <ChevronRight className="w-3 h-3 opacity-40" />
-      <span className="font-mono truncate max-w-[200px]">{action.target}</span>
-      {action.value && <span className="opacity-60 truncate max-w-[100px]">= "{action.value}"</span>}
-      <div className="ml-auto flex-shrink-0">{statusIcon}</div>
+    <div
+      className="rounded-2xl p-5 space-y-4"
+      style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)' }}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-white">New Project</p>
+        {showCancel && (
+          <button onClick={onCancel} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div>
+          <FieldLabel required>Project Name</FieldLabel>
+          <input
+            className={inputBase}
+            style={inputStyle}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. My SaaS App"
+            onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+            onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+          />
+          <FieldError msg={errs.name} />
+        </div>
+
+        <div>
+          <FieldLabel required>Website URL</FieldLabel>
+          <input
+            className={inputBase}
+            style={inputStyle}
+            value={url}
+            onChange={e => setUrl(e.target.value)}
+            placeholder="https://yourwebsite.com"
+            onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+            onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+          />
+          <FieldError msg={errs.url} />
+        </div>
+
+        {error && (
+          <p className="flex items-center gap-1.5 text-xs text-rose-400 px-1">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isPending}
+          className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 24px rgba(99,102,241,0.2)' }}
+        >
+          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          {isPending ? 'Creating…' : 'Save Project'}
+        </button>
+      </form>
     </div>
   );
 };
 
-// ── Panel component ────────────────────────────────────────────────────────
-const Panel = ({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
-  <div
-    className={`rounded-2xl relative overflow-hidden ${className}`}
-    style={{
-      background: 'rgba(9,9,11,0.80)',
-      border: '1px solid rgba(255,255,255,0.07)',
-      ...style,
-    }}
-  >
-    {/* Top mint edge line */}
-    <div
-      className="absolute top-0 left-0 right-0 h-px pointer-events-none"
-      style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.22), transparent)' }}
-    />
-    {children}
-  </div>
-);
-
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export const WorkflowRunner = () => {
-  const [projects, setProjects] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [step, setStep] = useState<1 | 2>(1);
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectUrl, setNewProjectUrl] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const [targetUrl, setTargetUrl] = useState('https://example.com');
-  const [goal, setGoal] = useState('Find and click the "More information" link on the page.');
+  // Step 2 fields
+  const [targetUrl, setTargetUrl] = useState('');
+  const [goal, setGoal] = useState('');
   const [persona, setPersona] = useState('Tech-Savvy User');
-  const [variablesInput, setVariablesInput] = useState('username=testuser\npassword=Password123!');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [variablesInput, setVariablesInput] = useState('');
 
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
-  const [uiStatus, setUiStatus] = useState<'idle' | 'running' | 'done'>('idle');
+  // Validation
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [thoughts, setThoughts] = useState<Thought[]>([]);
-  const [actions, setActions] = useState<Action[]>([]);
-  const [activeTab, setActiveTab] = useState<'thoughts' | 'actions'>('thoughts');
-  const [model, setModel] = useState<string>('');
+  // ── Data ───────────────────────────────────────────────────────────────────
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const createProject = useCreateProject();
+  const submitWorkflow = useSubmitWorkflow();
 
-  const thoughtsEndRef = useRef<HTMLDivElement>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Show create form immediately if no projects exist after load
+  useEffect(() => {
+    if (!projectsLoading && projects && projects.length === 0) {
+      setShowCreateForm(true);
+    }
+  }, [projectsLoading, projects]);
 
-  // Auto-scroll thoughts (disabled to allow free scrolling as per user request)
-  // useEffect(() => { thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [thoughts]);
+  // Pre-fill URL when project is selected
+  useEffect(() => {
+    if (selectedProjectId && projects) {
+      const proj = projects.find(p => p.id === selectedProjectId);
+      if (proj) setTargetUrl(proj.websiteUrl);
+    }
+  }, [selectedProjectId, projects]);
 
-  // Fetch projects on mount
-  useEffect(() => { fetchProjects(); }, []);
+  const selectedProject = projects?.find(p => p.id === selectedProjectId);
 
-  const fetchProjects = async () => {
+  // ── Step 1 handlers ────────────────────────────────────────────────────────
+
+  const handleCreateProject = async (name: string, url: string) => {
     try {
-      const res = await apiFetch('/projects');
-      const data = await res.json();
-      const projectList = data.projects ?? [];
-      setProjects(projectList);
-      if (projectList.length > 0) {
-        setSelectedProjectId(projectList[0].id);
-        setTargetUrl(projectList[0].websiteUrl);
-      }
-    } catch (err: any) { console.error('Fetch projects failed:', err); }
-  };
-
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProjectName || !newProjectUrl) return;
-    try {
-      const res = await apiFetch('/projects', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectName: newProjectName, websiteUrl: newProjectUrl }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      if (data.project) {
-        setProjects(prev => [...prev, data.project]);
-        setSelectedProjectId(data.project.id);
-        setTargetUrl(data.project.websiteUrl);
-        setNewProjectName(''); setNewProjectUrl('');
-      }
-    } catch (err: any) {
-      console.error('Create project failed:', err);
-      alert(`Failed to create project: ${err.message}`);
+      const project = await createProject.mutateAsync({ projectName: name, websiteUrl: url });
+      setSelectedProjectId(project.id);
+      setTargetUrl(project.websiteUrl);
+      setShowCreateForm(false);
+      setErrors({});
+      setStep(2);
+    } catch {
+      // error shown inside CreateProjectForm via error prop
     }
   };
 
-  const startPolling = (id: string) => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    pollingRef.current = setInterval(async () => {
-      try {
-        const [statusRes, thoughtsRes, actionsRes] = await Promise.all([
-          apiFetch(`/agent/workflow/${id}/status`),
-          apiFetch(`/agent/workflow/${id}/thoughts`),
-          apiFetch(`/agent/workflow/${id}/actions`),
-        ]);
-        const [statusData, thoughtsData, actionsData] = await Promise.all([
-          statusRes.json(), thoughtsRes.json(), actionsRes.json(),
-        ]);
-        if (statusData.session) setSessionStatus(statusData.session);
-        if (thoughtsData.thoughts) setThoughts(thoughtsData.thoughts);
-        if (actionsData.actions) setActions(actionsData.actions);
-        const done = ['COMPLETED', 'FAILED', 'TIMEOUT', 'LOOP_DETECTED'].includes(statusData.session?.status);
-        if (done) { setUiStatus('done'); if (pollingRef.current) clearInterval(pollingRef.current); }
-      } catch {}
-    }, 2000);
+  const handleStep1Continue = () => {
+    if (!selectedProjectId) {
+      setErrors({ project: 'Please select a project or create a new one' });
+      return;
+    }
+    setErrors({});
+    setStep(2);
   };
 
-  const handleStartWorkflow = async () => {
-    if (!selectedProjectId || !targetUrl || !goal) return;
+  // ── Step 2 handlers ────────────────────────────────────────────────────────
+
+  const handleLaunch = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!isValidUrl(targetUrl)) {
+      newErrors.targetUrl = 'Enter a valid URL (e.g. https://yoursite.com)';
+    }
+    if (!goal.trim() || goal.trim().length < 10) {
+      newErrors.goal = 'Describe what the AI agent should do (at least 10 characters)';
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+
+    // Parse variables
     const variables: Record<string, string> = {};
     variablesInput.split('\n').forEach(line => {
       const [k, ...rest] = line.split('=');
-      if (k && rest.length > 0) variables[k.trim()] = rest.join('=').trim();
+      if (k?.trim() && rest.length > 0) variables[k.trim()] = rest.join('=').trim();
     });
-    setLoading(true);
-    setThoughts([]); setActions([]); setSessionStatus(null);
+
     try {
-      const res = await apiFetch('/agent/workflow/run', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: selectedProjectId, url: targetUrl, goal, persona, variables }),
+      const result = await submitWorkflow.mutateAsync({
+        projectId: selectedProjectId,
+        url: normalizeUrl(targetUrl),
+        goal: goal.trim(),
+        persona,
+        ...(Object.keys(variables).length > 0 ? { variables } : {}),
       });
-      const data = await res.json();
-      if (data.workflowId) {
-        setWorkflowId(data.workflowId);
-        setModel(data.model ?? '');
-        setUiStatus('running');
-        startPolling(data.workflowId);
-      } else { setUiStatus('done'); }
-    } catch { setUiStatus('done'); }
-    finally { setLoading(false); }
+
+      navigate(`/app/monitor/${result.workflowId}`, {
+        state: {
+          projectName: selectedProject?.projectName ?? '',
+          goal: goal.trim(),
+          model: result.model,
+          persona,
+        },
+      });
+    } catch {
+      // submitWorkflow.error will be set automatically
+    }
   };
 
-  const handleStop = () => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    setUiStatus('done');
-  };
-
-  const currentStatus = sessionStatus?.status ?? (uiStatus === 'running' ? 'RUNNING' : 'idle');
-  const statusCfg = STATUS_CONFIG[currentStatus] ?? STATUS_CONFIG['idle'];
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-0 animate-in fade-in duration-300">
 
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span
-            className="text-[9px] font-black uppercase tracking-widest font-mono px-2.5 py-0.5 rounded-full"
-            style={{
-              color: '#6366f1',
-              background: 'rgba(99, 102, 241,0.1)',
-              border: '1px solid rgba(99, 102, 241,0.2)',
-            }}
-          >
-            Workflow Auditor
-          </span>
+      {/* Page header */}
+      <div className="mb-8">
+        <div
+          className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono uppercase tracking-widest px-3 py-1 rounded-full mb-3"
+          style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818cf8' }}
+        >
+          <Zap className="w-3 h-3" /> Workflow Auditor
         </div>
-        <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-3 mt-2">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{
-              background: 'rgba(99, 102, 241,0.1)',
-              border: '1px solid rgba(99, 102, 241,0.2)',
-            }}
-          >
-            <Brain className="w-5 h-5" style={{ color: '#6366f1' }} />
-          </div>
-          Agent Execution Console
-        </h1>
-        <p className="text-zinc-500 mt-1 text-sm font-sans">
-          Configure an AI audit goal and observe every reasoning step, decision, and action in real-time.
+        <h1 className="text-3xl font-bold text-white tracking-tight">Launch an Audit</h1>
+        <p className="mt-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          Configure your project and audit goal. An AI agent will handle the rest.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Wizard card */}
+      <div
+        className="rounded-3xl p-8"
+        style={{
+          background: 'radial-gradient(ellipse at top left, rgba(99,102,241,0.06), transparent 60%), rgba(9,9,11,0.8)',
+          border: '1px solid rgba(255,255,255,0.07)',
+        }}
+      >
+        <StepBar step={step} />
 
-        {/* ── Left Column: Configuration ─────────────────────────────────── */}
-        <div className="space-y-4">
-
-          {/* Create Project */}
-          <Panel>
-            <div className="p-5 space-y-3">
-              <div className="flex items-center gap-2 mb-1">
-                <PlusCircle className="w-4 h-4" style={{ color: '#6366f1' }} />
-                <h2 className="font-bold text-white text-sm tracking-tight">Create Project</h2>
-              </div>
-              <form onSubmit={handleCreateProject} className="space-y-2.5">
-                <FieldInput
-                  label="Project Name"
-                  value={newProjectName}
-                  onChange={setNewProjectName}
-                  placeholder="e.g. My SaaS App"
-                />
-                <FieldInput
-                  label="Root URL"
-                  value={newProjectUrl}
-                  onChange={setNewProjectUrl}
-                  placeholder="https://..."
-                />
-                <button
-                  type="submit"
-                  className="w-full text-xs font-bold py-2 rounded-lg transition-all mt-1 font-mono uppercase tracking-wider"
-                  style={{
-                    background: 'rgba(99, 102, 241,0.1)',
-                    border: '1px solid rgba(99, 102, 241,0.25)',
-                    color: '#6366f1',
-                  }}
-                  onMouseEnter={e => {
-                    (e.target as HTMLElement).style.background = 'rgba(99, 102, 241,0.18)';
-                  }}
-                  onMouseLeave={e => {
-                    (e.target as HTMLElement).style.background = 'rgba(99, 102, 241,0.1)';
-                  }}
-                >
-                  Add Project
-                </button>
-              </form>
+        {/* ── Step 1: Project Selection ─────────────────────────────────── */}
+        {step === 1 && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-lg font-bold text-white mb-1">Select a Project</h2>
+              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Choose an existing project or create a new one to audit.
+              </p>
             </div>
-          </Panel>
 
-          {/* Agent Config */}
-          <Panel>
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4" style={{ color: '#6366f1' }} />
-                <h2 className="font-bold text-white text-sm tracking-tight">Agent Configuration</h2>
+            {projectsLoading ? (
+              /* Skeleton */
+              <div className="grid grid-cols-2 gap-3">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="h-28 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }} />
+                ))}
               </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Existing projects grid */}
+                {projects && projects.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {projects.slice(0, 4).map(p => (
+                      <ProjectCard
+                        key={p.id}
+                        project={p}
+                        selected={selectedProjectId === p.id && !showCreateForm}
+                        onClick={() => { setSelectedProjectId(p.id); setShowCreateForm(false); setErrors({}); }}
+                      />
+                    ))}
+                    {/* Create new card */}
+                    <button
+                      onClick={() => { setShowCreateForm(true); setSelectedProjectId(''); setErrors({}); }}
+                      className="p-4 rounded-2xl text-left transition-all duration-200 group"
+                      style={{
+                        background: showCreateForm ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.01)',
+                        border: showCreateForm ? '1px solid rgba(99,102,241,0.35)' : '1px dashed rgba(255,255,255,0.12)',
+                      }}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-105"
+                        style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }}
+                      >
+                        <Plus className="w-4 h-4" style={{ color: '#818cf8' }} />
+                      </div>
+                      <p className="text-sm font-bold" style={{ color: '#818cf8' }}>New Project</p>
+                      <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>Add a website to audit</p>
+                    </button>
+                  </div>
+                )}
 
-              <FieldSelect label="Project" value={selectedProjectId} onChange={(val) => {
-                setSelectedProjectId(val);
-                const proj = projects.find(p => p.id === val);
-                if (proj) setTargetUrl(proj.websiteUrl);
-              }}>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.projectName}</option>)}
-              </FieldSelect>
+                {/* Inline create form */}
+                {showCreateForm && (
+                  <CreateProjectForm
+                    isPending={createProject.isPending}
+                    error={createProject.error?.message}
+                    showCancel={!!projects && projects.length > 0}
+                    onCancel={() => { setShowCreateForm(false); }}
+                    onSubmit={handleCreateProject}
+                  />
+                )}
 
-              <FieldInput label="Target URL" value={targetUrl} onChange={setTargetUrl} placeholder="https://example.com" />
-              <FieldInput label="Workflow Goal" value={goal} onChange={setGoal}
-                placeholder="e.g. Find and click the Sign Up button" rows={3} />
-              
-              <FieldSelect label="Persona" value={persona} onChange={setPersona}>
+                {/* Project selection error */}
+                <FieldError msg={errors.project} />
+              </div>
+            )}
+
+            {/* Continue button — only shown if not creating a new project */}
+            {!showCreateForm && (
+              <button
+                id="step1-continue-btn"
+                onClick={handleStep1Continue}
+                disabled={!selectedProjectId}
+                className="w-full py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2 mt-2"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 32px rgba(99,102,241,0.25)' }}
+              >
+                Continue <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Step 2: Audit Configuration ───────────────────────────────── */}
+        {step === 2 && (
+          <div className="space-y-5 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-lg font-bold text-white mb-1">Configure Your Audit</h2>
+              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Tell the AI agent what to do and on which URL.
+              </p>
+            </div>
+
+            {/* Selected project pill */}
+            <div
+              className="flex items-center justify-between px-4 py-2.5 rounded-xl"
+              style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}
+            >
+              <div className="flex items-center gap-2.5">
+                <Globe className="w-4 h-4" style={{ color: '#818cf8' }} />
+                <div>
+                  <p className="text-xs font-bold text-white">{selectedProject?.projectName}</p>
+                  <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{selectedProject?.websiteUrl}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setStep(1); setErrors({}); }}
+                className="text-xs font-semibold transition-colors hover:text-white"
+                style={{ color: 'rgba(99,102,241,0.7)' }}
+              >
+                Change
+              </button>
+            </div>
+
+            {/* Target URL */}
+            <div>
+              <FieldLabel required>Target URL</FieldLabel>
+              <input
+                id="audit-target-url"
+                className={inputBase}
+                style={inputStyle}
+                value={targetUrl}
+                onChange={e => { setTargetUrl(e.target.value); if (errors.targetUrl) setErrors(p => ({ ...p, targetUrl: '' })); }}
+                placeholder="https://yoursite.com/specific-page"
+                onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+              />
+              <FieldError msg={errors.targetUrl} />
+            </div>
+
+            {/* Audit Goal */}
+            <div>
+              <FieldLabel required>Audit Goal</FieldLabel>
+              <textarea
+                id="audit-goal"
+                rows={4}
+                className={inputBase + ' resize-none'}
+                style={inputStyle}
+                value={goal}
+                onChange={e => { setGoal(e.target.value); if (errors.goal) setErrors(p => ({ ...p, goal: '' })); }}
+                placeholder="e.g. Find and complete the sign-up flow. Check for any confusing steps, unclear labels, or friction points along the way."
+                onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+              />
+              <div className="flex items-start justify-between mt-1">
+                <FieldError msg={errors.goal} />
+                <span className="text-[10px] font-mono ml-auto flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                  {goal.length} chars
+                </span>
+              </div>
+            </div>
+
+            {/* Persona */}
+            <div>
+              <FieldLabel>AI Persona</FieldLabel>
+              <select
+                id="audit-persona"
+                className={inputBase}
+                style={{ ...inputStyle, color: '#fafafa' }}
+                value={persona}
+                onChange={e => setPersona(e.target.value)}
+              >
                 <option>Tech-Savvy User</option>
                 <option>Confused Beginner</option>
                 <option>Impatient User</option>
                 <option>Casual Explorer</option>
-              </FieldSelect>
-
-              <FieldInput
-                label="Context Variables (key=value per line)"
-                value={variablesInput}
-                onChange={setVariablesInput}
-                placeholder={"username=testuser\npassword=secret"}
-                rows={2}
-              />
-
-              <div className="pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                {uiStatus === 'running' ? (
-                  <button
-                    onClick={handleStop}
-                    className="w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
-                    style={{
-                      background: 'rgba(244,63,94,0.1)',
-                      border: '1px solid rgba(244,63,94,0.25)',
-                      color: '#fb7185',
-                    }}
-                  >
-                    <Square className="w-4 h-4" /> Stop Session
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleStartWorkflow}
-                    disabled={loading || !selectedProjectId}
-                    className="w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40 font-mono uppercase tracking-wider"
-                    style={{
-                      background: loading ? 'rgba(99, 102, 241,0.1)' : '#6366f1',
-                      color: loading ? '#6366f1' : '#070b0a',
-                    }}
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                    {loading ? 'Starting Agent...' : 'Run Autonomous Agent'}
-                  </button>
-                )}
-              </div>
+              </select>
             </div>
-          </Panel>
 
-          {/* Session Status Card */}
-          <Panel>
-            <div className="p-5 space-y-3">
-              <h2 className="font-bold text-white text-sm tracking-tight">Session Status</h2>
-              <div className={`flex items-center gap-2 ${statusCfg.color}`}>
-                {statusCfg.icon}
-                <span className="font-semibold text-sm">{statusCfg.label}</span>
-              </div>
-              {sessionStatus && (
-                <div className="space-y-2 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  <div className="flex justify-between">
-                    <span>Steps Taken</span>
-                    <span className="text-white font-mono">
-                      {Math.max(sessionStatus.stepCount, thoughts.length, actions.length)} / 30
-                    </span>
-                  </div>
-                  {model && (
-                    <div className="flex justify-between">
-                      <span>Model</span>
-                      <span className="font-mono truncate max-w-[140px]" style={{ color: '#6366f1' }}>{model}</span>
-                    </div>
-                  )}
-                  {workflowId && (
-                    <div className="flex justify-between">
-                      <span>Session ID</span>
-                      <span className="text-white/50 font-mono">{workflowId.slice(0, 12)}...</span>
-                    </div>
-                  )}
+            {/* Advanced Settings — collapsed by default */}
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <button
+                onClick={() => setShowAdvanced(p => !p)}
+                className="w-full flex items-center justify-between px-4 py-3 text-sm transition-colors"
+                style={{ background: 'rgba(255,255,255,0.02)', color: 'rgba(255,255,255,0.5)' }}
+              >
+                <span className="font-semibold">Advanced Settings</span>
+                {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+
+              {showAdvanced && (
+                <div className="px-4 pb-4 pt-1" style={{ background: 'rgba(255,255,255,0.01)' }}>
+                  <FieldLabel>Context Variables</FieldLabel>
+                  <p className="text-[11px] mb-2" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    One <code className="font-mono">key=value</code> per line. Passed to the agent as context.
+                  </p>
+                  <textarea
+                    rows={3}
+                    className={inputBase + ' resize-none font-mono text-xs'}
+                    style={inputStyle}
+                    value={variablesInput}
+                    onChange={e => setVariablesInput(e.target.value)}
+                    placeholder={'username=testuser\npassword=secret'}
+                    onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+                    onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+                  />
                 </div>
               )}
-              {/* Step progress bar */}
-              {(sessionStatus || thoughts.length > 0 || actions.length > 0) && (() => {
-                const effectiveStep = Math.max(sessionStatus?.stepCount ?? 0, thoughts.length, actions.length);
-                return effectiveStep > 0 ? (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                      <span>Progress</span>
-                      <span className="font-mono">{effectiveStep} / 30 steps</span>
-                    </div>
-                    <div className="w-full rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <div
-                        className="h-1.5 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min((effectiveStep / 30) * 100, 100)}%`,
-                          background: 'linear-gradient(to right, #10b981, #6366f1)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
             </div>
-          </Panel>
-        </div>
 
-        {/* ── Right Column: Execution Viewer ─────────────────────────────── */}
-        <div className="lg:col-span-2 space-y-4">
+            {/* Submission error */}
+            {submitWorkflow.error && (
+              <div
+                className="flex items-start gap-2.5 px-4 py-3 rounded-xl"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+              >
+                <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-rose-400">{submitWorkflow.error.message}</p>
+              </div>
+            )}
 
-          {/* Tab Switcher */}
-          <div className="flex gap-1 p-1 rounded-xl w-fit" style={{
-            background: 'rgba(9,9,11,0.8)',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}>
-            {(['thoughts', 'actions'] as const).map(tab => (
+            {/* Actions row */}
+            <div className="flex items-center gap-3 pt-2">
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all"
+                onClick={() => { setStep(1); setErrors({}); submitWorkflow.reset(); }}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:text-white"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
+              >
+                ← Back
+              </button>
+              <button
+                id="launch-audit-btn"
+                onClick={handleLaunch}
+                disabled={submitWorkflow.isPending}
+                className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2.5 group"
                 style={{
-                  background: activeTab === tab ? 'rgba(99, 102, 241,0.12)' : 'transparent',
-                  border: activeTab === tab ? '1px solid rgba(99, 102, 241,0.25)' : '1px solid transparent',
-                  color: activeTab === tab ? '#6366f1' : 'rgba(255,255,255,0.4)',
+                  background: submitWorkflow.isPending ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                  boxShadow: submitWorkflow.isPending ? 'none' : '0 0 40px rgba(99,102,241,0.3)',
                 }}
               >
-                {tab === 'thoughts' ? <Brain className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
-                {tab === 'thoughts' ? 'Thought Stream' : 'Action Timeline'}
-                {tab === 'thoughts' && thoughts.length > 0 && (
-                  <span
-                    className="ml-1 rounded-full px-1.5 py-0 text-[10px]"
-                    style={{ background: 'rgba(99, 102, 241,0.15)', color: '#6366f1' }}
-                  >
-                    {thoughts.length}
-                  </span>
-                )}
-                {tab === 'actions' && actions.length > 0 && (
-                  <span
-                    className="ml-1 rounded-full px-1.5 py-0 text-[10px]"
-                    style={{ background: 'rgba(99, 102, 241,0.15)', color: '#6366f1' }}
-                  >
-                    {actions.length}
-                  </span>
+                {submitWorkflow.isPending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Launching…</>
+                ) : (
+                  <>Launch Audit <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" /></>
                 )}
               </button>
-            ))}
+            </div>
           </div>
-
-          {/* Content Panel */}
-          <Panel className="overflow-hidden" style={{ minHeight: '520px' }}>
-            {/* Panel Header */}
-            <div
-              className="px-5 py-3.5 flex items-center justify-between"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)' }}
-            >
-              <div className="flex items-center gap-2">
-                {uiStatus === 'running' && (
-                  <span className="relative flex h-2 w-2">
-                    <span
-                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                      style={{ background: '#6366f1' }}
-                    />
-                    <span
-                      className="relative inline-flex rounded-full h-2 w-2"
-                      style={{ background: '#6366f1' }}
-                    />
-                  </span>
-                )}
-                <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                  {activeTab === 'thoughts' ? 'Agent reasoning — live' : 'Executed actions — chronological'}
-                </span>
-              </div>
-              {uiStatus === 'running' && (
-                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(99, 102, 241,0.7)' }}>
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                  <span className="font-mono text-[10px]">Polling every 2s</span>
-                </div>
-              )}
-            </div>
-
-            {/* Empty State */}
-            {uiStatus === 'idle' && (
-              <div className="flex flex-col items-center justify-center h-80 gap-4 text-center px-8">
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{
-                    background: 'rgba(99, 102, 241,0.08)',
-                    border: '1px solid rgba(99, 102, 241,0.18)',
-                  }}
-                >
-                  <Zap className="w-7 h-7" style={{ color: '#6366f1' }} />
-                </div>
-                <div>
-                  <h3 className="text-white font-bold">Agent Ready</h3>
-                  <p className="text-sm mt-1 max-w-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    Configure a workflow goal and click "Run Autonomous Agent" to begin.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Loading State */}
-            {loading && (
-              <div className="flex flex-col items-center justify-center h-80 gap-3">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#6366f1' }} />
-                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Initializing agent session...</p>
-              </div>
-            )}
-
-            {/* Thought Stream */}
-            {!loading && uiStatus !== 'idle' && activeTab === 'thoughts' && (
-              <div className="p-5 space-y-5 max-h-[520px] overflow-y-auto">
-                {thoughts.length === 0 ? (
-                  <div className="flex items-center gap-2 text-sm py-8 justify-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    <Brain className="w-4 h-4 animate-pulse" />
-                    <span>Waiting for first agent thought...</span>
-                  </div>
-                ) : (
-                  thoughts.map(t => <ThoughtBubble key={t.id} thought={t} step={t.stepNumber} />)
-                )}
-                <div ref={thoughtsEndRef} />
-              </div>
-            )}
-
-            {/* Action Timeline */}
-            {!loading && uiStatus !== 'idle' && activeTab === 'actions' && (
-              <div className="p-5 space-y-2 max-h-[520px] overflow-y-auto">
-                {actions.length === 0 ? (
-                  <div className="flex items-center gap-2 text-sm py-8 justify-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    <Activity className="w-4 h-4 animate-pulse" />
-                    <span>Waiting for first action...</span>
-                  </div>
-                ) : (
-                  actions.map(a => (
-                    <div key={a.id}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className="text-[10px] font-mono w-14 text-right flex-shrink-0"
-                          style={{ color: 'rgba(255,255,255,0.25)' }}
-                        >
-                          {new Date(a.timestamp).toLocaleTimeString()}
-                        </span>
-                        <div className="flex-1"><ActionChip action={a} /></div>
-                      </div>
-                      {a.errorMessage && (
-                        <p className="text-[11px] text-rose-400/80 ml-16 mt-0.5 font-mono">{a.errorMessage}</p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </Panel>
-
-          {/* Completion Banner */}
-          {uiStatus === 'done' && sessionStatus && (
-            <div
-              className="rounded-2xl border p-4 flex items-center gap-4"
-              style={{
-                background: sessionStatus.status === 'COMPLETED'
-                  ? 'rgba(99, 102, 241,0.05)'
-                  : 'rgba(244,63,94,0.05)',
-                border: sessionStatus.status === 'COMPLETED'
-                  ? '1px solid rgba(99, 102, 241,0.2)'
-                  : '1px solid rgba(244,63,94,0.2)',
-              }}
-            >
-              {sessionStatus.status === 'COMPLETED'
-                ? <CheckCircle className="w-6 h-6 flex-shrink-0" style={{ color: '#6366f1' }} />
-                : <AlertTriangle className="w-6 h-6 text-rose-400 flex-shrink-0" />}
-              <div>
-                <p className="font-bold text-sm" style={{ color: sessionStatus.status === 'COMPLETED' ? '#6366f1' : '#fb7185' }}>
-                  Workflow {statusCfg.label}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  Completed {sessionStatus.stepCount} steps · Model: {sessionStatus.model}
-                </p>
-              </div>
-              <div className="ml-auto flex items-center gap-4">
-                <Link
-                  to={`/app/reports/${workflowId}`}
-                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors font-mono uppercase tracking-wider"
-                  style={{
-                    background: 'rgba(99, 102, 241,0.1)',
-                    border: '1px solid rgba(99, 102, 241,0.25)',
-                    color: '#6366f1',
-                  }}
-                >
-                  <Eye className="w-3.5 h-3.5" /> View Report
-                </Link>
-                <button
-                  onClick={() => { setUiStatus('idle'); setThoughts([]); setActions([]); setSessionStatus(null); setWorkflowId(null); }}
-                  className="flex items-center gap-1.5 text-xs transition-colors"
-                  style={{ color: 'rgba(255,255,255,0.35)' }}
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> New Run
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
-
-      {/* ── Intelligence Console (Phase 6 — always rendered when session exists) */}
-      {workflowId && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div
-              className="h-px flex-1"
-              style={{ background: 'linear-gradient(to right, rgba(99, 102, 241,0.2), transparent)' }}
-            />
-            <span
-              className="text-[9px] font-black uppercase tracking-widest font-mono px-3 py-1 rounded-full"
-              style={{
-                color: '#6366f1',
-                background: 'rgba(99, 102, 241,0.08)',
-                border: '1px solid rgba(99, 102, 241,0.18)',
-              }}
-            >
-              Intelligence Operations Console
-            </span>
-            <div
-              className="h-px flex-1"
-              style={{ background: 'linear-gradient(to left, rgba(99, 102, 241,0.2), transparent)' }}
-            />
-          </div>
-          <AgentOrchestrationConsole
-            sessionId={workflowId}
-            onOrchestrationComplete={() => console.log('[WorkflowRunner] Orchestration completed')}
-          />
-        </div>
-      )}
     </div>
   );
 };
