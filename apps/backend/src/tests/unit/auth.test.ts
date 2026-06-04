@@ -360,6 +360,49 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
   });
 
   describe('authContext Helper Functions', () => {
+    it('should test getCurrentUser, requireUser, getCurrentUserId, and resolveUser', async () => {
+      const {
+        getCurrentUser,
+        requireUser,
+        getCurrentUserId,
+        resolveUser,
+      } = await import('../../middleware/authContext');
+
+      const mockCtx: any = {
+        get: (key: string) => {
+          if (key === 'clerkAuth') return mockAuth;
+          return null;
+        },
+        json: (body: any, status: number) => {
+          return { body, status };
+        },
+      };
+
+      // Unauthenticated
+      mockAuth.userId = null;
+      expect(getCurrentUser(mockCtx)).toBeNull();
+      expect(getCurrentUserId(mockCtx)).toBeNull();
+      expect(() => requireUser(mockCtx)).toThrow();
+      expect(await resolveUser(mockCtx)).toBeNull();
+
+      // Authenticated
+      mockAuth.userId = 'user_123';
+      expect(getCurrentUser(mockCtx)).toEqual({ userId: 'user_123', sessionId: undefined, email: undefined });
+      expect(getCurrentUserId(mockCtx)).toBe('user_123');
+      expect(requireUser(mockCtx)).toEqual({ userId: 'user_123', sessionId: undefined, email: undefined });
+
+      // resolveUser - exists in DB
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user_123', name: 'Existing User' });
+      expect(await resolveUser(mockCtx)).toEqual({ id: 'user_123', name: 'Existing User' });
+
+      // resolveUser - create new user
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.create.mockResolvedValue({ id: 'user_123', name: 'Clerk User' });
+      expect(await resolveUser(mockCtx)).toEqual({ id: 'user_123', name: 'Clerk User' });
+
+      // resolveUser - create failure
+      mockPrisma.user.create.mockRejectedValue(new Error('Creation failed'));
+      expect(await resolveUser(mockCtx)).toBeNull();
     });
   });
 });
