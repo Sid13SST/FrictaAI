@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+.turbo
+.next
+apps/backend/coverage
+**/dist/**
+**/node_modules/**
+**/coverage/**
+**/.turbo/**
+**/.next/**
+**/generated/**
+**/generated/client/**
+packages/db/src/generated/**
+packages/db/copy-client.js
+
