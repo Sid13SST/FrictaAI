@@ -28,3 +28,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://fricta:fricta_dev@localhost:5432/fricta_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      PORT: 3001
+      NODE_ENV: test
+      CLERK_SECRET_KEY: sk_test_dummy_clerk_secret_key_for_tests
+      CLERK_PUBLISHABLE_KEY: pk_test_dummy_clerk_publishable_key_for_tests
+
