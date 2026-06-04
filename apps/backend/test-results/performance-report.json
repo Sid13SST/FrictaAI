@@ -1,0 +1,212 @@
+{
+  "timestamp": "2026-06-04T06:56:18.437Z",
+  "environment": "integration",
+  "baselines": [
+    {
+      "operation": "createProject",
+      "averageMs": 9,
+      "p95Ms": 20,
+      "p99Ms": 20,
+      "maxMs": 20
+    },
+    {
+      "operation": "startWorkflow",
+      "averageMs": 721,
+      "p95Ms": 922,
+      "p99Ms": 922,
+      "maxMs": 922
+    },
+    {
+      "operation": "replayFetch",
+      "averageMs": 3,
+      "p95Ms": 5,
+      "p99Ms": 5,
+      "maxMs": 5
+    },
+    {
+      "operation": "generateReport",
+      "averageMs": 24,
+      "p95Ms": 35,
+      "p99Ms": 35,
+      "maxMs": 35
+    },
+    {
+      "operation": "exportReport",
+      "averageMs": 13,
+      "p95Ms": 15,
+      "p99Ms": 15,
+      "maxMs": 15
+    }
+  ],
+  "concurrencySimulations": {
+    "level_1": {
+      "concurrency": 1,
+      "successRate": 100,
+      "errorRate": 0,
+      "avgLatencyMs": 713,
+      "p95LatencyMs": 713,
+      "requestsPerSecond": 4
+    },
+    "level_5": {
+      "concurrency": 5,
+      "successRate": 100,
+      "errorRate": 0,
+      "avgLatencyMs": 901,
+      "p95LatencyMs": 952,
+      "requestsPerSecond": 16
+    },
+    "level_10": {
+      "concurrency": 10,
+      "successRate": 100,
+      "errorRate": 0,
+      "avgLatencyMs": 1447,
+      "p95LatencyMs": 1608,
+      "requestsPerSecond": 19
+    },
+    "level_25": {
+      "concurrency": 25,
+      "successRate": 100,
+      "errorRate": 0,
+      "avgLatencyMs": 1286,
+      "p95LatencyMs": 1507,
+      "requestsPerSecond": 49
+    }
+  },
+  "memoryTracking": {
+    "before": {
+      "heapUsed": 103,
+      "heapTotal": 132,
+      "rss": 211,
+      "external": 4
+    },
+    "after": {
+      "heapUsed": 146,
+      "heapTotal": 170,
+      "rss": 254,
+      "external": 4
+    },
+    "afterCleanup": {
+      "heapUsed": 146,
+      "heapTotal": 170,
+      "rss": 254,
+      "external": 4
+    }
+  },
+  "queueMetrics": {
+    "pendingJobs": 0,
+    "activeJobs": 0,
+    "completedJobs": 0,
+    "failedJobs": 0
+  },
+  "dbConnections": {
+    "totalQueriesExecuted": 546,
+    "uniqueQueriesCount": 21,
+    "queries": [
+      {
+        "query": "Project.findUnique",
+        "frequency": 102,
+        "avgDurationMs": 4
+      },
+      {
+        "query": "WorkflowSession.findUnique",
+        "frequency": 66,
+        "avgDurationMs": 3
+      },
+      {
+        "query": "Project.create",
+        "frequency": 50,
+        "avgDurationMs": 106
+      },
+      {
+        "query": "WorkflowSession.create",
+        "frequency": 50,
+        "avgDurationMs": 10
+      },
+      {
+        "query": "User.findUnique",
+        "frequency": 46,
+        "avgDurationMs": 3
+      },
+      {
+        "query": "InteractionEvent.create",
+        "frequency": 46,
+        "avgDurationMs": 10
+      },
+      {
+        "query": "Screenshot.create",
+        "frequency": 46,
+        "avgDurationMs": 6
+      },
+      {
+        "query": "BehavioralReplayEvent.findMany",
+        "frequency": 46,
+        "avgDurationMs": 3
+      },
+      {
+        "query": "WorkflowSession.update",
+        "frequency": 46,
+        "avgDurationMs": 7
+      },
+      {
+        "query": "SimulationProfile.create",
+        "frequency": 5,
+        "avgDurationMs": 4
+      },
+      {
+        "query": "BehavioralReplayEvent.create",
+        "frequency": 5,
+        "avgDurationMs": 3
+      },
+      {
+        "query": "UXSignal.deleteMany",
+        "frequency": 5,
+        "avgDurationMs": 2
+      },
+      {
+        "query": "UXRecommendation.deleteMany",
+        "frequency": 5,
+        "avgDurationMs": 1
+      },
+      {
+        "query": "UXScore.deleteMany",
+        "frequency": 5,
+        "avgDurationMs": 1
+      },
+      {
+        "query": "UXScore.create",
+        "frequency": 5,
+        "avgDurationMs": 2
+      },
+      {
+        "query": "UXReport.findFirst",
+        "frequency": 5,
+        "avgDurationMs": 2
+      },
+      {
+        "query": "UXReport.create",
+        "frequency": 5,
+        "avgDurationMs": 2
+      },
+      {
+        "query": "PersonaProfile.findMany",
+        "frequency": 5,
+        "avgDurationMs": 1
+      },
+      {
+        "query": "Global.queryRaw",
+        "frequency": 1,
+        "avgDurationMs": 40
+      },
+      {
+        "query": "Global.executeRaw",
+        "frequency": 1,
+        "avgDurationMs": 1491
+      },
+      {
+        "query": "User.create",
+        "frequency": 1,
+        "avgDurationMs": 8
+      }
+    ]
+  }
+}
