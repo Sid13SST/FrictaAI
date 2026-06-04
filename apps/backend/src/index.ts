@@ -8,8 +8,16 @@ import * as path from 'path';
 // Load root .env
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+import { validateStartup } from './utils/startupCheck';
+
+validateStartup().catch((err) => {
+  console.error('❌ CRITICAL STARTUP FAILURE:', err.message);
+  process.exit(1);
+});
+
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
-import { clerkMiddleware, requireAuth } from './middleware';
+import { clerkMiddleware, requireAuth, customLogger } from './middleware';
+
 
 // ─── Route Imports ────────────────────────────────────────────────────────────
 import { authRoutes } from './routes/auth';
@@ -54,7 +62,7 @@ import { publicRoutes } from './routes/public';
 import { telemetryRoutes } from './routes/telemetry';
 import { liveIntelligenceRoutes } from './routes/liveIntelligence';
 import { optimizationRoutes } from './routes/optimization';
-import { startWorker } from '@fricta/agent';
+import { startWorker, connection } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
 
@@ -62,8 +70,9 @@ import { prisma } from '@fricta/db';
 const app = new Hono();
 
 // ─── Global Middlewares ───────────────────────────────────────────────────────
-app.use('*', logger());
+app.use('*', customLogger());
 app.use('*', cors());
+
 
 // SSE query token rewrite middleware: intercepts ?token=... query parameter
 // and rewrites it to the Authorization header to support SSE clients.
@@ -205,7 +214,8 @@ startRuntime(prisma).catch((err) => {
   console.error('Failed to start distributed runtime:', err);
 });
 
-serve({
+const server = serve({
   fetch: app.fetch,
   port
 });
+
