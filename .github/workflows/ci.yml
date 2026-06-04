@@ -1,0 +1,15 @@
+name: CI/CD Quality Gate Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Code Validation and Testing
+    runs-on: ubuntu-latest
+
