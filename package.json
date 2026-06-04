@@ -5,7 +5,8 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "eslint . --max-warnings=0",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "typecheck": "tsc --noEmit -p apps/backend/tsconfig.json && tsc --noEmit -p apps/frontend/tsconfig.json"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
