@@ -14,6 +14,14 @@ export default defineConfig({
         'src/guards/ownership.ts',
       ],
       exclude: ['src/tests/**', 'src/index.ts'],
+      thresholds: {
+        'src/middleware/**': {
+          statements: 90,
+          branches: 80,
+          functions: 90,
+          lines: 90,
+        },
+      },
     },
   },
 });
