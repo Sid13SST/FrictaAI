@@ -39,5 +39,10 @@ export default defineConfig({
         },
       },
     },
+    reporters: ['default', 'junit', 'json'],
+    outputFile: {
+      junit: 'test-results/unit-junit.xml',
+      json: 'test-results/unit-results.json',
+    },
   },
 });
