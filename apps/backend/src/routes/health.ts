@@ -1,41 +1,60 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { connection } from '@fricta/agent';
-// Assuming we have some browser health check in agent, or we just try to launch one
-import { chromium } from 'playwright-core';
 
 const health = new Hono();
 
+// Base /health and liveness checks
 health.get('/', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+  return c.json({ status: 'healthy' });
 });
 
-health.get('/db', async (c) => {
+health.get('/live', (c) => {
+  return c.json({ status: 'healthy' });
+});
+
+// Readiness check verifying DB and Redis connectivity
+health.get('/ready', async (c) => {
+  let dbStatus = 'ok';
+  let redisStatus = 'ok';
+  let isHealthy = true;
+
+  // Check Database
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return c.json({ status: 'ok', database: 'connected' });
-  } catch (err: any) {
-    return c.json({ status: 'error', error: err.message }, 500);
+  } catch (err) {
+    dbStatus = 'failed';
+    isHealthy = false;
   }
-});
 
-health.get('/agent', async (c) => {
+  // Check Redis
   try {
     const ping = await connection.ping();
-    return c.json({ status: 'ok', redis: ping === 'PONG' ? 'connected' : 'error' });
-  } catch (err: any) {
-    return c.json({ status: 'error', error: err.message }, 500);
+    if (ping !== 'PONG') {
+      redisStatus = 'failed';
+      isHealthy = false;
+    }
+  } catch (err) {
+    redisStatus = 'failed';
+    isHealthy = false;
   }
+
+  const responsePayload = {
+    status: isHealthy ? 'healthy' : 'unhealthy',
+    database: dbStatus,
+    redis: redisStatus,
+  };
+
+  return c.json(responsePayload, isHealthy ? 200 : 503);
 });
 
-health.get('/browser', async (c) => {
-  try {
-    const browser = await chromium.launch({ headless: true });
-    await browser.close();
-    return c.json({ status: 'ok', browser: 'ready' });
-  } catch (err: any) {
-    return c.json({ status: 'error', error: err.message }, 500);
-  }
+// Version endpoint
+health.get('/version', (c) => {
+  return c.json({
+    version: '1.0.0',
+    commit: '404080c',
+    environment: process.env.NODE_ENV || 'production',
+  });
 });
 
 export const healthRoutes = health;
