@@ -77,3 +77,28 @@ jobs:
       - name: Security and Vulnerability Audit
         run: npm audit --audit-level=high
 
+      - name: Build Validation - Packages
+        run: npx turbo run build --filter="./packages/*"
+
+      - name: Build Validation - Backend App
+        run: npx turbo run build --filter="@fricta/backend"
+
+      - name: Build Validation - Frontend App
+        run: npx turbo run build --filter="@fricta/frontend"
+
+      - name: Upload Coverage Reports Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: apps/backend/coverage/
+
+      - name: Upload Test & Performance Results Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-and-performance-reports
+          path: |
+            apps/backend/test-results/
+            apps/backend/test-results/**/*.xml
+            apps/backend/test-results/**/*.json
