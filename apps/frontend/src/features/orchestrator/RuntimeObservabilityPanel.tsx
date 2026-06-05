@@ -12,6 +12,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { apiFetch } from '../../lib/api';
 
 interface RuntimeObservabilityPanelProps {
   sessionId: string;
@@ -25,13 +26,11 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
 
   const fetchRuntimeTelemetry = async () => {
     try {
-      const host = window.location.hostname;
-      const port = '3001';
-      console.log(`[RuntimeObservabilityPanel] Fetching telemetry from http://${host}:${port}...`);
+      console.log(`[RuntimeObservabilityPanel] Fetching telemetry...`);
       
       const [telemetryRes, sessionRes] = await Promise.all([
-        fetch(`http://${host}:${port}/api/runtime/telemetry`),
-        fetch(`http://${host}:${port}/api/runtime/telemetry/${sessionId}`)
+        apiFetch(`/runtime/telemetry`),
+        apiFetch(`/runtime/telemetry/${sessionId}`)
       ]);
 
       if (!telemetryRes.ok || !sessionRes.ok) {
