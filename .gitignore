@@ -8,6 +8,8 @@ Coverage
 
 # Storage & screenshots
 storage/
+test-results/
+coverage/
 
 # Prisma generated client (auto-generated at build time, platform-specific binaries)
 packages/db/src/generated/
