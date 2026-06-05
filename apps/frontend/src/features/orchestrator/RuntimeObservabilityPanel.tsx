@@ -25,13 +25,17 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
   const [error, setError] = useState<string | null>(null);
 
   const fetchRuntimeTelemetry = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
       console.log(`[RuntimeObservabilityPanel] Fetching telemetry...`);
       
       const [telemetryRes, sessionRes] = await Promise.all([
-        apiFetch(`/runtime/telemetry`),
-        apiFetch(`/runtime/telemetry/${sessionId}`)
+        apiFetch(`/runtime/telemetry`, { signal: controller.signal }),
+        apiFetch(`/runtime/telemetry/${sessionId}`, { signal: controller.signal })
       ]);
+      clearTimeout(timeoutId);
 
       if (!telemetryRes.ok) {
         let errMsg = `Telemetry request failed (${telemetryRes.status})`;
@@ -64,8 +68,13 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
       }
       setError(null);
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('[RuntimeObservabilityPanel] Error during fetch:', err);
-      setError(err.message || 'Failed to sync runtime metrics');
+      if (err.name === 'AbortError') {
+        setError('Telemetry request timed out after 5 seconds');
+      } else {
+        setError(err.message || 'Failed to sync runtime metrics');
+      }
     } finally {
       setLoading(false);
     }
@@ -98,8 +107,10 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
     );
   }
 
-  const { queues = [], workers = [], browserPool = {}, activeSessions = 0, totalErrors = 0 } = telemetry;
-  const { recoveryCount = 0, checkpoint = {} } = sessionRuntime || {};
+  const { queues = [], workers = [], browserPool, activeSessions = 0, totalErrors = 0 } = telemetry;
+  const safeBrowserPool = browserPool || {};
+  const { recoveryCount = 0, checkpoint } = sessionRuntime || {};
+  const safeCheckpoint = checkpoint || {};
 
   return (
     <div className="flex flex-col gap-6 w-full font-mono text-[11px] text-zinc-300">
@@ -109,7 +120,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
         {[
           { label: 'Active Sessions', value: activeSessions, desc: 'Parallel runs in flight', icon: Clock, color: 'text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
           { label: 'Registered Workers', value: workers.length, desc: 'Horizontal cluster size', icon: Server, color: 'text-blue-400 bg-blue-500/5 border-blue-500/10' },
-          { label: 'Browser Contexts', value: `${browserPool.activeContexts || 0} / ${browserPool.idleContexts + browserPool.activeContexts || 0}`, desc: 'Active / Total capacity', icon: Chrome, color: 'text-purple-400 bg-purple-500/5 border-purple-500/10' },
+          { label: 'Browser Contexts', value: `${safeBrowserPool.activeContexts || 0} / ${(safeBrowserPool.idleContexts || 0) + (safeBrowserPool.activeContexts || 0)}`, desc: 'Active / Total capacity', icon: Chrome, color: 'text-purple-400 bg-purple-500/5 border-purple-500/10' },
           { label: 'Recovery Events', value: recoveryCount, desc: 'Auto-heals in this session', icon: RefreshCw, color: 'text-yellow-400 bg-yellow-500/5 border-yellow-500/10' }
         ].map((stat, i) => (
           <div key={i} className="bg-[#121214] border border-[#222226] rounded-xl p-4 flex items-center gap-3">
@@ -222,23 +233,23 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
           <div className="bg-[#0d0d0f] border border-[#222226] p-4 rounded-lg flex flex-col gap-3">
             <div className="flex justify-between items-center">
               <span>Active Leases</span>
-              <span className="text-white font-bold">{browserPool.activeContexts || 0}</span>
+              <span className="text-white font-bold">{safeBrowserPool.activeContexts || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Idle Pools</span>
-              <span className="text-white font-bold">{browserPool.idleContexts || 0}</span>
+              <span className="text-white font-bold">{safeBrowserPool.idleContexts || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Total Contexts Launched</span>
-              <span className="text-white font-bold">{browserPool.totalLaunched || 0}</span>
+              <span className="text-white font-bold">{safeBrowserPool.totalLaunched || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Recycled Count</span>
-              <span className="text-emerald-400 font-bold">{browserPool.recycledCount || 0}</span>
+              <span className="text-emerald-400 font-bold">{safeBrowserPool.recycledCount || 0}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Avg Context Lease Duration</span>
-              <span className="text-white font-bold">{(browserPool.contextLeaseAvgMs / 1000).toFixed(1)}s</span>
+              <span className="text-white font-bold">{((safeBrowserPool.contextLeaseAvgMs || 0) / 1000).toFixed(1)}s</span>
             </div>
           </div>
         </div>
@@ -257,18 +268,18 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
             <div className="flex items-center justify-between border-b border-[#222226]/50 pb-2">
               <span className="font-bold text-white">RECOVERY CHECKPOINT STATE</span>
               <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-bold">
-                {checkpoint.lastMilestone || 'INITIAL'}
+                {safeCheckpoint.lastMilestone || 'INITIAL'}
               </span>
             </div>
             
             <div className="flex flex-col gap-2 text-[10px]">
               <div className="flex justify-between">
                 <span className="text-zinc-500">Completed Tasks:</span>
-                <span className="text-emerald-400 font-bold">{checkpoint.completedTaskIds?.length || 0}</span>
+                <span className="text-emerald-400 font-bold">{safeCheckpoint.completedTaskIds?.length || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Failed Tasks:</span>
-                <span className="text-red-400 font-bold">{checkpoint.failedTaskIds?.length || 0}</span>
+                <span className="text-red-400 font-bold">{safeCheckpoint.failedTaskIds?.length || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Session Lock status:</span>
