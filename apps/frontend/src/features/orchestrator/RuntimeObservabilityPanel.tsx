@@ -33,12 +33,22 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
         apiFetch(`/runtime/telemetry/${sessionId}`)
       ]);
 
-      if (!telemetryRes.ok || !sessionRes.ok) {
-        console.error('[RuntimeObservabilityPanel] Fetch response not OK:', {
-          telemetryStatus: telemetryRes.status,
-          sessionStatus: sessionRes.status
-        });
-        throw new Error('Failed to fetch telemetry data from backend');
+      if (!telemetryRes.ok) {
+        let errMsg = `Telemetry request failed (${telemetryRes.status})`;
+        try {
+          const json = await telemetryRes.clone().json();
+          if (json.error) errMsg += `: ${json.error}`;
+        } catch {}
+        throw new Error(errMsg);
+      }
+
+      if (!sessionRes.ok) {
+        let errMsg = `Session metrics request failed (${sessionRes.status})`;
+        try {
+          const json = await sessionRes.clone().json();
+          if (json.error) errMsg += `: ${json.error}`;
+        } catch {}
+        throw new Error(errMsg);
       }
 
       const telemetryData = await telemetryRes.json();
