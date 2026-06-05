@@ -39,6 +39,7 @@ interface SessionRecord {
   model: string;
   startedAt: Date;
   endedAt?: Date;
+  createdAt: Date;
 }
 
 interface ThoughtRecord {
@@ -267,6 +268,7 @@ agentRoutes.post('/workflow/run', async (c) => {
     stepCount: 0,
     model: modelName,
     startedAt: new Date(),
+    createdAt: new Date(),
   });
   memThoughts.set(sessionId, []);
   memActions.set(sessionId, []);
@@ -327,6 +329,7 @@ agentRoutes.get('/workflow/:id/status', async (c) => {
         where: { id },
         select: {
           id: true,
+          projectId: true,
           status: true,
           stepCount: true,
           model: true,
@@ -334,6 +337,13 @@ agentRoutes.get('/workflow/:id/status', async (c) => {
           persona: true,
           startedAt: true,
           endedAt: true,
+          createdAt: true,
+          project: {
+            select: {
+              projectName: true,
+              websiteUrl: true,
+            }
+          }
         },
       });
       if (session) {
