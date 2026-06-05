@@ -182,6 +182,7 @@ export const WorkflowMonitor = () => {
 
   const [activeTab, setActiveTab] = useState<'thoughts' | 'actions'>('thoughts');
   const [isTerminal, setIsTerminal] = useState(false);
+  const [countdown, setCountdown] = useState(2);
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
 
   // ── Status polling ─────────────────────────────────────────────────────────
@@ -238,6 +239,16 @@ export const WorkflowMonitor = () => {
       setIsTerminal(true);
     }
   }, [session?.status]);
+
+  // Live countdown ticker — 2 → 1 → 0 → 2 …, stops when terminal
+  useEffect(() => {
+    if (isTerminal) { setCountdown(2); return; }
+    setCountdown(2); // reset on (re)start
+    const id = setInterval(() => {
+      setCountdown(prev => (prev <= 1 ? 2 : prev - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isTerminal]);
 
   // Auto-scroll thoughts
   useEffect(() => {
@@ -468,7 +479,7 @@ export const WorkflowMonitor = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-400" />
               </span>
-              <span className="font-mono text-[10px]">Live · 2s</span>
+              <span className="font-mono text-[10px]">Live · {countdown}s</span>
             </div>
           )}
         </div>

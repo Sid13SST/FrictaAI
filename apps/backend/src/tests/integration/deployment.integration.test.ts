@@ -4,6 +4,7 @@ import { validateEnv } from '../../utils/envValidation';
 import { validateStartup } from '../../utils/startupCheck';
 import { healthRoutes } from '../../routes/health';
 import { customLogger } from '../../middleware/customLogger';
+import { prisma } from '@fricta/db';
 
 describe('Release Engineering & Deployment Hardening Integration Tests', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -44,7 +45,10 @@ describe('Release Engineering & Deployment Hardening Integration Tests', () => {
       // Mock db connector or pass invalid connection string to throw error
       process.env.DATABASE_URL = 'postgresql://invalid_host:5432/invalid_db';
       
-      await expect(validateStartup()).rejects.toThrow();
+      const queryRawSpy = vi.spyOn(prisma, '$queryRaw').mockRejectedValueOnce(new Error('Connection refused'));
+      
+      await expect(validateStartup()).rejects.toThrow(/DB_CONNECTION_FAILED/);
+      expect(queryRawSpy).toHaveBeenCalled();
     });
   });
 
