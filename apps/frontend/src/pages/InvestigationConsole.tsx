@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Brain, Terminal, Layers, ShieldAlert, Cpu, Sparkles, Database, Eye, Activity } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 import { OrchestrationOverview } from '../features/orchestration/OrchestrationOverview';
 import { MultiAgentTimeline } from '../features/timeline/MultiAgentTimeline';
@@ -45,7 +46,7 @@ export const InvestigationConsole: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const base = 'http://127.0.0.1:3001/api/console';
+      const base = '/console';
       const [
         overviewRes,
         timelineRes,
@@ -55,13 +56,13 @@ export const InvestigationConsole: React.FC = () => {
         memoryRes,
         replayRes
       ] = await Promise.all([
-        fetch(`${base}/${id}/overview`),
-        fetch(`${base}/${id}/timeline`),
-        fetch(`${base}/${id}/evidence`),
-        fetch(`${base}/${id}/insights`),
-        fetch(`${base}/${id}/agents`),
-        fetch(`${base}/${id}/memory`),
-        fetch(`${base}/${id}/replay-sync`),
+        apiFetch(`${base}/${id}/overview`),
+        apiFetch(`${base}/${id}/timeline`),
+        apiFetch(`${base}/${id}/evidence`),
+        apiFetch(`${base}/${id}/insights`),
+        apiFetch(`${base}/${id}/agents`),
+        apiFetch(`${base}/${id}/memory`),
+        apiFetch(`${base}/${id}/replay-sync`),
       ]);
 
       if (!overviewRes.ok) throw new Error('Investigation session details not found');
@@ -111,9 +112,9 @@ export const InvestigationConsole: React.FC = () => {
   useEffect(() => {
     if (!id || loading) return;
 
-    const baseRealtime = 'http://127.0.0.1:3001/api/realtime';
     const streamNames = ['orchestration', 'timeline', 'agents', 'memory', 'replay', 'insights'] as const;
     const sources: { [key: string]: EventSource } = {};
+    let active = true;
 
     const mapSSEEventToTimelineItem = (eventType: string, data: any) => {
       const timestamp = data.timestamp || new Date().toISOString();
@@ -201,17 +202,31 @@ export const InvestigationConsole: React.FC = () => {
       }
     };
 
-    streamNames.forEach(streamName => {
-      const url = `${baseRealtime}/${streamName}/${id}`;
-      const source = new EventSource(url);
-      sources[streamName] = source;
+    const initSSE = async () => {
+      let token = '';
+      try {
+        const clerk = (window as any).__clerk__;
+        if (clerk?.session) {
+          token = await clerk.session.getToken() || '';
+        }
+      } catch (err) {
+        console.error('Failed to get Clerk token for SSE:', err);
+      }
 
-      source.onerror = (err) => {
-        console.error(`[SSE Connection Error] Stream: ${streamName}`, err);
-      };
-    });
+      if (!active) return;
 
-    // orchestration stream listeners
+      streamNames.forEach(streamName => {
+        const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+        const url = `/api/realtime/${streamName}/${id}${tokenParam}`;
+        const source = new EventSource(url);
+        sources[streamName] = source;
+
+        source.onerror = (err) => {
+          console.error(`[SSE Connection Error] Stream: ${streamName}`, err);
+        };
+      });
+
+      // orchestration stream listeners
     sources.orchestration.addEventListener('orchestration.started', (e: any) => {
       const data = JSON.parse(e.data);
       setOverviewData((prev: any) => {
@@ -531,8 +546,11 @@ export const InvestigationConsole: React.FC = () => {
         };
       });
     });
+  };
 
-    return () => {
+  initSSE();
+
+  return () => {
       streamNames.forEach(streamName => {
         if (sources[streamName]) {
           sources[streamName].close();
