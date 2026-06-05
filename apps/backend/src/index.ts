@@ -23,7 +23,7 @@ import { clerkMiddleware, requireAuth, customLogger } from './middleware';
 import { authRoutes } from './routes/auth';
 import { projectRoutes } from './routes/projects';
 import { workflowRoutes } from './routes/workflows';
-import { reportRoutes } from './routes/reports';
+import { reportRoutes, generateReportForSession } from './routes/reports';
 import { personaRoutes } from './routes/personas';
 import { agentRoutes } from './routes/agent';
 import { healthRoutes } from './routes/health';
@@ -239,7 +239,32 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 console.log(`Server is running on port ${port}`);
 
 // Start BullMQ Worker
-startWorker();
+const worker = startWorker();
+worker.on('completed', async (job) => {
+  const sessionId = job.data?.sessionId;
+  if (sessionId) {
+    console.log(`[Worker Listener] Job completed. Auto-generating report for session ${sessionId}...`);
+    try {
+      await generateReportForSession(sessionId);
+      console.log(`[Worker Listener] Report auto-generated successfully for session ${sessionId}`);
+    } catch (err: any) {
+      console.error(`[Worker Listener] Failed to auto-generate report for session ${sessionId}:`, err.message);
+    }
+  }
+});
+
+worker.on('failed', async (job, err) => {
+  const sessionId = job?.data?.sessionId;
+  if (sessionId) {
+    console.log(`[Worker Listener] Job failed. Auto-generating diagnostic report for session ${sessionId}...`);
+    try {
+      await generateReportForSession(sessionId);
+      console.log(`[Worker Listener] Diagnostic report auto-generated successfully for session ${sessionId}`);
+    } catch (dbErr: any) {
+      console.error(`[Worker Listener] Failed to auto-generate diagnostic report for session ${sessionId}:`, dbErr.message);
+    }
+  }
+});
 // Start Runtime Infrastructure (Workers, Supervisor, Telemetry)
 startRuntime(prisma).catch((err) => {
   console.error('Failed to start distributed runtime:', err);

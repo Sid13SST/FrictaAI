@@ -405,22 +405,36 @@ export const WorkflowMonitor = () => {
       {/* ── Completion CTAs ───────────────────────────────────────────────── */}
       {isTerminal && (
         <div className="flex flex-wrap items-center gap-3">
-          {session?.status === 'COMPLETED' ? (
-            <Link
-              to={`/app/reports/${workflowId}`}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-105"
-              style={{ background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 0 24px rgba(16,185,129,0.25)' }}
-            >
-              <CheckCircle className="w-4 h-4" /> View Report <ArrowRight className="w-4 h-4" />
-            </Link>
-          ) : (
-            <div
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
-            >
-              <RefreshCw className="w-4 h-4 animate-spin" /> Report processing…
-            </div>
-          )}
+          <Link
+            to={`/app/reports/${workflowId}`}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-105"
+            style={{
+              background: session?.status === 'COMPLETED'
+                ? 'linear-gradient(135deg,#10b981,#34d399)'
+                : session?.status === 'LOOP_DETECTED'
+                ? 'linear-gradient(135deg,#eab308,#fb923c)'
+                : 'linear-gradient(135deg,#f43f5e,#fb7185)',
+              boxShadow: session?.status === 'COMPLETED'
+                ? '0 0 24px rgba(16,185,129,0.25)'
+                : session?.status === 'LOOP_DETECTED'
+                ? '0 0 24px rgba(234,179,8,0.25)'
+                : '0 0 24px rgba(244,63,94,0.25)'
+            }}
+          >
+            {session?.status === 'COMPLETED' ? (
+              <>
+                <CheckCircle className="w-4 h-4" /> View Report <ArrowRight className="w-4 h-4" />
+              </>
+            ) : session?.status === 'LOOP_DETECTED' ? (
+              <>
+                <AlertTriangle className="w-4 h-4" /> View Diagnostic Report <ArrowRight className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                <XCircle className="w-4 h-4" /> View Diagnostic Report <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </Link>
           <button
             onClick={() => navigate('/app/workflow')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"

@@ -24,7 +24,7 @@ import {
 
 export const reportRoutes = new Hono();
 
-async function generateReportForSession(sessionId: string) {
+export async function generateReportForSession(sessionId: string) {
   const session = await prisma.workflowSession.findUnique({
     where: { id: sessionId },
     include: {
