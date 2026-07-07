@@ -69,7 +69,7 @@ export const runWorkflow = async (options: RunWorkflowOptions) => {
           await Promise.all([
             prisma.agentThought.create({
               data: { workflowSessionId: sessionId, thought, stepNumber: step }
-            }).catch(err => logger.error({ err }, 'Failed to save thought')),
+            }).catch((err: any) => logger.error({ err }, 'Failed to save thought')),
             prisma.workflowSession.update({
               where: { id: sessionId },
               data: { stepCount: step }
@@ -87,7 +87,7 @@ export const runWorkflow = async (options: RunWorkflowOptions) => {
               stepNumber: executed.stepNumber,
               errorMessage: executed.errorMessage,
             }
-          }).catch(err => logger.error({ err }, 'Failed to save action'));
+          }).catch((err: any) => logger.error({ err }, 'Failed to save action'));
           
           await prisma.workflowSession.update({
             where: { id: sessionId },
