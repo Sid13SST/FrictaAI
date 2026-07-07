@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@fricta/db';
 import { BrowserManager } from '../browser/manager';
 import { AgentLoop } from './loop';
 import { createAIProvider } from '../providers';

@@ -37,6 +37,12 @@ vi.mock('@fricta/agent', () => {
         id: 'job_123',
         getState: vi.fn().mockResolvedValue('completed'),
         data: { sessionId: 'session_123' }
+      }),
+      getJobCounts: vi.fn().mockResolvedValue({
+        waiting: 0,
+        active: 0,
+        completed: 0,
+        failed: 0
       })
     }
   };

@@ -3,7 +3,7 @@ import { connection } from '../queue/connection';
 import { WORKFLOW_QUEUE_NAME } from '../queue';
 import { WorkflowJobData } from '../scheduler';
 import { logger } from '@fricta/shared';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@fricta/db';
 import { runWorkflow } from '../index'; // Will refactor this to use the Agent directly
 
 const prisma = new PrismaClient();
