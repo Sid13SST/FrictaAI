@@ -8,6 +8,40 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { workflowQueue } from '@fricta/agent';
 
+// Mock @fricta/agent to prevent launching Playwright/Chromium and starting real queue connections
+const { mockLaunch, mockCreateContext } = vi.hoisted(() => {
+  return {
+    mockLaunch: vi.fn().mockResolvedValue(undefined),
+    mockCreateContext: vi.fn().mockResolvedValue({}),
+  };
+});
+
+vi.mock('@fricta/agent', () => {
+  return {
+    BrowserManager: vi.fn().mockImplementation(function() {
+      return {
+        launch: mockLaunch,
+        createContext: mockCreateContext,
+        closeContext: vi.fn().mockResolvedValue(undefined),
+      };
+    }),
+    SessionManager: vi.fn().mockImplementation(function() {
+      return {
+        start: vi.fn().mockResolvedValue(undefined),
+        getContext: vi.fn().mockResolvedValue({ history: [] }),
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+    }),
+    workflowQueue: {
+      getJob: vi.fn().mockResolvedValue({
+        id: 'job_123',
+        getState: vi.fn().mockResolvedValue('completed'),
+        data: { sessionId: 'session_123' }
+      })
+    }
+  };
+});
+
 // Mock Clerk auth statically to intercept Bearer token and bypass Clerk network calls
 vi.mock('@hono/clerk-auth', () => {
   return {
