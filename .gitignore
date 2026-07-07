@@ -7,7 +7,8 @@ Coverage
 *.log
 
 # Storage & screenshots
-storage/
+/storage/
+/apps/backend/storage/
 test-results/
 coverage/
 
