@@ -240,7 +240,7 @@ console.log(`Server is running on port ${port}`);
 
 // Start BullMQ Worker
 const worker = startWorker();
-worker.on('completed', async (job) => {
+worker.on('completed', async (job: any) => {
   const sessionId = job.data?.sessionId;
   if (sessionId) {
     console.log(`[Worker Listener] Job completed. Auto-generating report for session ${sessionId}...`);
@@ -253,7 +253,7 @@ worker.on('completed', async (job) => {
   }
 });
 
-worker.on('failed', async (job, err) => {
+worker.on('failed', async (job: any, err: any) => {
   const sessionId = job?.data?.sessionId;
   if (sessionId) {
     console.log(`[Worker Listener] Job failed. Auto-generating diagnostic report for session ${sessionId}...`);
@@ -266,7 +266,7 @@ worker.on('failed', async (job, err) => {
   }
 });
 // Start Runtime Infrastructure (Workers, Supervisor, Telemetry)
-startRuntime(prisma).catch((err) => {
+startRuntime(prisma).catch((err: any) => {
   console.error('Failed to start distributed runtime:', err);
 });
 
