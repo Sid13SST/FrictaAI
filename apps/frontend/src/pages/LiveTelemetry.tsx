@@ -75,7 +75,7 @@ export const LiveTelemetry: React.FC = () => {
   const [signals, setSignals] = useState<SessionSignal[]>([]);
   const [liveEvents, setLiveEvents] = useState<TelemetryEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeUsersCount, setActiveUsersCount] = useState<number>(3);
+  const [activeUsersCount, setActiveUsersCount] = useState<number>(0);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [sdkKey] = useState<string>('fricta_live_53ac97de72267b43a52f145f5cb811bce9faa65a00fb936b');
   const [projectId, setProjectId] = useState<string>('56b8722a-c7c4-47db-a855-b5d3e0ad32cb');
@@ -91,48 +91,7 @@ export const LiveTelemetry: React.FC = () => {
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock sessions list for seeding UI when empty
-  const mockSessions: LiveSession[] = [
-    {
-      id: 'sess_1',
-      sessionKey: 'fricta_sess_chrome_mac_usa_001',
-      userId: 'user_active_888',
-      browser: 'Chrome',
-      os: 'macOS',
-      device: 'Desktop',
-      ipAddress: '64.233.160.1',
-      location: 'San Francisco, USA',
-      startedAt: new Date(Date.now() - 300000).toISOString(),
-      lastActiveAt: new Date().toISOString(),
-      status: 'ACTIVE'
-    },
-    {
-      id: 'sess_2',
-      sessionKey: 'fricta_sess_firefox_win_uk_002',
-      userId: 'user_friction_999',
-      browser: 'Firefox',
-      os: 'Windows',
-      device: 'Desktop',
-      ipAddress: '82.165.2.1',
-      location: 'London, UK',
-      startedAt: new Date(Date.now() - 600000).toISOString(),
-      lastActiveAt: new Date(Date.now() - 40000).toISOString(),
-      status: 'ACTIVE'
-    },
-    {
-      id: 'sess_3',
-      sessionKey: 'fricta_sess_safari_ios_fra_003',
-      userId: 'user_success_777',
-      browser: 'Safari',
-      os: 'iOS',
-      device: 'Mobile',
-      ipAddress: '195.154.122.1',
-      location: 'Paris, France',
-      startedAt: new Date(Date.now() - 900000).toISOString(),
-      lastActiveAt: new Date(Date.now() - 120000).toISOString(),
-      status: 'COMPLETED'
-    }
-  ];
+
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -164,12 +123,12 @@ export const LiveTelemetry: React.FC = () => {
       });
 
       const list = Object.values(uniqueSessionsMap);
-      setSessions(list.length > 0 ? list : mockSessions);
-      setActiveUsersCount(list.filter(s => s.status === 'ACTIVE').length || 3);
+      setSessions(list);
+      setActiveUsersCount(list.filter(s => s.status === 'ACTIVE').length);
     } catch (err) {
-      console.error('Telemetry fetch failed, using fallback mock states:', err);
-      setSessions(mockSessions);
-      setActiveUsersCount(3);
+      console.error('Telemetry fetch failed:', err);
+      setSessions([]);
+      setActiveUsersCount(0);
     } finally {
       setLoading(false);
     }
@@ -583,84 +542,94 @@ export const LiveTelemetry: React.FC = () => {
 
             {/* List Layout instead of flat table for rich details */}
             <div className="space-y-2">
-              {sessions.map((sess) => {
-                const isSelected = selectedSessionId === sess.id;
-                return (
-                  <div
-                    key={sess.id}
-                    onClick={() => fetchSessionDetails(sess.id)}
-                    className={`group p-4 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                      isSelected 
-                        ? 'bg-emerald-500/[0.03] border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
-                        : 'bg-zinc-900/30 border-white/[0.03] hover:bg-zinc-900/60 hover:border-white/[0.08]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Status indicator */}
-                      <div className="relative flex-shrink-0 w-3 h-3 flex items-center justify-center">
-                        {sess.status === 'ACTIVE' ? (
-                          <>
-                            <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                          </>
-                        ) : (
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-zinc-600"></span>
-                        )}
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-white">
-                            {sess.sessionKey}
-                          </span>
-                          {sess.userId && (
-                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-white/[0.04]">
-                              {sess.userId}
-                            </span>
+              {sessions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl border border-dashed border-white/[0.04] bg-zinc-900/10 text-center">
+                  <Activity className="w-8 h-8 text-zinc-600 mb-3 animate-pulse" />
+                  <p className="text-zinc-300 text-sm font-semibold">No Active Telemetry Pipes</p>
+                  <p className="text-zinc-500 text-xs mt-1 max-w-sm">
+                    Launch a new workflow or configure the Fricta SDK to capture real-world user interactions and session signals.
+                  </p>
+                </div>
+              ) : (
+                sessions.map((sess) => {
+                  const isSelected = selectedSessionId === sess.id;
+                  return (
+                    <div
+                      key={sess.id}
+                      onClick={() => fetchSessionDetails(sess.id)}
+                      className={`group p-4 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                        isSelected 
+                          ? 'bg-emerald-500/[0.03] border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
+                          : 'bg-zinc-900/30 border-white/[0.03] hover:bg-zinc-900/60 hover:border-white/[0.08]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Status indicator */}
+                        <div className="relative flex-shrink-0 w-3 h-3 flex items-center justify-center">
+                          {sess.status === 'ACTIVE' ? (
+                            <>
+                              <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </>
+                          ) : (
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-zinc-600"></span>
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-                          <span className="flex items-center gap-1">
-                            {sess.device === 'Mobile' ? <Smartphone className="w-3.5 h-3.5" /> : <Laptop className="w-3.5 h-3.5" />}
-                            {sess.browser} on {sess.os}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-white">
+                              {sess.sessionKey}
+                            </span>
+                            {sess.userId && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-white/[0.04]">
+                                {sess.userId}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+                            <span className="flex items-center gap-1">
+                              {sess.device === 'Mobile' ? <Smartphone className="w-3.5 h-3.5" /> : <Laptop className="w-3.5 h-3.5" />}
+                              {sess.browser} on {sess.os}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Globe className="w-3 h-3 text-zinc-500" />
+                              {sess.location}
+                            </span>
+                            <span>•</span>
+                            <span className="font-mono text-[10px]">IP: {sess.ipAddress}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/[0.04] pt-3 pt-0">
+                        <div className="text-left sm:text-right font-mono">
+                          <span className="text-[10px] text-zinc-500 block uppercase">Last Interaction</span>
+                          <span className="text-xs text-zinc-300 font-semibold">
+                            {new Date(sess.lastActiveAt).toLocaleTimeString()}
                           </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Globe className="w-3 h-3 text-zinc-500" />
-                            {sess.location}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider ${
+                            sess.status === 'ACTIVE' 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : 'bg-zinc-800 text-zinc-400 border border-transparent'
+                          }`}>
+                            {sess.status}
                           </span>
-                          <span>•</span>
-                          <span className="font-mono text-[10px]">IP: {sess.ipAddress}</span>
+
+                          <ChevronRight className={`w-4 h-4 text-zinc-600 transition-transform ${
+                            isSelected ? 'translate-x-1 text-emerald-400' : 'group-hover:translate-x-0.5'
+                          }`} />
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-white/[0.04] pt-3 sm:pt-0">
-                      <div className="text-left sm:text-right font-mono">
-                        <span className="text-[10px] text-zinc-500 block uppercase">Last Interaction</span>
-                        <span className="text-xs text-zinc-300 font-semibold">
-                          {new Date(sess.lastActiveAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider ${
-                          sess.status === 'ACTIVE' 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                            : 'bg-zinc-800 text-zinc-400 border border-transparent'
-                        }`}>
-                          {sess.status}
-                        </span>
-
-                        <ChevronRight className={`w-4 h-4 text-zinc-600 transition-transform ${
-                          isSelected ? 'translate-x-1 text-emerald-400' : 'group-hover:translate-x-0.5'
-                        }`} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 

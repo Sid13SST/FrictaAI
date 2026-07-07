@@ -105,8 +105,8 @@ export const CollaborationDashboard = () => {
   const [alertSeverity, setAlertSeverity] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('HIGH');
   const [alertMessage, setAlertMessage] = useState('');
   const [alertChannels, setAlertChannels] = useState<string[]>(['SLACK', 'EMAIL']);
-  const [alertSlackHook, setAlertSlackHook] = useState('https://hooks.slack.com/services/T00/B00/mock-webhook');
-  const [alertEmail, setAlertEmail] = useState('team-leads@fricta.ai');
+  const [alertSlackHook, setAlertSlackHook] = useState('');
+  const [alertEmail, setAlertEmail] = useState('');
 
   // Share Token Form State
   const [shareEmail, setShareEmail] = useState('');
