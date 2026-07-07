@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@fricta/db';
 
 export class EvidenceLinkManager {
   private prisma: PrismaClient;
@@ -36,7 +36,7 @@ export class EvidenceLinkManager {
     });
 
     const fullEvidence = await Promise.all(
-      links.map(async (link) => {
+      links.map(async (link: any) => {
         let details: any = null;
 
         try {

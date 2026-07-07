@@ -1,4 +1,4 @@
-import { ExecutiveReport } from '@prisma/client';
+import { ExecutiveReport } from '@fricta/db';
 import { PresentationDeck, SlideData } from '../types';
 
 export class PresentationDeckBuilder {

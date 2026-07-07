@@ -1,4 +1,4 @@
-import { PrismaClient, WorkspaceInsightDigest } from '@prisma/client';
+import { PrismaClient, WorkspaceInsightDigest } from '@fricta/db';
 
 export class WorkspaceAnalyticsEngine {
   private prisma: PrismaClient;
@@ -38,9 +38,9 @@ export class WorkspaceAnalyticsEngine {
     let scoresCount = 0;
     const topRisksList: any[] = [];
 
-    projects.forEach(project => {
+    projects.forEach((project: any) => {
       totalRuns += project.sessions.length;
-      project.sessions.forEach(session => {
+      project.sessions.forEach((session: any) => {
         const score = session.scores[0]?.overallScore ?? session.visualScores[0]?.overallScore;
         if (score !== undefined) {
           totalScoreSum += score;
@@ -48,8 +48,8 @@ export class WorkspaceAnalyticsEngine {
         }
       });
 
-      project.workflowForecasts.forEach(forecast => {
-        forecast.riskSignals.forEach(signal => {
+      project.workflowForecasts.forEach((forecast: any) => {
+        forecast.riskSignals.forEach((signal: any) => {
           if (signal.severity === 'CRITICAL' || signal.severity === 'HIGH') {
             topRisksList.push({
               project: project.projectName,
@@ -101,8 +101,8 @@ export class WorkspaceAnalyticsEngine {
       }
     });
 
-    return projects.map(proj => {
-      const dataPoints = proj.sessions.map(s => {
+    return projects.map((proj: any) => {
+      const dataPoints = proj.sessions.map((s: any) => {
         const score = s.scores[0]?.overallScore ?? s.visualScores[0]?.overallScore ?? 80;
         return {
           date: s.createdAt.toISOString().split('T')[0],

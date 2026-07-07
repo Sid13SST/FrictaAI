@@ -1,4 +1,4 @@
-import { PrismaClient, ReportDistributionEvent } from '@prisma/client';
+import { PrismaClient, ReportDistributionEvent } from '@fricta/db';
 
 export class ReportDistributionDispatcher {
   private prisma: PrismaClient;

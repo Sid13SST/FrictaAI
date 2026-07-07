@@ -1,4 +1,4 @@
-import { ExecutiveReport } from '@prisma/client';
+import { ExecutiveReport } from '@fricta/db';
 import { PDFLayoutStructure, PDFLayoutPage } from '../types';
 
 export class PDFLayoutEngine {

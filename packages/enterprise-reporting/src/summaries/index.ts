@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@fricta/db';
 
 export class SummarySynthesisEngine {
   private prisma: PrismaClient;
@@ -18,10 +18,10 @@ export class SummarySynthesisEngine {
     });
 
     const personaTypes = ['BEGINNER', 'POWER_USER', 'FIRST_TIME_USER', 'DISTRACTED_USER', 'STANDARD'];
-    const summary = personaTypes.map(type => {
-      const typeFindings = findings.filter(f => f.personaType?.toUpperCase() === type);
-      const criticals = typeFindings.filter(f => f.severity === 'CRITICAL').length;
-      const highs = typeFindings.filter(f => f.severity === 'HIGH').length;
+    const summary = personaTypes.map((type: string) => {
+      const typeFindings = findings.filter((f: any) => f.personaType?.toUpperCase() === type);
+      const criticals = typeFindings.filter((f: any) => f.severity === 'CRITICAL').length;
+      const highs = typeFindings.filter((f: any) => f.severity === 'HIGH').length;
 
       let scoreDelta = 0;
       if (criticals > 0) scoreDelta = -25;
@@ -53,22 +53,22 @@ export class SummarySynthesisEngine {
       orderBy: { stepIndex: 'asc' }
     });
 
-    const escalations = reactions.map(r => {
-      const stepHesitations = hesitations.filter(h => h.stepIndex === r.stepIndex);
+    const escalations = reactions.map((r: any) => {
+      const stepHesitations = hesitations.filter((h: any) => h.stepIndex === r.stepIndex);
       return {
         stepIndex: r.stepIndex,
         reactionType: r.reactionType,
         trigger: r.triggerSource,
         intensity: r.intensity,
         hesitationsCount: stepHesitations.length,
-        hasEscalated: r.intensity > 0.6 || stepHesitations.some(h => h.severity === 'HIGH')
+        hasEscalated: r.intensity > 0.6 || stepHesitations.some((h: any) => h.severity === 'HIGH')
       };
     });
 
     return {
       sessionId,
       totalReactions: reactions.length,
-      averageIntensity: reactions.length > 0 ? reactions.reduce((acc, curr) => acc + curr.intensity, 0) / reactions.length : 0,
+      averageIntensity: reactions.length > 0 ? reactions.reduce((acc: any, curr: any) => acc + curr.intensity, 0) / reactions.length : 0,
       escalationTimeline: escalations
     };
   }

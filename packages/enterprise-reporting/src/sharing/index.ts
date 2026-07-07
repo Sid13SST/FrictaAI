@@ -1,4 +1,4 @@
-import { PrismaClient, SharedReport } from '@prisma/client';
+import { PrismaClient, SharedReport } from '@fricta/db';
 import * as crypto from 'crypto';
 
 export class SharedReportManager {

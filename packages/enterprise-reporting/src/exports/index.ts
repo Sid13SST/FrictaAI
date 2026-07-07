@@ -1,4 +1,4 @@
-import { PrismaClient, ReportExport } from '@prisma/client';
+import { PrismaClient, ReportExport } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
 
 export class ExportProcessingService {

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@fricta/db';
 import { ExecutiveReportSection } from '../types';
 
 export class ExecutiveReportingCompiler {
@@ -47,10 +47,10 @@ export class ExecutiveReportingCompiler {
     let avgCompletionRate = 0.85;
     
     if (latestSessions.length > 0) {
-      const scores = latestSessions.map(s => s.scores[0]?.overallScore ?? s.visualScores[0]?.overallScore ?? 80);
-      avgOverallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      const scores = latestSessions.map((s: any) => s.scores[0]?.overallScore ?? s.visualScores[0]?.overallScore ?? 80);
+      avgOverallScore = Math.round(scores.reduce((a: any, b: any) => a + b, 0) / scores.length);
       
-      const successCount = latestSessions.filter(s => s.status === 'COMPLETED' || s.status === 'SUCCESS').length;
+      const successCount = latestSessions.filter((s: any) => s.status === 'COMPLETED' || s.status === 'SUCCESS').length;
       avgCompletionRate = successCount / latestSessions.length;
     }
 
@@ -60,11 +60,11 @@ export class ExecutiveReportingCompiler {
     if (latestForecast) {
       riskLevel = latestForecast.riskLevel;
     } else {
-      const hasCriticalFinding = latestSessions.some(s => s.uxFindings.some(f => f.severity === 'CRITICAL'));
+      const hasCriticalFinding = latestSessions.some((s: any) => s.uxFindings.some((f: any) => f.severity === 'CRITICAL'));
       if (hasCriticalFinding) {
         riskLevel = 'CRITICAL';
       } else {
-        const hasHighFinding = latestSessions.some(s => s.uxFindings.some(f => f.severity === 'HIGH'));
+        const hasHighFinding = latestSessions.some((s: any) => s.uxFindings.some((f: any) => f.severity === 'HIGH'));
         if (hasHighFinding) {
           riskLevel = 'HIGH';
         }
@@ -73,8 +73,8 @@ export class ExecutiveReportingCompiler {
 
     // 4. Synthesize PM-ready executive summary
     let summaryText = `UX Intelligence Audit for ${project.projectName}. `;
-    const totalCriticalIssues = latestSessions.reduce((acc, s) => acc + s.uxFindings.filter(f => f.severity === 'CRITICAL').length, 0);
-    const totalHighIssues = latestSessions.reduce((acc, s) => acc + s.uxFindings.filter(f => f.severity === 'HIGH').length, 0);
+    const totalCriticalIssues = latestSessions.reduce((acc: any, s: any) => acc + s.uxFindings.filter((f: any) => f.severity === 'CRITICAL').length, 0);
+    const totalHighIssues = latestSessions.reduce((acc: any, s: any) => acc + s.uxFindings.filter((f: any) => f.severity === 'HIGH').length, 0);
 
     if (riskLevel === 'CRITICAL' || riskLevel === 'HIGH') {
       summaryText += `Critical structural friction was identified during user progression. Immediate prioritization is recommended for onboarding elements and primary conversion paths where exit fatigue is projected to spike.`;
