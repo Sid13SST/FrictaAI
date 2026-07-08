@@ -390,9 +390,9 @@ export const Reports = () => {
                       to={`/app/console/${report.sessionId}`}
                       className="flex items-center gap-1.5 text-[10px] font-black font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
                       style={{
-                        background: 'rgba(94, 210, 156, 0.08)',
-                        border: '1px solid rgba(94, 210, 156, 0.2)',
-                        color: '#5ed29c',
+                        background: 'rgba(115, 66, 226, 0.08)',
+                        border: '1px solid rgba(115, 66, 226, 0.2)',
+                        color: '#7342e2',
                       }}
                     >
                       Console <Layers className="w-3 h-3" />
