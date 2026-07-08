@@ -158,12 +158,12 @@ export function RedesignDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#5ed29c]/30 selection:text-white">
+    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#7342e2]/30 selection:text-white">
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-[#222226] pb-6 mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#5ed29c]/10 text-[#5ed29c] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#5ed29c]/20 uppercase tracking-widest">
+            <span className="bg-[#7342e2]/10 text-[#7342e2] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#7342e2]/20 uppercase tracking-widest">
               Redesign Intelligence Active
             </span>
             <span className="bg-purple-500/10 text-purple-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-purple-500/20 uppercase tracking-widest">
@@ -171,7 +171,7 @@ export function RedesignDashboard() {
             </span>
           </div>
           <h1 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#5ed29c] fill-[#5ed29c]/10" /> Explainable Redesign suggestions Dashboard
+            <Sparkles className="w-5 h-5 text-[#7342e2] fill-[#7342e2]/10" /> Explainable Redesign suggestions Dashboard
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
             Replay-linked layout optimizations, cognitive complexity simplification, and impact-quantified UX suggestions.
@@ -197,7 +197,7 @@ export function RedesignDashboard() {
           <button
             onClick={triggerPipeline}
             disabled={runningPipeline}
-            className="flex items-center gap-2 bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase disabled:opacity-50 font-mono"
+            className="flex items-center gap-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase disabled:opacity-50 font-mono"
           >
             {runningPipeline ? (
               <>
@@ -205,7 +205,7 @@ export function RedesignDashboard() {
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-[#5ed29c]" /> Trigger Redesign Pipeline
+                <Play className="w-3.5 h-3.5 fill-[#7342e2]" /> Trigger Redesign Pipeline
               </>
             )}
           </button>
@@ -214,7 +214,7 @@ export function RedesignDashboard() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-[#121214] border border-[#222226] rounded-2xl">
-          <RefreshCw className="w-8 h-8 text-[#5ed29c] animate-spin mb-4" />
+          <RefreshCw className="w-8 h-8 text-[#7342e2] animate-spin mb-4" />
           <span className="text-xs text-zinc-500 uppercase">Running layout remediation analysis...</span>
         </div>
       ) : (
@@ -240,7 +240,7 @@ export function RedesignDashboard() {
                   </button>
                   <button 
                     onClick={() => setComparatorMode('after')}
-                    className={`px-2.5 py-1 rounded transition-all ${comparatorMode === 'after' ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`px-2.5 py-1 rounded transition-all ${comparatorMode === 'after' ? 'bg-[#7342e2]/10 text-[#7342e2] border border-[#7342e2]/20' : 'text-zinc-500 hover:text-zinc-300'}`}
                   >
                     Proposed Fix
                   </button>
@@ -261,8 +261,8 @@ export function RedesignDashboard() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-4 text-center">
-                    <span className="text-[9px] text-[#5ed29c] font-bold uppercase tracking-widest animate-pulse">Remediated CTA Proposal</span>
-                    <button className="bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/40 font-bold px-6 py-2 rounded-xl text-xs transition-all duration-300 shadow-[0_0_15px_rgba(94,210,156,0.15)]">
+                    <span className="text-[9px] text-[#7342e2] font-bold uppercase tracking-widest animate-pulse">Remediated CTA Proposal</span>
+                    <button className="bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/40 font-bold px-6 py-2 rounded-xl text-xs transition-all duration-300 shadow-[0_0_15px_rgba(115, 66, 226,0.15)]">
                       Submit Details
                     </button>
                     <p className="text-[10px] text-zinc-400 max-w-xs leading-normal">
@@ -291,7 +291,7 @@ export function RedesignDashboard() {
                     <div
                       key={rec.id}
                       onClick={() => inspectEvidence(rec)}
-                      className="bg-[#18181b] border border-[#222226] hover:border-[#5ed29c]/30 p-4 rounded-xl flex items-start justify-between gap-4 cursor-pointer transition-all"
+                      className="bg-[#18181b] border border-[#222226] hover:border-[#7342e2]/30 p-4 rounded-xl flex items-start justify-between gap-4 cursor-pointer transition-all"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -303,12 +303,12 @@ export function RedesignDashboard() {
                         </div>
                         <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">{rec.description}</p>
                         <div className="bg-[#0c0c0e] border border-[#222226]/60 p-2.5 rounded-lg text-[10.5px] text-zinc-300 font-mono flex items-start gap-2">
-                          <span className="text-[#5ed29c] font-black text-[9px] uppercase mt-0.5">Proposed:</span>
+                          <span className="text-[#7342e2] font-black text-[9px] uppercase mt-0.5">Proposed:</span>
                           <p className="flex-1 leading-normal">{rec.proposedChange}</p>
                         </div>
                       </div>
                       <div className="text-right flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <span className="bg-[#5ed29c]/5 border border-[#5ed29c]/15 text-[#5ed29c] text-[10px] font-bold px-2 py-0.5 rounded">
+                        <span className="bg-[#7342e2]/5 border border-[#7342e2]/15 text-[#7342e2] text-[10px] font-bold px-2 py-0.5 rounded">
                           +{Math.round(rec.impactScore)}% Yield
                         </span>
                         <span className="text-[8px] text-zinc-500 uppercase">Confidence: {Math.round(rec.confidenceScore * 100)}%</span>
@@ -337,7 +337,7 @@ export function RedesignDashboard() {
                   const isModerate = baseLoad > 40 && baseLoad <= 65;
                   const bgClass = isSevere ? 'border-red-500/20 bg-red-500/5 text-red-400' :
                                   isModerate ? 'border-amber-500/20 bg-amber-500/5 text-amber-400' :
-                                  'border-emerald-500/10 bg-emerald-500/5 text-[#5ed29c]';
+                                  'border-emerald-500/10 bg-emerald-500/5 text-[#7342e2]';
 
                   return (
                     <div
@@ -368,7 +368,7 @@ export function RedesignDashboard() {
                       <p className="text-[11px] text-zinc-400 leading-normal">{rem.remediationPlan}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <span className="text-xs font-black text-[#5ed29c]">-{Math.round(rem.complexityReduction)}% Load</span>
+                      <span className="text-xs font-black text-[#7342e2]">-{Math.round(rem.complexityReduction)}% Load</span>
                     </div>
                   </div>
                 ))}
@@ -383,7 +383,7 @@ export function RedesignDashboard() {
             {/* Impact Gauges */}
             <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl">
               <h2 className="text-xs font-black uppercase text-white mb-6 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-[#5ed29c]" /> Redesign Impact Forecast Dials
+                <TrendingUp className="w-4 h-4 text-[#7342e2]" /> Redesign Impact Forecast Dials
               </h2>
 
               <div className="flex flex-col gap-6 items-center">
@@ -395,7 +395,7 @@ export function RedesignDashboard() {
                       cy="72" 
                       r="60" 
                       fill="none" 
-                      stroke="#5ed29c" 
+                      stroke="#7342e2" 
                       strokeWidth="10" 
                       strokeDasharray={376.8}
                       strokeDashoffset={376.8 - (376.8 * getOverallReadiness()) / 100}
@@ -415,7 +415,7 @@ export function RedesignDashboard() {
                   </div>
                   <div>
                     <span className="text-zinc-500 block uppercase">Cognitive Gains</span>
-                    <span className="text-[#5ed29c] font-bold block text-sm mt-1">
+                    <span className="text-[#7342e2] font-bold block text-sm mt-1">
                       {cognitiveRemediations.length > 0 ? `-${Math.round(cognitiveRemediations[0].complexityReduction)}%` : '0%'}
                     </span>
                   </div>
@@ -426,7 +426,7 @@ export function RedesignDashboard() {
             {/* Workflow Survivability Gains */}
             <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl">
               <h2 className="text-xs font-black uppercase text-white mb-4 flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-[#5ed29c]" /> Workflow Optimization Yield
+                <Cpu className="w-4 h-4 text-[#7342e2]" /> Workflow Optimization Yield
               </h2>
               <div className="flex flex-col gap-4">
                 {optimizations.length === 0 ? (
@@ -436,7 +436,7 @@ export function RedesignDashboard() {
                     <div key={opt.id} className="bg-[#18181b] border border-[#222226] p-4 rounded-xl">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="text-white text-xs font-bold">{opt.workflowPath}</span>
-                        <span className="text-[#5ed29c] text-[10px] font-bold">+{Math.round(opt.expectedSurvivalGain)}% Survival</span>
+                        <span className="text-[#7342e2] text-[10px] font-bold">+{Math.round(opt.expectedSurvivalGain)}% Survival</span>
                       </div>
                       <p className="text-[10.5px] text-zinc-400 leading-normal mb-3">{opt.remediationStrategy}</p>
                       <div className="flex justify-between text-[9px] border-t border-[#222226]/60 pt-2 text-zinc-500 uppercase">
@@ -484,7 +484,7 @@ export function RedesignDashboard() {
               <div className="flex items-center justify-between border-b border-[#222226] pb-4 mb-6">
                 <div>
                   <h3 className="text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[#5ed29c] fill-[#5ed29c]/10" /> Redesign Evidence Inspector
+                    <Sparkles className="w-4 h-4 text-[#7342e2] fill-[#7342e2]/10" /> Redesign Evidence Inspector
                   </h3>
                   <span className="text-[9px] text-zinc-500 uppercase block mt-1">Audit trail and heuristic metrics</span>
                 </div>
@@ -519,7 +519,7 @@ export function RedesignDashboard() {
                         <div className="flex items-center gap-2 text-right">
                           <span className="text-red-400 text-xs line-through">{f.beforeValue}%</span>
                           <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
-                          <span className="text-[#5ed29c] text-xs font-bold">+{f.afterValue}%</span>
+                          <span className="text-[#7342e2] text-xs font-bold">+{f.afterValue}%</span>
                         </div>
                       </div>
                     ))}
@@ -532,7 +532,7 @@ export function RedesignDashboard() {
                 <span className="text-[10px] text-zinc-500 uppercase block mb-3 font-bold">Linked Replay telemetry Evidence</span>
                 {loadingDetails ? (
                   <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-5 h-5 text-[#5ed29c] animate-spin" />
+                    <RefreshCw className="w-5 h-5 text-[#7342e2] animate-spin" />
                   </div>
                 ) : evidenceList.length === 0 ? (
                   <div className="text-center py-6 text-zinc-600 text-xs border border-[#222226] border-dashed rounded-xl">
@@ -546,7 +546,7 @@ export function RedesignDashboard() {
                         <div className="flex items-center justify-between text-[8px] text-zinc-500 uppercase">
                           <span>Replay Drift: +{ev.metricDriftValue}%</span>
                           {ev.sessionRefId && (
-                            <span className="text-[#5ed29c] font-bold">
+                            <span className="text-[#7342e2] font-bold">
                               Session: {ev.sessionRefId.slice(0, 8)}
                             </span>
                           )}
@@ -564,7 +564,7 @@ export function RedesignDashboard() {
                   {traces.map((tr) => (
                     <div key={tr.id} className="bg-[#0c0c0e] border border-dashed border-[#222226] p-2.5 rounded-lg flex justify-between items-center text-[10px] text-zinc-400">
                       <span>Index #{tr.actionNodeIndex}: {tr.actionSelector}</span>
-                      <span className="text-[#5ed29c] text-[9px] uppercase tracking-wide">Screenshot Mapped</span>
+                      <span className="text-[#7342e2] text-[9px] uppercase tracking-wide">Screenshot Mapped</span>
                     </div>
                   ))}
                 </div>
