@@ -15,19 +15,47 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: initial; /* Lenis handles this */
+  }
+
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
   }
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: #070b0a;
-    color: #fafafa;
+    background: #050505;
+    color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    cursor: none; /* Custom cursor */
+  }
+
+  /* Exclude cursor:none on touch devices */
+  @media (pointer: coarse) {
+    body {
+      cursor: auto;
+    }
   }
 
   ::selection {
-    background: rgba(99, 102, 241, 0.25);
+    background: rgba(94, 210, 156, 0.25);
   }
 }
 
