@@ -1429,7 +1429,7 @@ export const WorkspaceConsole: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#09090b] text-zinc-500 font-mono text-xs">
-        <Clock className="w-4 h-4 animate-spin mr-2 text-[#5ed29c]" />
+        <Clock className="w-4 h-4 animate-spin mr-2 text-[#7342e2]" />
         LOADING ENTERPRISE COMMAND WORKSPACE...
       </div>
     );
@@ -1444,7 +1444,7 @@ export const WorkspaceConsole: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#222226] pb-5 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#5ed29c] animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#7342e2] animate-pulse"></span>
             <h1 className="text-sm font-black font-mono text-white uppercase tracking-widest">
               COLLABORATIVE WORKSPACE COMMAND CONSOLE
             </h1>
@@ -1463,7 +1463,7 @@ export const WorkspaceConsole: React.FC = () => {
                 <div
                   key={idx}
                   title={`${user.name} viewing ${user.activeScreen}`}
-                  className="w-5 h-5 rounded-full bg-[#1c1c20] border border-[#222226] flex items-center justify-center font-bold text-[#5ed29c] text-[9px] relative group"
+                  className="w-5 h-5 rounded-full bg-[#1c1c20] border border-[#222226] flex items-center justify-center font-bold text-[#7342e2] text-[9px] relative group"
                 >
                   {user.name.substring(0, 2).toUpperCase()}
                   <span className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black border border-[#333] text-[9px] px-2 py-0.5 rounded text-white hidden group-hover:block whitespace-nowrap z-50">
@@ -1537,11 +1537,11 @@ export const WorkspaceConsole: React.FC = () => {
                 }}
                 className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-mono font-bold border text-left transition-all ${
                   isActive
-                    ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/20'
+                    ? 'bg-[#7342e2]/10 text-white border-[#7342e2]/20'
                     : 'border-transparent text-zinc-400 hover:bg-[#121214] hover:text-white'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#5ed29c]' : 'text-zinc-500'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#7342e2]' : 'text-zinc-500'}`} />
                 {tab.label}
               </button>
             );
@@ -1550,7 +1550,7 @@ export const WorkspaceConsole: React.FC = () => {
           {/* Org & Workspace Creators */}
           <div className="bg-[#121214]/50 border border-[#222226]/50 rounded-xl p-4 mt-6">
             <h4 className="text-[10px] font-black font-mono text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Building className="w-3 h-3 text-[#5ed29c]" /> Organization Settings
+              <Building className="w-3 h-3 text-[#7342e2]" /> Organization Settings
             </h4>
             
             <form onSubmit={handleCreateOrg} className="flex flex-col gap-2 mb-4 border-b border-[#222226] pb-4">
@@ -1597,7 +1597,7 @@ export const WorkspaceConsole: React.FC = () => {
 
           <div className="bg-[#121214]/50 border border-[#222226]/50 rounded-xl p-4 mt-4">
             <h4 className="text-[10px] font-black font-mono text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Info className="w-3 h-3 text-[#5ed29c]" /> Active Scoped Project
+              <Info className="w-3 h-3 text-[#7342e2]" /> Active Scoped Project
             </h4>
             {projects.length > 0 ? (
               <div className="flex flex-col gap-1.5">
@@ -1630,7 +1630,7 @@ export const WorkspaceConsole: React.FC = () => {
             <div className="flex flex-col gap-6">
               <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                 <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                  <ClipboardList className="w-4 h-4 text-[#5ed29c]" /> Investigation Review Queue
+                  <ClipboardList className="w-4 h-4 text-[#7342e2]" /> Investigation Review Queue
                 </h3>
                 <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                   Verify and approve agent runs before committing findings to historical intelligence indexes
@@ -1650,7 +1650,7 @@ export const WorkspaceConsole: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className={`text-[8.5px] font-mono font-black uppercase px-2 py-0.5 rounded-md ${
-                              item.status === 'APPROVED' ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20' :
+                              item.status === 'APPROVED' ? 'bg-[#7342e2]/10 text-[#7342e2] border border-[#7342e2]/20' :
                               item.status === 'RESOLVED' ? 'bg-blue-950/20 text-blue-400 border border-blue-500/20' :
                               item.status === 'REJECTED' ? 'bg-red-950/20 text-red-400 border border-red-500/20' :
                               'bg-zinc-800 text-zinc-400 border border-zinc-700'
@@ -1690,7 +1690,7 @@ export const WorkspaceConsole: React.FC = () => {
 
                           <button
                             onClick={() => handleReviewAction(item.workflowSessionId, 'APPROVED')}
-                            className="bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/20 text-[#5ed29c] text-[10px] font-mono font-black px-2.5 py-1 rounded-lg uppercase transition-all"
+                            className="bg-[#7342e2]/10 hover:bg-[#7342e2]/20 border border-[#7342e2]/20 text-[#7342e2] text-[10px] font-mono font-black px-2.5 py-1 rounded-lg uppercase transition-all"
                           >
                             Approve
                           </button>
@@ -1724,7 +1724,7 @@ export const WorkspaceConsole: React.FC = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-1 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-[#5ed29c]" /> Shared Team Investigations
+                        <Sparkles className="w-4 h-4 text-[#7342e2]" /> Shared Team Investigations
                       </h3>
                       <p className="text-[10px] font-mono text-zinc-500 uppercase">
                         Shared agent workflow reviews under team-wide discussion
@@ -1744,13 +1744,13 @@ export const WorkspaceConsole: React.FC = () => {
                           onClick={() => setSelectedInvestigationId(item.id)}
                           className={`border rounded-xl p-4 cursor-pointer transition-all ${
                             selectedInvestigationId === item.id
-                              ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
+                              ? 'bg-[#18181b] border-[#7342e2]/40 shadow-lg shadow-[#7342e2]/5'
                               : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-xs font-bold text-white font-mono">{item.name}</h4>
-                            <span className="text-[8px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 px-2 py-0.5 rounded border border-[#5ed29c]/10">
+                            <span className="text-[8px] font-mono text-[#7342e2] bg-[#7342e2]/5 px-2 py-0.5 rounded border border-[#7342e2]/10">
                               SESSION {item.workflowSession.id.substring(0, 8)}
                             </span>
                           </div>
@@ -1771,7 +1771,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {selectedInvestigationId && (
                   <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                     <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-[#5ed29c]" /> Granular Investigation Access Rules
+                      <Lock className="w-3.5 h-3.5 text-[#7342e2]" /> Granular Investigation Access Rules
                     </h3>
                     <p className="text-[10px] font-mono text-zinc-500 uppercase mb-4">
                       Control which roles or specific users can view or comment on this shared investigation
@@ -1824,7 +1824,7 @@ export const WorkspaceConsole: React.FC = () => {
                               type="checkbox"
                               checked={newAccessCanRead}
                               onChange={(e) => setNewAccessCanRead(e.target.checked)}
-                              className="accent-[#5ed29c]"
+                              className="accent-[#7342e2]"
                             />
                             <span>Can Read</span>
                           </label>
@@ -1833,7 +1833,7 @@ export const WorkspaceConsole: React.FC = () => {
                               type="checkbox"
                               checked={newAccessCanWrite}
                               onChange={(e) => setNewAccessCanWrite(e.target.checked)}
-                              className="accent-[#5ed29c]"
+                              className="accent-[#7342e2]"
                             />
                             <span>Can Write/Comment</span>
                           </label>
@@ -1841,7 +1841,7 @@ export const WorkspaceConsole: React.FC = () => {
 
                         <button
                           type="submit"
-                          className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-1.5 rounded-xl transition-all"
+                          className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-1.5 rounded-xl transition-all"
                         >
                           Save Access Rule
                         </button>
@@ -1857,7 +1857,7 @@ export const WorkspaceConsole: React.FC = () => {
                               <div key={rule.id} className="text-[11px] py-2 flex items-center justify-between text-zinc-400">
                                 <div>
                                   <span className="text-white font-bold">{rule.accessorType}</span>
-                                  {rule.accessorId && <span className="text-[9px] text-[#5ed29c] ml-1 bg-[#5ed29c]/5 border border-[#5ed29c]/15 px-1 rounded">{rule.accessorId}</span>}
+                                  {rule.accessorId && <span className="text-[9px] text-[#7342e2] ml-1 bg-[#7342e2]/5 border border-[#7342e2]/15 px-1 rounded">{rule.accessorId}</span>}
                                 </div>
                                 <div className="flex gap-2">
                                   {rule.canRead && <span className="text-emerald-400">READ</span>}
@@ -1922,7 +1922,7 @@ export const WorkspaceConsole: React.FC = () => {
                     <button
                       type="submit"
                       disabled={!shareSessionId || !shareSessionName}
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all disabled:opacity-50"
+                      className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2 rounded-xl transition-all disabled:opacity-50"
                     >
                       Share with Workspace
                     </button>
@@ -1966,7 +1966,7 @@ export const WorkspaceConsole: React.FC = () => {
                         />
                         <button
                           type="submit"
-                          className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] px-3 py-1.5 rounded-lg transition-all"
+                          className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] px-3 py-1.5 rounded-lg transition-all"
                         >
                           <Send className="w-3.5 h-3.5" />
                         </button>
@@ -2000,7 +2000,7 @@ export const WorkspaceConsole: React.FC = () => {
                             cx="50"
                             cy="50"
                             r="40"
-                            stroke="#5ed29c"
+                            stroke="#7342e2"
                             strokeWidth="8"
                             fill="transparent"
                             strokeDasharray={251.2}
@@ -2087,17 +2087,17 @@ export const WorkspaceConsole: React.FC = () => {
 
                   {/* SVG Longitudinal Trend Graph */}
                   <div className="bg-[#121214] border border-[#222226] rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/25 to-transparent"></div>
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#7342e2]/25 to-transparent"></div>
                     <div className="flex items-center justify-between mb-5">
                       <div>
                         <h3 className="text-xs font-black font-mono uppercase tracking-widest text-white flex items-center gap-2">
-                          <Activity className="w-3.5 h-3.5 text-[#5ed29c] animate-pulse" /> Longitudinal Stability Drift Timeline
+                          <Activity className="w-3.5 h-3.5 text-[#7342e2] animate-pulse" /> Longitudinal Stability Drift Timeline
                         </h3>
                         <p className="text-[9px] font-mono text-zinc-500 uppercase mt-0.5">
                           Continuous verification of UX performance and regressions over time
                         </p>
                       </div>
-                      <span className="text-[9px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/15 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                      <span className="text-[9px] font-mono text-[#7342e2] bg-[#7342e2]/5 border border-[#7342e2]/15 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
                         Live Diagnostics
                       </span>
                     </div>
@@ -2142,8 +2142,8 @@ export const WorkspaceConsole: React.FC = () => {
                               <svg className="w-full h-full" viewBox="0 0 600 185">
                                 <defs>
                                   <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.25" />
-                                    <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0" />
+                                    <stop offset="0%" stopColor="#7342e2" stopOpacity="0.25" />
+                                    <stop offset="100%" stopColor="#7342e2" stopOpacity="0.0" />
                                   </linearGradient>
                                   <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                                     <feGaussianBlur stdDeviation="4" result="blur" />
@@ -2203,7 +2203,7 @@ export const WorkspaceConsole: React.FC = () => {
                                   <path
                                     d={lineD}
                                     fill="none"
-                                    stroke="#5ed29c"
+                                    stroke="#7342e2"
                                     strokeWidth="2.5"
                                     filter="url(#glow)"
                                     strokeLinecap="round"
@@ -2218,8 +2218,8 @@ export const WorkspaceConsole: React.FC = () => {
                                       cx={p.x}
                                       cy={p.y}
                                       r="6"
-                                      fill="rgba(94, 210, 156, 0.15)"
-                                      stroke="#5ed29c"
+                                      fill="rgba(115, 66, 226, 0.15)"
+                                      stroke="#7342e2"
                                       strokeWidth="1"
                                     />
                                     {/* Inner solid dot */}
@@ -2227,7 +2227,7 @@ export const WorkspaceConsole: React.FC = () => {
                                       cx={p.x}
                                       cy={p.y}
                                       r="3"
-                                      fill="#5ed29c"
+                                      fill="#7342e2"
                                     />
 
                                     {/* Floating Score Badge above the node */}
@@ -2239,7 +2239,7 @@ export const WorkspaceConsole: React.FC = () => {
                                         height="16"
                                         rx="4"
                                         fill="#09090b"
-                                        stroke="#5ed29c"
+                                        stroke="#7342e2"
                                         strokeWidth="1"
                                       />
                                       <text
@@ -2333,7 +2333,7 @@ export const WorkspaceConsole: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5">
                 <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-[#5ed29c]" /> Active Project Annotations
+                  <MessageSquare className="w-4 h-4 text-[#7342e2]" /> Active Project Annotations
                 </h3>
                 <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                   Contextual annotations dropped by team members on finding cards or timelines
@@ -2351,7 +2351,7 @@ export const WorkspaceConsole: React.FC = () => {
                         onClick={() => setSelectedAnnotationId(item.id)}
                         className={`border rounded-xl p-4 cursor-pointer transition-all ${
                           selectedAnnotationId === item.id
-                            ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
+                            ? 'bg-[#18181b] border-[#7342e2]/40 shadow-lg shadow-[#7342e2]/5'
                             : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
                         }`}
                       >
@@ -2375,7 +2375,7 @@ export const WorkspaceConsole: React.FC = () => {
                         <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
                           <span>By: {item.createdBy?.name || item.createdBy?.email}</span>
                           <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3 text-[#5ed29c]" /> {item.comments.length} Comments
+                            <MessageSquare className="w-3 h-3 text-[#7342e2]" /> {item.comments.length} Comments
                           </span>
                         </div>
 
@@ -2387,7 +2387,7 @@ export const WorkspaceConsole: React.FC = () => {
                             }}
                             className={`flex items-center gap-1 text-[9px] font-mono font-bold uppercase px-2 py-1 rounded ${
                               item.resolved
-                                ? 'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
+                                ? 'bg-[#7342e2]/10 text-[#7342e2] border border-[#7342e2]/20'
                                 : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white'
                             }`}
                           >
@@ -2458,7 +2458,7 @@ export const WorkspaceConsole: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                      className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
                     >
                       Publish Annotation
                     </button>
@@ -2503,7 +2503,7 @@ export const WorkspaceConsole: React.FC = () => {
                         />
                         <button
                           type="submit"
-                          className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] px-3 py-1.5 rounded-lg transition-all"
+                          className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] px-3 py-1.5 rounded-lg transition-all"
                         >
                           <Send className="w-3.5 h-3.5" />
                         </button>
@@ -2519,7 +2519,7 @@ export const WorkspaceConsole: React.FC = () => {
           {activeTab === 'activity' && (
             <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
               <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-[#5ed29c]" /> Workspace Activity & Audit Trail
+                <Activity className="w-4 h-4 text-[#7342e2]" /> Workspace Activity & Audit Trail
               </h3>
               <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                 Chronological ledger of intelligence runs, approvals, permissions, and exports
@@ -2541,7 +2541,7 @@ export const WorkspaceConsole: React.FC = () => {
                         <div>
                           <p className="text-zinc-300 font-bold mb-0.5">{item.description}</p>
                           <div className="flex items-center gap-2 text-[9px] text-zinc-500 uppercase font-black">
-                            <span className="text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/10 px-1 rounded">
+                            <span className="text-[#7342e2] bg-[#7342e2]/5 border border-[#7342e2]/10 px-1 rounded">
                               {item.actionType}
                             </span>
                             <span>Operator: {item.userName}</span>
@@ -2563,7 +2563,7 @@ export const WorkspaceConsole: React.FC = () => {
             <div className="flex flex-col gap-6">
               <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                 <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                  <Share2 className="w-4 h-4 text-[#5ed29c]" /> Access-Controlled Link Sharing
+                  <Share2 className="w-4 h-4 text-[#7342e2]" /> Access-Controlled Link Sharing
                 </h3>
                 <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                   Generate secure sharing URLs for external stakeholders with automatic time-based or usage-limit expiration
@@ -2626,7 +2626,7 @@ export const WorkspaceConsole: React.FC = () => {
 
                       <button
                         type="submit"
-                        className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                        className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
                       >
                         Generate Secured Link
                       </button>
@@ -2644,7 +2644,7 @@ export const WorkspaceConsole: React.FC = () => {
                           </span>
                           <button
                             onClick={() => copyToClipboard(generatedLink)}
-                            className="text-[#5ed29c] hover:bg-[#5ed29c]/5 p-1.5 rounded border border-[#5ed29c]/10 transition-all shrink-0"
+                            className="text-[#7342e2] hover:bg-[#7342e2]/5 p-1.5 rounded border border-[#7342e2]/10 transition-all shrink-0"
                           >
                             <Copy className="w-3.5 h-3.5" />
                           </button>
@@ -2665,7 +2665,7 @@ export const WorkspaceConsole: React.FC = () => {
               {/* Shared Access Grants Table */}
               <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                 <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> Active External Shared Grants
+                  <ShieldCheck className="w-4 h-4 text-[#7342e2]" /> Active External Shared Grants
                 </h3>
                 <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                   Verify or revoke external stakeholder sharing permissions
@@ -2692,7 +2692,7 @@ export const WorkspaceConsole: React.FC = () => {
                         sharedGrants.map((g) => (
                           <tr key={g.id} className="hover:bg-[#18181b]/30">
                             <td className="py-3 pr-4 text-white font-bold">{g.resourceType} ({g.resourceId.substring(0, 8)})</td>
-                            <td className="py-3 px-4 text-[#5ed29c] font-bold">{g.granteeEmail || 'Anonymous Link'}</td>
+                            <td className="py-3 px-4 text-[#7342e2] font-bold">{g.granteeEmail || 'Anonymous Link'}</td>
                             <td className="py-3 px-4 text-zinc-500">
                               {g.expiresAt ? new Date(g.expiresAt).toLocaleString() : 'Never'}
                             </td>
@@ -2721,7 +2721,7 @@ export const WorkspaceConsole: React.FC = () => {
               <div className="lg:col-span-2 flex flex-col gap-6">
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                   <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#5ed29c]" /> Workspace Role Directory
+                    <Users className="w-4 h-4 text-[#7342e2]" /> Workspace Role Directory
                   </h3>
                   <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                     Workspace members and RBAC authority levels
@@ -2743,7 +2743,7 @@ export const WorkspaceConsole: React.FC = () => {
                           </div>
                         </div>
 
-                        <span className="bg-[#5ed29c]/5 border border-[#5ed29c]/15 text-[#5ed29c] font-black text-[9px] px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                        <span className="bg-[#7342e2]/5 border border-[#7342e2]/15 text-[#7342e2] font-black text-[9px] px-2.5 py-0.5 rounded-md uppercase tracking-wider">
                           {m.role}
                         </span>
                       </div>
@@ -2754,7 +2754,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Pending Invites */}
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                   <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> Pending Workspace Invitations
+                    <ShieldCheck className="w-4 h-4 text-[#7342e2]" /> Pending Workspace Invitations
                   </h3>
                   <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                     Outstanding team invitations awaiting acceptance
@@ -2774,7 +2774,7 @@ export const WorkspaceConsole: React.FC = () => {
                               Role: {invite.role} • Expires: {new Date(invite.expiresAt).toLocaleDateString()}
                             </div>
                           </div>
-                          <span className="text-[#5ed29c] font-black text-[9px] bg-[#5ed29c]/5 border border-[#5ed29c]/15 px-2 py-0.5 rounded">
+                          <span className="text-[#7342e2] font-black text-[9px] bg-[#7342e2]/5 border border-[#7342e2]/15 px-2 py-0.5 rounded">
                             PENDING
                           </span>
                         </div>
@@ -2818,7 +2818,7 @@ export const WorkspaceConsole: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                      className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
                     >
                       Send Workspace Invitation
                     </button>
@@ -2840,7 +2840,7 @@ export const WorkspaceConsole: React.FC = () => {
                     />
                     <button
                       type="submit"
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                      className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
                     >
                       Join Workspace
                     </button>
@@ -2857,7 +2857,7 @@ export const WorkspaceConsole: React.FC = () => {
               <div className="lg:col-span-2 flex flex-col gap-6">
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                   <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                    <Key className="w-4 h-4 text-[#5ed29c]" /> Permission Console
+                    <Key className="w-4 h-4 text-[#7342e2]" /> Permission Console
                   </h3>
                   <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                     Configure granular permissions checklist across custom roles
@@ -2870,7 +2870,7 @@ export const WorkspaceConsole: React.FC = () => {
                         onClick={() => setSelectedRoleId(r.id)}
                         className={`border rounded-xl p-4 cursor-pointer transition-all ${
                           selectedRoleId === r.id
-                            ? 'bg-[#18181b] border-[#5ed29c]/40 shadow-lg shadow-[#5ed29c]/5'
+                            ? 'bg-[#18181b] border-[#7342e2]/40 shadow-lg shadow-[#7342e2]/5'
                             : 'bg-[#18181b]/60 border-[#2d2d30] hover:border-zinc-700'
                         }`}
                       >
@@ -2903,7 +2903,7 @@ export const WorkspaceConsole: React.FC = () => {
                   return (
                     <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                       <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> Permissions Matrix override: <span className="text-[#5ed29c] font-black">{role.name}</span>
+                        <ShieldCheck className="w-4 h-4 text-[#7342e2]" /> Permissions Matrix override: <span className="text-[#7342e2] font-black">{role.name}</span>
                       </h3>
                       <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                         {isSystemDefault ? 'System role permissions are read-only' : 'Grant or revoke domain abilities using checkboxes below'}
@@ -2947,7 +2947,7 @@ export const WorkspaceConsole: React.FC = () => {
                                           disabled={isSystemDefault}
                                           checked={isAllowed}
                                           onChange={(e) => handleUpdatePermissionOverride(role.id, domain, action, e.target.checked)}
-                                          className="accent-[#5ed29c] cursor-pointer disabled:cursor-not-allowed"
+                                          className="accent-[#7342e2] cursor-pointer disabled:cursor-not-allowed"
                                         />
                                       </td>
                                     );
@@ -2967,7 +2967,7 @@ export const WorkspaceConsole: React.FC = () => {
               <div className="lg:col-span-1 flex flex-col gap-6">
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                   <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                    <Plus className="w-4 h-4 text-[#5ed29c]" /> Create Custom Role
+                    <Plus className="w-4 h-4 text-[#7342e2]" /> Create Custom Role
                   </h4>
                   <form onSubmit={handleCreateCustomRole} className="flex flex-col gap-4 font-mono text-xs">
                     <div>
@@ -2994,7 +2994,7 @@ export const WorkspaceConsole: React.FC = () => {
 
                     <button
                       type="submit"
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
+                      className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2 rounded-xl transition-all"
                     >
                       Publish Custom Role
                     </button>
@@ -3008,7 +3008,7 @@ export const WorkspaceConsole: React.FC = () => {
           {activeTab === 'policies' && (
             <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 animate-fadeIn">
               <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                <Settings className="w-4 h-4 text-[#5ed29c]" /> Workspace Policy Settings
+                <Settings className="w-4 h-4 text-[#7342e2]" /> Workspace Policy Settings
               </h3>
               <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                 Configure organization-level access policy boundaries
@@ -3090,7 +3090,7 @@ export const WorkspaceConsole: React.FC = () => {
                             onClick={() => handleUpdatePolicy(policy.key, opt.value)}
                             className={`px-3 py-1.5 rounded-lg border transition-all ${
                               activeVal === opt.value
-                                ? 'bg-[#5ed29c]/15 text-[#5ed29c] border-[#5ed29c]/25'
+                                ? 'bg-[#7342e2]/15 text-[#7342e2] border-[#7342e2]/25'
                                 : 'bg-[#121214] text-zinc-500 border-transparent hover:text-white'
                             }`}
                           >
@@ -3109,7 +3109,7 @@ export const WorkspaceConsole: React.FC = () => {
           {activeTab === 'replays' && (
             <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 animate-fadeIn">
               <h3 className="text-xs font-black font-mono uppercase tracking-wider text-white mb-2 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-[#5ed29c]" /> Replay Sensitivity Controls
+                <Eye className="w-4 h-4 text-[#7342e2]" /> Replay Sensitivity Controls
               </h3>
               <p className="text-[10px] font-mono text-zinc-500 mb-4 uppercase">
                 Audit visual replay access scopes to secure sensitive transaction paths
@@ -3165,7 +3165,7 @@ export const WorkspaceConsole: React.FC = () => {
                                     onClick={() => handleSetReplayScope(r.workflowSessionId, scopeType, allowedRoles)}
                                     className={`px-2 py-1 rounded text-[9px] uppercase font-black border transition-all ${
                                       activeScopeType === scopeType
-                                        ? 'bg-[#5ed29c]/15 text-[#5ed29c] border-[#5ed29c]/25'
+                                        ? 'bg-[#7342e2]/15 text-[#7342e2] border-[#7342e2]/25'
                                         : 'bg-[#1c1c1f] text-zinc-500 border-transparent hover:text-white'
                                     }`}
                                   >
@@ -3194,7 +3194,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* SOC2 Compliance Readiness Gauge */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-[#5ed29c]" /> SOC2 Readiness Index
+                    <ShieldCheck className="w-4 h-4 text-[#7342e2]" /> SOC2 Readiness Index
                   </h3>
                   <p className="text-[9px] text-zinc-500 uppercase mb-4">Continuous security standards checkpoint</p>
                   
@@ -3203,7 +3203,7 @@ export const WorkspaceConsole: React.FC = () => {
                       <div className="relative w-28 h-28 flex items-center justify-center rounded-full border-4 border-[#222226]">
                         <div className="absolute inset-2 rounded-full border border-[#222226] border-dashed"></div>
                         <div className="flex flex-col items-center justify-center">
-                          <span className="text-3xl font-black text-[#5ed29c] tracking-tight">{complianceReport.score}%</span>
+                          <span className="text-3xl font-black text-[#7342e2] tracking-tight">{complianceReport.score}%</span>
                           <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-widest mt-0.5">Compliant</span>
                         </div>
                       </div>
@@ -3222,7 +3222,7 @@ export const WorkspaceConsole: React.FC = () => {
                             </div>
                             <span className={`text-[8.5px] font-black uppercase px-1 py-0.5 rounded shrink-0 border mt-0.5 ${
                               item.status === 'COMPLIANT'
-                                ? 'bg-emerald-950/20 text-[#5ed29c] border-[#5ed29c]/20'
+                                ? 'bg-emerald-950/20 text-[#7342e2] border-[#7342e2]/20'
                                 : 'bg-amber-950/20 text-amber-500 border-amber-500/20'
                             }`}>
                               {item.status}
@@ -3243,7 +3243,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Compliance Data Retention Policies */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-[#5ed29c]" /> Data Retention Controls
+                    <Clock className="w-4 h-4 text-[#7342e2]" /> Data Retention Controls
                   </h3>
                   <p className="text-[9px] text-zinc-500 uppercase mb-3">Schedule archival scopes for workflow intelligence</p>
                   
@@ -3282,7 +3282,7 @@ export const WorkspaceConsole: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isApplyingRetention}
-                      className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase transition-all"
+                      className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] py-1.5 rounded text-[9.5px] font-black uppercase transition-all"
                     >
                       {isApplyingRetention ? 'Applying...' : 'Apply Retention Rule'}
                     </button>
@@ -3297,7 +3297,7 @@ export const WorkspaceConsole: React.FC = () => {
                         <div key={rec.id} className="bg-[#18181b] border border-[#222226] p-2 rounded-lg text-[9px] text-zinc-400">
                           <div className="flex justify-between items-center font-bold">
                             <span>{rec.resourceType}: {rec.resourceId.substring(0, 8)}...</span>
-                            <span className="text-[#5ed29c]">{rec.retentionDays}d</span>
+                            <span className="text-[#7342e2]">{rec.retentionDays}d</span>
                           </div>
                           <span className="text-[8px] text-zinc-500 block mt-0.5">Expires: {new Date(rec.expiresAt).toLocaleDateString()}</span>
                         </div>
@@ -3342,7 +3342,7 @@ export const WorkspaceConsole: React.FC = () => {
                               type="button"
                               onClick={() => handleResolveAlert(alert.id)}
                               disabled={isResolvingAlert}
-                              className="bg-emerald-950/30 hover:bg-emerald-900/40 text-[#5ed29c] border border-[#5ed29c]/20 px-2 py-1 rounded text-[9px] uppercase font-black transition-all"
+                              className="bg-emerald-950/30 hover:bg-emerald-900/40 text-[#7342e2] border border-[#7342e2]/20 px-2 py-1 rounded text-[9px] uppercase font-black transition-all"
                             >
                               Resolve Incident
                             </button>
@@ -3356,7 +3356,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Audit Timeline Viewer */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                    <Activity className="w-4 h-4 text-[#5ed29c]" /> Workspace Audit Timeline
+                    <Activity className="w-4 h-4 text-[#7342e2]" /> Workspace Audit Timeline
                   </h3>
                   <p className="text-[9px] text-zinc-500 uppercase mb-3">Chronological operational audit log</p>
                   
@@ -3387,7 +3387,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Access Traceability Log */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                    <Eye className="w-4 h-4 text-[#5ed29c]" /> Access Trace accountability
+                    <Eye className="w-4 h-4 text-[#7342e2]" /> Access Trace accountability
                   </h3>
                   <p className="text-[9px] text-zinc-500 uppercase mb-3">Replay read & export trace details</p>
                   
@@ -3407,7 +3407,7 @@ export const WorkspaceConsole: React.FC = () => {
                           </div>
                           <p className="text-zinc-400 font-mono">Resource ID: {grant.resourceId.substring(0, 16)}...</p>
                           {grant.granteeEmail && (
-                            <span className="text-[9.5px] text-[#5ed29c] font-bold block mt-1">Recipient: {grant.granteeEmail}</span>
+                            <span className="text-[9.5px] text-[#7342e2] font-bold block mt-1">Recipient: {grant.granteeEmail}</span>
                           )}
                         </div>
                       ))}
@@ -3430,7 +3430,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Executive Report List */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#5ed29c]" /> Compiled Reports
+                    <FileText className="w-4 h-4 text-[#7342e2]" /> Compiled Reports
                   </h3>
                   
                   {reports.length === 0 ? (
@@ -3443,7 +3443,7 @@ export const WorkspaceConsole: React.FC = () => {
                           onClick={() => setSelectedReportId(rep.id)}
                           className={`w-full text-left p-3 rounded-lg border text-xs font-bold uppercase transition-all ${
                             selectedReportId === rep.id
-                              ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/30'
+                              ? 'bg-[#7342e2]/10 text-white border-[#7342e2]/30'
                               : 'bg-[#18181b] border-[#222226] text-zinc-400 hover:text-white'
                           }`}
                         >
@@ -3469,7 +3469,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Compile New Report */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5 text-[#5ed29c]" /> Compile Report
+                    <Plus className="w-3.5 h-3.5 text-[#7342e2]" /> Compile Report
                   </h3>
                   <form onSubmit={handleCreateReport} className="flex flex-col gap-3">
                     <div>
@@ -3485,7 +3485,7 @@ export const WorkspaceConsole: React.FC = () => {
                     <button
                       type="submit"
                       disabled={reportBuilding || !reportTitle.trim()}
-                      className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-2 rounded-lg font-black uppercase text-[10px] transition-all disabled:opacity-50"
+                      className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] py-2 rounded-lg font-black uppercase text-[10px] transition-all disabled:opacity-50"
                     >
                       {reportBuilding ? 'COMPILING INTELLIGENCE...' : 'GENERATE REPORT'}
                     </button>
@@ -3495,7 +3495,7 @@ export const WorkspaceConsole: React.FC = () => {
                 {/* Templates Manager */}
                 <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                   <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-1.5">
-                    <Layout className="w-3.5 h-3.5 text-[#5ed29c]" /> Report Templates
+                    <Layout className="w-3.5 h-3.5 text-[#7342e2]" /> Report Templates
                   </h3>
                   <div className="flex flex-col gap-2 max-h-48 overflow-y-auto mb-3">
                     {templates.map((temp) => (
@@ -3561,7 +3561,7 @@ export const WorkspaceConsole: React.FC = () => {
                           </div>
                           <div className="bg-[#18181b] border border-[#222226] p-3 rounded-lg text-center">
                             <span className="text-[8px] text-zinc-500 uppercase font-black block mb-1">Completion Rate</span>
-                            <span className="text-lg font-black text-[#5ed29c]">{Math.round(activeReport.completionRate * 100)}%</span>
+                            <span className="text-lg font-black text-[#7342e2]">{Math.round(activeReport.completionRate * 100)}%</span>
                           </div>
                           <div className="bg-[#18181b] border border-[#222226] p-3 rounded-lg text-center">
                             <span className="text-[8px] text-zinc-500 uppercase font-black block mb-1">Friction Alerts</span>
@@ -3586,7 +3586,7 @@ export const WorkspaceConsole: React.FC = () => {
                         <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                           <div className="flex items-center justify-between mb-3 border-b border-[#222226] pb-3">
                             <h3 className="text-xs font-black uppercase text-white flex items-center gap-1.5">
-                              <Layout className="w-4 h-4 text-[#5ed29c]" /> Slide Presentation Reviewer
+                              <Layout className="w-4 h-4 text-[#7342e2]" /> Slide Presentation Reviewer
                             </h3>
                             <div className="flex items-center gap-2">
                               <button
@@ -3614,10 +3614,10 @@ export const WorkspaceConsole: React.FC = () => {
                           {/* Slide Panel Display */}
                           <div className="bg-[#18181b] border border-[#2d2d30] aspect-[16/9] rounded-xl p-6 flex flex-col justify-between relative overflow-hidden">
                             {/* Accent indicator */}
-                            <div className={`absolute top-0 left-0 right-0 h-1 ${deckData.theme === 'DARK_ALERT' ? 'bg-red-500' : 'bg-[#5ed29c]'}`}></div>
+                            <div className={`absolute top-0 left-0 right-0 h-1 ${deckData.theme === 'DARK_ALERT' ? 'bg-red-500' : 'bg-[#7342e2]'}`}></div>
                             
                             <div>
-                              <span className="text-[9px] text-[#5ed29c] font-black tracking-widest uppercase block mb-1">
+                              <span className="text-[9px] text-[#7342e2] font-black tracking-widest uppercase block mb-1">
                                 {deckData.deckTitle}
                               </span>
                               <h4 className="text-base font-black text-white uppercase mb-4">
@@ -3659,7 +3659,7 @@ export const WorkspaceConsole: React.FC = () => {
                       {pdfLayout && (
                         <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                           <h3 className="text-xs font-black uppercase text-white mb-3 flex items-center gap-1.5">
-                            <FileText className="w-4 h-4 text-[#5ed29c]" /> Boardroom PDF Blueprint
+                            <FileText className="w-4 h-4 text-[#7342e2]" /> Boardroom PDF Blueprint
                           </h3>
                           <div className="flex flex-col gap-3 max-h-60 overflow-y-auto border border-[#222226] rounded-lg p-3">
                             {pdfLayout.pages.map((p: any) => (
@@ -3672,7 +3672,7 @@ export const WorkspaceConsole: React.FC = () => {
                                   {p.elements.map((el: any, elIdx: number) => (
                                     <div key={elIdx} className="text-zinc-300 font-mono text-[10.5px]">
                                       {el.type === 'TITLE' && <span className="text-white font-black text-xs block">{el.value}</span>}
-                                      {el.type === 'SECTION_HEADER' && <span className="text-[#5ed29c] font-bold block mt-1">{el.value}</span>}
+                                      {el.type === 'SECTION_HEADER' && <span className="text-[#7342e2] font-bold block mt-1">{el.value}</span>}
                                       {el.type === 'PARAGRAPH' && <p className="font-sans text-[10px] text-zinc-400 mt-1">{el.value}</p>}
                                     </div>
                                   ))}
@@ -3688,7 +3688,7 @@ export const WorkspaceConsole: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                           <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                            <Download className="w-3.5 h-3.5 text-[#5ed29c]" /> Document Exports
+                            <Download className="w-3.5 h-3.5 text-[#7342e2]" /> Document Exports
                           </h3>
                           <p className="text-[9.5px] text-zinc-500 uppercase mb-4">Export static snapshots</p>
                           <div className="flex gap-2 mb-4">
@@ -3722,7 +3722,7 @@ export const WorkspaceConsole: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => copyToClipboard(e.filePath)}
-                                      className="text-[#5ed29c] hover:underline"
+                                      className="text-[#7342e2] hover:underline"
                                     >
                                       Copy Path
                                     </button>
@@ -3736,7 +3736,7 @@ export const WorkspaceConsole: React.FC = () => {
                         {/* Public Link Sharing */}
                         <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                           <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                            <Share2 className="w-3.5 h-3.5 text-[#5ed29c]" /> Token Share Links
+                            <Share2 className="w-3.5 h-3.5 text-[#7342e2]" /> Token Share Links
                           </h3>
                           <p className="text-[9.5px] text-zinc-500 uppercase mb-3">Distribute secure public tokens</p>
                           <form onSubmit={handleGenerateReportShare} className="flex flex-col gap-2 mb-4">
@@ -3749,7 +3749,7 @@ export const WorkspaceConsole: React.FC = () => {
                             />
                             <button
                               type="submit"
-                              className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase"
+                              className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] py-1.5 rounded text-[9.5px] font-black uppercase"
                             >
                               Generate Access Token
                             </button>
@@ -3780,7 +3780,7 @@ export const WorkspaceConsole: React.FC = () => {
                         {/* Report Webhook Distribution */}
                         <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                           <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-[#5ed29c]" /> Webhook & Email Delivery
+                            <Mail className="w-3.5 h-3.5 text-[#7342e2]" /> Webhook & Email Delivery
                           </h3>
                           <p className="text-[9.5px] text-zinc-500 uppercase mb-3">Distribute report via integrations</p>
                           <form onSubmit={handleDistributeReport} className="flex flex-col gap-2">
@@ -3801,7 +3801,7 @@ export const WorkspaceConsole: React.FC = () => {
                             />
                             <button
                               type="submit"
-                              className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase"
+                              className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] py-1.5 rounded text-[9.5px] font-black uppercase"
                             >
                               Trigger Dispatch
                             </button>
@@ -3825,7 +3825,7 @@ export const WorkspaceConsole: React.FC = () => {
                         {/* Workspace Health Digests */}
                         <div className="bg-[#121214] border border-[#222226] p-5 rounded-xl">
                           <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                            <Activity className="w-3.5 h-3.5 text-[#5ed29c]" /> Workspace Insight Digests
+                            <Activity className="w-3.5 h-3.5 text-[#7342e2]" /> Workspace Insight Digests
                           </h3>
                           <p className="text-[9.5px] text-zinc-500 uppercase mb-3">Compile cross-project stability metrics</p>
                           
@@ -3849,7 +3849,7 @@ export const WorkspaceConsole: React.FC = () => {
                               </select>
                               <button
                                 type="submit"
-                                className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] py-1.5 rounded text-[9.5px] font-black uppercase"
+                                className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] py-1.5 rounded text-[9.5px] font-black uppercase"
                               >
                                 Compile Workspace Digest
                               </button>
@@ -3863,7 +3863,7 @@ export const WorkspaceConsole: React.FC = () => {
                               <div key={d.id} className="bg-[#18181b] border border-[#222226] p-2.5 rounded-lg">
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-white font-bold">{d.title}</span>
-                                  <span className="text-[8px] bg-zinc-800 text-[#5ed29c] px-1 py-0.5 rounded">{d.digestPeriod}</span>
+                                  <span className="text-[8px] bg-zinc-800 text-[#7342e2] px-1 py-0.5 rounded">{d.digestPeriod}</span>
                                 </div>
                                 <div className="text-[8.5px] text-zinc-500">
                                   Avg Score: {d.metricsSummary?.averageStability || 80}/100 • Runs: {d.metricsSummary?.totalRunsThisPeriod || 0}
