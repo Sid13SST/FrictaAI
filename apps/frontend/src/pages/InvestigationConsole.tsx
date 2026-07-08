@@ -562,8 +562,8 @@ export const InvestigationConsole: React.FC = () => {
   if (loading) {
     return (
       <div className="h-screen w-screen bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-zinc-400 font-mono">
-        <div className="w-10 h-10 border-2 border-t-transparent animate-spin rounded-full" style={{ borderColor: 'rgba(94, 210, 156, 0.2)', borderTopColor: '#5ed29c' }} />
-        <span className="text-[10px] tracking-[0.2em] text-[#5ed29c] font-black uppercase animate-pulse">Aggregating investigation telemetry...</span>
+        <div className="w-10 h-10 border-2 border-t-transparent animate-spin rounded-full" style={{ borderColor: 'rgba(115, 66, 226, 0.2)', borderTopColor: '#7342e2' }} />
+        <span className="text-[10px] tracking-[0.2em] text-[#7342e2] font-black uppercase animate-pulse">Aggregating investigation telemetry...</span>
       </div>
     );
   }
@@ -574,7 +574,7 @@ export const InvestigationConsole: React.FC = () => {
         <ShieldAlert className="w-12 h-12 text-red-400 animate-bounce" />
         <h3 className="text-base font-bold text-white font-mono">Operational Console Failed</h3>
         <p className="text-xs text-zinc-500 max-w-sm font-sans">{error || 'Session intelligence data could not be retrieved.'}</p>
-        <Link to="/app/reports" className="text-xs font-mono text-[#5ed29c] border border-[#5ed29c]/20 bg-[#5ed29c]/5 px-4 py-2 rounded-xl mt-4">
+        <Link to="/app/reports" className="text-xs font-mono text-[#7342e2] border border-[#7342e2]/20 bg-[#7342e2]/5 px-4 py-2 rounded-xl mt-4">
           Return to Reports
         </Link>
       </div>
@@ -608,8 +608,8 @@ export const InvestigationConsole: React.FC = () => {
           </Link>
           <span className="text-zinc-700 font-mono text-xs">/</span>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#5ed29c]/5 border border-[#5ed29c]/20 flex items-center justify-center shrink-0">
-              <Brain className="w-3.5 h-3.5 text-[#5ed29c]" />
+            <div className="w-6 h-6 rounded-lg bg-[#7342e2]/5 border border-[#7342e2]/20 flex items-center justify-center shrink-0">
+              <Brain className="w-3.5 h-3.5 text-[#7342e2]" />
             </div>
             <span className="text-xs font-black tracking-tight text-white font-mono uppercase">Investigation Console</span>
           </div>
@@ -619,8 +619,8 @@ export const InvestigationConsole: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-[#5ed29c]/5 border border-[#5ed29c]/20 px-3 py-1 rounded-lg text-[9px] font-mono font-bold text-[#5ed29c]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#5ed29c] animate-pulse" />
+          <div className="flex items-center gap-1.5 bg-[#7342e2]/5 border border-[#7342e2]/20 px-3 py-1 rounded-lg text-[9px] font-mono font-bold text-[#7342e2]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7342e2] animate-pulse" />
             INVESTIGATION LIVE
           </div>
         </div>
@@ -645,11 +645,11 @@ export const InvestigationConsole: React.FC = () => {
                   onClick={() => setActiveTab(item.key)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-mono font-bold border transition-all ${
                     isActive
-                      ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/20'
+                      ? 'bg-[#7342e2]/10 text-white border-[#7342e2]/20'
                       : 'border-transparent text-zinc-400 hover:bg-[#121214] hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#5ed29c]' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#7342e2]' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
                   {item.label}
                 </button>
               );
@@ -744,7 +744,7 @@ export const InvestigationConsole: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="bg-[#121214] border border-[#222226] p-3 rounded-lg flex flex-col gap-0.5">
                       <span className="text-[9px] font-mono text-zinc-500 uppercase font-black">Status</span>
-                      <span className="text-xs font-mono text-[#5ed29c] font-bold uppercase">{session.status}</span>
+                      <span className="text-xs font-mono text-[#7342e2] font-bold uppercase">{session.status}</span>
                     </div>
                     <div className="bg-[#121214] border border-[#222226] p-3 rounded-lg flex flex-col gap-0.5">
                       <span className="text-[9px] font-mono text-zinc-500 uppercase font-black">Findings</span>
@@ -762,7 +762,7 @@ export const InvestigationConsole: React.FC = () => {
                       { label: 'CRITICAL', val: severity.CRITICAL || 0, color: 'text-red-400 bg-red-500/10 border-red-500/20' },
                       { label: 'HIGH', val: severity.HIGH || 0, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
                       { label: 'MEDIUM', val: severity.MEDIUM || 0, color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
-                      { label: 'LOW', val: severity.LOW || 0, color: 'text-[#5ed29c] bg-[#5ed29c]/10 border-[#5ed29c]/20' }
+                      { label: 'LOW', val: severity.LOW || 0, color: 'text-[#7342e2] bg-[#7342e2]/10 border-[#7342e2]/20' }
                     ].map(s => (
                       <div key={s.label} className="flex justify-between items-center text-xs font-mono">
                         <span className={`px-2 py-0.5 rounded border font-bold ${s.color}`}>{s.label}</span>
