@@ -19,7 +19,7 @@ export function Navbar() {
       <motion.nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out ${
           isScrolled 
-            ? 'bg-background-deep/70 backdrop-blur-md border-b border-white/5 py-4' 
+            ? 'liquid-glass border-b border-white/5 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' 
             : 'bg-transparent py-6'
         }`}
         initial={{ y: -100 }}
@@ -37,12 +37,12 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-1 bg-white/5 backdrop-blur-md px-2 py-1 rounded-full border border-white/10">
             {NAV_LINKS.map((link) => (
               <a
                 key={link}
                 href={`#${link.toLowerCase()}`}
-                className="text-[14px] font-inter text-text-secondary hover:text-white transition-colors duration-200"
+                className="text-[13px] font-inter font-medium text-white/70 hover:text-white hover:bg-white/10 px-4 py-1.5 rounded-full transition-all duration-200"
               >
                 {link}
               </a>
@@ -50,16 +50,16 @@ export function Navbar() {
           </div>
 
           {/* Actions */}
-          <div className="hidden lg:flex items-center gap-4">
-            <Link to="/sign-in" className="text-[14px] font-inter text-text-secondary hover:text-white transition-colors duration-200">
+          <div className="hidden lg:flex items-center gap-3">
+            <Link to="/sign-in" className="text-[13px] font-inter font-medium text-white/70 hover:text-white px-4 py-2 transition-colors duration-200">
               Sign In
             </Link>
             
             {/* Get Started Button (Animated Border, Hover Glow) */}
             <Link to="/app" className="relative group">
               <div className="absolute -inset-[1px] bg-gradient-to-r from-primary to-accent-secondary rounded-full opacity-50 group-hover:opacity-100 blur-sm transition-opacity duration-500" />
-              <div className="relative px-5 py-2 bg-card rounded-full border border-white/10 group-hover:border-transparent transition-colors duration-300">
-                <span className="text-[14px] font-inter font-medium text-white group-hover:text-primary transition-colors duration-300">
+              <div className="relative px-5 py-2 liquid-glass rounded-full border border-white/10 transition-colors duration-300">
+                <span className="text-[13px] font-inter font-bold text-white group-hover:text-primary transition-colors duration-300">
                   Get Started
                 </span>
               </div>
@@ -68,10 +68,10 @@ export function Navbar() {
 
           {/* Mobile Toggle */}
           <button 
-            className="lg:hidden text-white/70 hover:text-white"
+            className="lg:hidden text-white/70 hover:text-white liquid-glass p-2 rounded-full"
             onClick={() => setMobileMenuOpen(true)}
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </button>
         </div>
       </motion.nav>
