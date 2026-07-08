@@ -20,7 +20,7 @@ export function ReplayExperience() {
   }, [isPlaying]);
 
   return (
-    <section className="py-32 bg-background-alt relative overflow-hidden">
+    <section className="py-32 bg-transparent relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 mb-16 text-center">
         <motion.h2 
           initial={{ opacity: 0, y: 20 }}
@@ -81,7 +81,7 @@ export function ReplayExperience() {
               <motion.path 
                 d="M 100 100 C 300 150, 400 300, 600 200 S 800 400, 700 500" 
                 fill="none" 
-                stroke="#5ED29C" 
+                stroke="#7342e2" 
                 strokeWidth="2"
                 strokeDasharray="4 4"
                 initial={{ pathLength: 0 }}
@@ -98,7 +98,7 @@ export function ReplayExperience() {
               }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.5 3.21V20.8C5.5 21.45 6.27 21.8 6.76 21.36L11.44 17.15H17.5C18.05 17.15 18.5 16.7 18.5 16.15V3.21C18.5 2.66 18.05 2.21 17.5 2.21H6.5C5.95 2.21 5.5 2.66 5.5 3.21Z" fill="#5ED29C" stroke="#050505" strokeWidth="1.5"/>
+                <path d="M5.5 3.21V20.8C5.5 21.45 6.27 21.8 6.76 21.36L11.44 17.15H17.5C18.05 17.15 18.5 16.7 18.5 16.15V3.21C18.5 2.66 18.05 2.21 17.5 2.21H6.5C5.95 2.21 5.5 2.66 5.5 3.21Z" fill="#7342e2" stroke="#050505" strokeWidth="1.5"/>
               </svg>
               
               {/* Click Ripple */}
