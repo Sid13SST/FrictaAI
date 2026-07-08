@@ -17,7 +17,7 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <section className="py-32 bg-background relative overflow-hidden">
+    <section className="py-32 bg-transparent relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
       
