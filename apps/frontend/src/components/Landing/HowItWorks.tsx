@@ -30,10 +30,8 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="py-32 relative bg-background overflow-hidden">
-      {/* Subtle Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/5 blur-[120px] rounded-[100%] pointer-events-none" />
-
+    <section className="py-32 relative bg-transparent overflow-hidden">
+      
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         
         <div className="text-center mb-20">
@@ -74,7 +72,7 @@ export function HowItWorks() {
                whileInView={{ opacity: 1, y: 0 }}
                viewport={{ once: true }}
                transition={{ delay: index * 0.15, duration: 0.6, ease: "easeOut" }}
-               className="relative z-10 bg-card/60 backdrop-blur-xl border border-white/5 hover:border-primary/30 p-8 rounded-2xl group transition-all duration-300 flex flex-col h-full shadow-lg hover:shadow-[0_0_30px_rgba(94,210,156,0.1)] overflow-hidden"
+               className="relative z-10 bg-card/60 backdrop-blur-xl border border-white/5 hover:border-primary/30 p-8 rounded-2xl group transition-all duration-300 flex flex-col h-full shadow-lg hover:shadow-[0_0_30px_rgba(115, 66, 226,0.1)] overflow-hidden"
              >
                {/* Ambient idle glow inside the card */}
                <motion.div 
