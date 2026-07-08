@@ -161,22 +161,22 @@ export function PredictiveDashboard() {
 
   const curves = [
     { name: 'BEGINNER', color: '#f87171', points: getCurveData('BEGINNER') },
-    { name: 'POWER_USER', color: '#5ed29c', points: getCurveData('POWER_USER') },
+    { name: 'POWER_USER', color: '#7342e2', points: getCurveData('POWER_USER') },
     { name: 'STANDARD', color: '#a78bfa', points: getCurveData('STANDARD') }
   ];
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#5ed29c]/30 selection:text-white">
+    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#7342e2]/30 selection:text-white">
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-[#222226] pb-6 mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#5ed29c]/10 text-[#5ed29c] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#5ed29c]/20 uppercase tracking-widest">
+            <span className="bg-[#7342e2]/10 text-[#7342e2] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#7342e2]/20 uppercase tracking-widest">
               Predictive Systems Active
             </span>
           </div>
           <h1 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-            <Zap className="w-5 h-5 text-[#5ed29c] fill-[#5ed29c]" /> Predictive UX Failure Detection Dashboard
+            <Zap className="w-5 h-5 text-[#7342e2] fill-[#7342e2]" /> Predictive UX Failure Detection Dashboard
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
             Proactive usability risk forecasting, cognitive fatigue modeling, and workflow survivability analysis.
@@ -202,7 +202,7 @@ export function PredictiveDashboard() {
           <button
             onClick={triggerForecast}
             disabled={forecasting}
-            className="flex items-center gap-2 bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase disabled:opacity-50 font-mono"
+            className="flex items-center gap-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase disabled:opacity-50 font-mono"
           >
             {forecasting ? (
               <>
@@ -210,7 +210,7 @@ export function PredictiveDashboard() {
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-[#5ed29c]" /> Execute Predictive Analysis
+                <Play className="w-3.5 h-3.5 fill-[#7342e2]" /> Execute Predictive Analysis
               </>
             )}
           </button>
@@ -219,7 +219,7 @@ export function PredictiveDashboard() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-[#121214] border border-[#222226] rounded-2xl">
-          <RefreshCw className="w-8 h-8 text-[#5ed29c] animate-spin mb-4" />
+          <RefreshCw className="w-8 h-8 text-[#7342e2] animate-spin mb-4" />
           <span className="text-xs text-zinc-500 uppercase">Computing UX failure projections...</span>
         </div>
       ) : (
@@ -240,7 +240,7 @@ export function PredictiveDashboard() {
                   failures.map((fail) => (
                     <div
                       key={fail.id}
-                      className="bg-[#18181b] border border-[#222226] p-4 rounded-xl flex items-start justify-between gap-4 hover:border-[#5ed29c]/30 transition-all cursor-pointer"
+                      className="bg-[#18181b] border border-[#222226] p-4 rounded-xl flex items-start justify-between gap-4 hover:border-[#7342e2]/30 transition-all cursor-pointer"
                       onClick={() => inspectEvidence(fail)}
                     >
                       <div className="flex-1">
@@ -260,7 +260,7 @@ export function PredictiveDashboard() {
                               Est. Drop Step: {fail.estimatedSteps}
                             </span>
                           )}
-                          <span className="bg-[#5ed29c]/5 text-[#5ed29c] px-2 py-0.5 rounded border border-[#5ed29c]/10 text-[9px] uppercase tracking-wider">
+                          <span className="bg-[#7342e2]/5 text-[#7342e2] px-2 py-0.5 rounded border border-[#7342e2]/10 text-[9px] uppercase tracking-wider">
                             Inspect Evidence
                           </span>
                         </div>
@@ -287,7 +287,7 @@ export function PredictiveDashboard() {
             {/* Row 2: Survivability Forecast Graphs */}
             <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl">
               <h2 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-[#5ed29c]" /> Multi-Step Workflow Survival Curves
+                <TrendingUp className="w-4 h-4 text-[#7342e2]" /> Multi-Step Workflow Survival Curves
               </h2>
               <p className="text-[10px] text-zinc-500 uppercase mb-6">Persona dropoff probability over consecutive workflow steps</p>
 
@@ -373,7 +373,7 @@ export function PredictiveDashboard() {
                   const isMedium = score > 40 && score <= 60;
                   const color = isHigh ? 'border-red-500/30 bg-red-500/10 text-red-400' :
                                 isMedium ? 'border-amber-500/30 bg-amber-500/10 text-amber-400' :
-                                'border-emerald-500/20 bg-emerald-500/5 text-[#5ed29c]';
+                                'border-emerald-500/20 bg-emerald-500/5 text-[#7342e2]';
 
                   return (
                     <div
@@ -397,7 +397,7 @@ export function PredictiveDashboard() {
             {/* Risk Index Summary */}
             <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl">
               <h2 className="text-xs font-black uppercase text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#5ed29c]" /> Stability Explorer
+                <Sparkles className="w-4 h-4 text-[#7342e2]" /> Stability Explorer
               </h2>
               <div className="flex flex-col gap-4">
                 {risks.length === 0 ? (
@@ -407,7 +407,7 @@ export function PredictiveDashboard() {
                     <div key={r.id} className="bg-[#18181b] border border-[#222226] p-3.5 rounded-xl">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-white text-xs font-bold">{r.workflowPath}</span>
-                        <span className={`text-[10px] font-mono ${r.stabilityIndex > 70 ? 'text-[#5ed29c]' : r.stabilityIndex > 45 ? 'text-amber-400' : 'text-red-400'}`}>
+                        <span className={`text-[10px] font-mono ${r.stabilityIndex > 70 ? 'text-[#7342e2]' : r.stabilityIndex > 45 ? 'text-amber-400' : 'text-red-400'}`}>
                           Stability: {r.stabilityIndex}%
                         </span>
                       </div>
@@ -470,7 +470,7 @@ export function PredictiveDashboard() {
               <div className="flex items-center justify-between border-b border-[#222226] pb-4 mb-6">
                 <div>
                   <h3 className="text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[#5ed29c]" /> Forecast Evidence Inspector
+                    <Sparkles className="w-4 h-4 text-[#7342e2]" /> Forecast Evidence Inspector
                   </h3>
                   <span className="text-[9px] text-zinc-500 uppercase block mt-1">Traceability details</span>
                 </div>
@@ -495,7 +495,7 @@ export function PredictiveDashboard() {
                 <span className="text-[10px] text-zinc-500 uppercase block mb-3 font-bold">Supporting Evidence (Replay-Linked):</span>
                 {loadingEvidence ? (
                   <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-5 h-5 text-[#5ed29c] animate-spin" />
+                    <RefreshCw className="w-5 h-5 text-[#7342e2] animate-spin" />
                   </div>
                 ) : evidenceList.length === 0 ? (
                   <div className="text-center py-6 text-zinc-600 text-xs border border-[#222226] border-dashed rounded-xl">
@@ -509,7 +509,7 @@ export function PredictiveDashboard() {
                         <div className="flex items-center justify-between text-[8px] text-zinc-500 uppercase">
                           <span>Conf. Weight: {ev.confidenceWeight * 100}%</span>
                           {ev.sessionRefId && (
-                            <span className="text-[#5ed29c] font-bold">
+                            <span className="text-[#7342e2] font-bold">
                               Session: {ev.sessionRefId.slice(0, 8)}
                             </span>
                           )}
