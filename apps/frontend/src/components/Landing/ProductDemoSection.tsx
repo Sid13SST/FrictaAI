@@ -57,10 +57,18 @@ export function ProductDemoSection() {
   }, []);
 
   return (
-    <section className="py-32 bg-background relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
-      
+    <section className="py-32 bg-transparent relative overflow-hidden">
+      {/* Reactive Focus Blur Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[800px] blur-[150px] rounded-[100%]"
+          animate={{
+            backgroundColor: 'rgba(115, 66, 226, 0.08)',
+            scale: activeFindings.length > 0 ? [1, 1.1, 1] : 1
+          }}
+          transition={{ duration: 2, ease: "easeInOut", repeat: activeFindings.length > 0 ? Infinity : 0 }}
+        />
+      </div>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
           <motion.h2 
@@ -91,7 +99,7 @@ export function ProductDemoSection() {
           className="w-full bg-card rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col h-[700px]"
         >
           {/* Header */}
-          <div className="h-14 border-b border-white/10 bg-background-alt/50 flex items-center justify-between px-6">
+          <div className="h-14 border-b border-white/10 bg-transparent flex items-center justify-between px-6">
             <div className="flex items-center gap-4">
                <div className="flex gap-2">
                  <div className="w-3 h-3 rounded-full bg-white/20" />
@@ -144,7 +152,7 @@ export function ProductDemoSection() {
             </div>
 
             {/* Center: Live Replay View */}
-            <div className="flex-1 bg-background relative flex flex-col">
+            <div className="flex-1 bg-transparent relative flex flex-col">
               <div className="p-2 border-b border-white/5 flex items-center gap-2 bg-card">
                 <div className="flex-1 bg-background-deep rounded border border-white/5 px-3 py-1 flex items-center gap-2">
                   <span className="text-[10px] text-white/30">URL</span>
@@ -185,14 +193,14 @@ export function ProductDemoSection() {
                          {/* Card Input (Finding 2) */}
                          <div className="space-y-1.5 relative">
                            <div className="w-20 h-2 bg-gray-300 rounded-full" />
-                           <div className={`h-8 border rounded flex items-center px-2 gap-2 relative bg-white transition-colors duration-300 ${progress > 85 ? 'border-[#FFBD2E] bg-[#FFBD2E]/5 shadow-[0_0_0_2px_rgba(255,189,46,0.2)]' : 'border-gray-200'}`}>
+                           <div className={`h-8 border rounded flex items-center px-2 gap-2 relative bg-white transition-colors duration-300 ${progress > 85 ? 'border-primary bg-primary/5 shadow-[0_0_0_2px_rgba(115,66,226,0.2)]' : 'border-gray-200'}`}>
                              <div className="w-5 h-3 bg-gray-300 rounded-sm" />
                              <div className="w-32 h-2 bg-gray-200 rounded-full" />
                              
                              {/* Fricta highlight overlay */}
                              <AnimatePresence>
                                {progress > 85 && (
-                                 <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="absolute -top-6 right-0 bg-[#FFBD2E] text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm z-20 whitespace-nowrap">
+                                 <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="absolute -top-6 right-0 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm z-20 whitespace-nowrap">
                                    Missing aria-label
                                  </motion.div>
                                )}
@@ -209,8 +217,8 @@ export function ProductDemoSection() {
                            {/* Blocker highlight */}
                            <AnimatePresence>
                              {progress > 35 && progress < 75 && (
-                               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 border-2 border-dashed border-[#FF5F56] rounded bg-[#FF5F56]/10 flex items-center justify-center pointer-events-none z-20">
-                                 <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#FF5F56] text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 border-2 border-dashed border-primary rounded bg-primary/10 flex items-center justify-center pointer-events-none z-20">
+                                 <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                                    Click Intercepted
                                  </span>
                                </motion.div>
@@ -306,9 +314,7 @@ export function ProductDemoSection() {
                       className="bg-card border border-white/10 p-3 rounded-lg flex flex-col gap-2"
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-                          finding.severity === 'high' ? 'bg-[#FF5F56]/20 text-[#FF5F56]' : 'bg-[#FFBD2E]/20 text-[#FFBD2E]'
-                        }`}>
+                        <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary">
                           {finding.severity}
                         </span>
                         <span className="text-[10px] text-text-tertiary font-mono">{finding.time}</span>
