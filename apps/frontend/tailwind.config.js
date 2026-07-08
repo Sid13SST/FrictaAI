@@ -9,8 +9,8 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#5ED29C",
-          foreground: "#050505",
+          DEFAULT: "#7342E2",
+          foreground: "#FFFFFF",
         },
         background: {
           DEFAULT: "#050505",
@@ -22,8 +22,8 @@ export default {
           hover: "#131313",
         },
         accent: {
-          DEFAULT: "#5ED29C",
-          secondary: "#74F3B8",
+          DEFAULT: "#7342E2",
+          secondary: "#9B72FA",
         },
         text: {
           primary: "#FFFFFF",
@@ -33,7 +33,7 @@ export default {
         },
         border: {
           DEFAULT: "rgba(255, 255, 255, 0.08)",
-          hover: "rgba(94, 210, 156, 0.45)",
+          hover: "rgba(115, 66, 226, 0.45)",
         },
       },
       fontFamily: {
