@@ -13,7 +13,7 @@ export function TrustedByMarquee() {
   ];
 
   return (
-    <section className="py-20 border-y border-white/5 bg-background-alt overflow-hidden relative">
+    <section className="py-20 border-y border-white/5 bg-transparent overflow-hidden relative">
       <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-background-alt to-transparent z-10" />
       <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-background-alt to-transparent z-10" />
       
