@@ -717,7 +717,7 @@ export const SimulationConsole: React.FC = () => {
       case 'MEDIUM':
         return 'text-orange-400 bg-orange-950/10 border-orange-500/20';
       default:
-        return 'text-[#5ed29c] bg-[#5ed29c]/5 border-[#5ed29c]/10';
+        return 'text-[#7342e2] bg-[#7342e2]/5 border-[#7342e2]/10';
     }
   };
 
@@ -727,8 +727,8 @@ export const SimulationConsole: React.FC = () => {
       {/* ── Header ───────────────────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#222226] pb-5 mb-6">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#5ed29c]/5 border border-[#5ed29c]/20 flex items-center justify-center">
-            <Compass className="w-4 h-4 text-[#5ed29c]" />
+          <div className="w-8 h-8 rounded-xl bg-[#7342e2]/5 border border-[#7342e2]/20 flex items-center justify-center">
+            <Compass className="w-4 h-4 text-[#7342e2]" />
           </div>
           <div>
             <h1 className="text-sm font-black font-mono text-white uppercase tracking-widest">
@@ -775,14 +775,14 @@ export const SimulationConsole: React.FC = () => {
           
           <div className="flex justify-between items-start mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#5ed29c]" />
+              <Sparkles className="w-4 h-4 text-[#7342e2]" />
               <h2 className="text-xs font-black font-mono text-white uppercase tracking-wider">
                 System Guide: What is Autonomous UX Simulation?
               </h2>
             </div>
             <button
               onClick={() => setShowGuide(false)}
-              className="text-[10px] font-mono text-zinc-500 hover:text-[#5ed29c] uppercase tracking-widest transition-colors focus:outline-none"
+              className="text-[10px] font-mono text-zinc-500 hover:text-[#7342e2] uppercase tracking-widest transition-colors focus:outline-none"
             >
               [ Dismiss Guide ]
             </button>
@@ -795,7 +795,7 @@ export const SimulationConsole: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-3 border-t border-[#222226]">
             <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
               <div className="flex items-center gap-2 mb-1.5">
-                <Users className="w-3.5 h-3.5 text-[#5ed29c]" />
+                <Users className="w-3.5 h-3.5 text-[#7342e2]" />
                 <h4 className="text-[10px] font-bold font-mono text-white uppercase">1. Choose Persona</h4>
               </div>
               <p className="text-[11px] text-zinc-500 leading-normal">
@@ -805,7 +805,7 @@ export const SimulationConsole: React.FC = () => {
 
             <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
               <div className="flex items-center gap-2 mb-1.5">
-                <MousePointer className="w-3.5 h-3.5 text-[#5ed29c]" />
+                <MousePointer className="w-3.5 h-3.5 text-[#7342e2]" />
                 <h4 className="text-[10px] font-bold font-mono text-white uppercase">2. Viewport Cursor</h4>
               </div>
               <p className="text-[11px] text-zinc-500 leading-normal">
@@ -815,7 +815,7 @@ export const SimulationConsole: React.FC = () => {
 
             <div className="bg-[#121214]/60 border border-white/[0.02] p-3.5 rounded-xl">
               <div className="flex items-center gap-2 mb-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-[#5ed29c]" />
+                <TrendingUp className="w-3.5 h-3.5 text-[#7342e2]" />
                 <h4 className="text-[10px] font-bold font-mono text-white uppercase">3. Live Confidence</h4>
               </div>
               <p className="text-[11px] text-zinc-500 leading-normal">
@@ -844,7 +844,7 @@ export const SimulationConsole: React.FC = () => {
           {/* Controller Form */}
           <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
             <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <Settings className="w-3.5 h-3.5 text-[#5ed29c]" /> Simulation Parameters
+              <Settings className="w-3.5 h-3.5 text-[#7342e2]" /> Simulation Parameters
             </h3>
             
             <form onSubmit={handleStartSimulation} className="flex flex-col gap-4 font-mono text-xs">
@@ -885,7 +885,7 @@ export const SimulationConsole: React.FC = () => {
               <button
                 type="submit"
                 disabled={running || !selectedProjectId}
-                className="w-full bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="w-full bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {running ? (
                   <>
@@ -905,7 +905,7 @@ export const SimulationConsole: React.FC = () => {
           {/* Persona Traits Panel */}
           <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
             <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-[#5ed29c]" /> Active Archetype Coefficient
+              <Users className="w-3.5 h-3.5 text-[#7342e2]" /> Active Archetype Coefficient
             </h3>
             
             {(() => {
@@ -934,7 +934,7 @@ export const SimulationConsole: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div className="w-20 h-1 bg-[#1c1c1f] rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-[#5ed29c]"
+                            className="h-full bg-[#7342e2]"
                             style={{ width: `${trait.value * 100}%` }}
                           />
                         </div>
@@ -953,9 +953,9 @@ export const SimulationConsole: React.FC = () => {
           
           {/* Live Simulation Monitor */}
           {running && (
-            <div className="bg-[#121214] border border-[#5ed29c]/20 p-5 rounded-xl flex items-center justify-between gap-4 animate-pulse">
+            <div className="bg-[#121214] border border-[#7342e2]/20 p-5 rounded-xl flex items-center justify-between gap-4 animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="w-3.5 h-3.5 rounded-full bg-[#5ed29c] animate-ping shrink-0" />
+                <div className="w-3.5 h-3.5 rounded-full bg-[#7342e2] animate-ping shrink-0" />
                 <div>
                   <h4 className="text-xs font-black font-mono text-white uppercase">LIVE BEHAVIOR SIMULATOR IN PROGRESS</h4>
                   <p className="text-[10px] font-mono text-zinc-500 uppercase mt-0.5">
@@ -966,7 +966,7 @@ export const SimulationConsole: React.FC = () => {
 
               <div className="flex items-center gap-2 font-mono text-xs">
                 <span className="text-zinc-500">Live Confidence:</span>
-                <span className="text-[#5ed29c] font-black">{(liveConfidence * 100).toFixed(0)}%</span>
+                <span className="text-[#7342e2] font-black">{(liveConfidence * 100).toFixed(0)}%</span>
               </div>
             </div>
           )}
@@ -1025,7 +1025,7 @@ export const SimulationConsole: React.FC = () => {
 
                     <div className="flex items-center gap-3 font-mono text-[10px] shrink-0">
                       <span className={`px-2 py-0.5 rounded border ${
-                        path.isSuccess ? 'text-[#5ed29c] border-[#5ed29c]/20 bg-[#5ed29c]/5' : 'text-red-400 border-red-500/20 bg-red-500/5'
+                        path.isSuccess ? 'text-[#7342e2] border-[#7342e2]/20 bg-[#7342e2]/5' : 'text-red-400 border-red-500/20 bg-red-500/5'
                       }`}>
                         {path.isSuccess ? 'SUCCESS' : 'ABORTED'}
                       </span>
@@ -1040,8 +1040,8 @@ export const SimulationConsole: React.FC = () => {
           {/* Tab selectors control panel */}
           <div className="bg-[#121214] border border-[#222226] p-4 rounded-2xl mb-6 flex flex-col gap-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
             <div className="flex items-center gap-3 min-w-0 w-full">
-              <div className="w-9 h-9 rounded-xl bg-[#5ed29c]/5 border border-[#5ed29c]/15 flex items-center justify-center shrink-0">
-                <Brain className="w-4 h-4 text-[#5ed29c]" />
+              <div className="w-9 h-9 rounded-xl bg-[#7342e2]/5 border border-[#7342e2]/15 flex items-center justify-center shrink-0">
+                <Brain className="w-4 h-4 text-[#7342e2]" />
               </div>
               <div className="min-w-0">
                 <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider">
@@ -1058,7 +1058,7 @@ export const SimulationConsole: React.FC = () => {
                 onClick={() => setActiveTab('explorer')}
                 className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[10px] lg:text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full focus:outline-none whitespace-nowrap ${
                   activeTab === 'explorer'
-                    ? 'bg-[#5ed29c] text-[#070b0a] shadow-[0_0_20px_rgba(94,210,156,0.25)] border border-[#5ed29c]'
+                    ? 'bg-[#7342e2] text-[#070b0a] shadow-[0_0_20px_rgba(115, 66, 226,0.25)] border border-[#7342e2]'
                     : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
                 }`}
               >
@@ -1091,7 +1091,7 @@ export const SimulationConsole: React.FC = () => {
                 onClick={() => setActiveTab('predictive')}
                 className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-[10px] lg:text-xs font-black font-mono tracking-wider uppercase transition-all duration-300 w-full focus:outline-none whitespace-nowrap ${
                   activeTab === 'predictive'
-                    ? 'bg-[#5ed29c] text-[#070b0a] shadow-[0_0_20px_rgba(94,210,156,0.25)] border border-[#5ed29c]'
+                    ? 'bg-[#7342e2] text-[#070b0a] shadow-[0_0_20px_rgba(115, 66, 226,0.25)] border border-[#7342e2]'
                     : 'text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.03]'
                 }`}
               >
@@ -1108,10 +1108,10 @@ export const SimulationConsole: React.FC = () => {
                 <div className="md:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 overflow-hidden">
                   <div className="flex justify-between items-center">
                     <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <MousePointer className="w-4 h-4 text-[#5ed29c]" /> Behavioral Replay & Cursor Trails
+                      <MousePointer className="w-4 h-4 text-[#7342e2]" /> Behavioral Replay & Cursor Trails
                     </h3>
                     <div className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#5ed29c]" /> COORD SCANNING ENABLED
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#7342e2]" /> COORD SCANNING ENABLED
                     </div>
                   </div>
 
@@ -1120,7 +1120,7 @@ export const SimulationConsole: React.FC = () => {
                     <div 
                       className="w-full aspect-[27/14] bg-[#0b0c0e] rounded-lg border border-white/[0.04] relative overflow-hidden"
                       style={{
-                        background: 'radial-gradient(circle at top left, rgba(94, 210, 156, 0.02), transparent 50%), #0b0c0e'
+                        background: 'radial-gradient(circle at top left, rgba(115, 66, 226, 0.02), transparent 50%), #0b0c0e'
                       }}
                     >
                       <style>{`
@@ -1136,7 +1136,7 @@ export const SimulationConsole: React.FC = () => {
                         <div className="flex gap-1.5 shrink-0">
                           <div className="w-1.5 h-1.5 rounded-full bg-red-500/40" />
                           <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/40" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#5ed29c]/40" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#7342e2]/40" />
                         </div>
                         {/* URL bar */}
                         <div className="w-72 h-4.5 bg-[#1c1c1f] rounded text-[8px] font-mono text-zinc-500 flex items-center px-2 truncate border border-white/[0.01]">
@@ -1164,8 +1164,8 @@ export const SimulationConsole: React.FC = () => {
                               style={{ left: '0px', top: '0px', width: '100%', height: '35px' }}
                             >
                               <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded bg-[#5ed29c]/10 border border-[#5ed29c]/30 flex items-center justify-center">
-                                  <Compass className="w-1.5 h-1.5 text-[#5ed29c]" />
+                                <div className="w-2.5 h-2.5 rounded bg-[#7342e2]/10 border border-[#7342e2]/30 flex items-center justify-center">
+                                  <Compass className="w-1.5 h-1.5 text-[#7342e2]" />
                                 </div>
                                 <span className="text-[7.5px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
                                   {layout === 'login' && 'Identity Secure Access Portal'}
@@ -1181,11 +1181,11 @@ export const SimulationConsole: React.FC = () => {
                               <>
                                 {/* Username Input (left: 12%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#7342e2]/15 hover:border-[#7342e2]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(115, 66, 226,0.06)]"
                                   style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Username</span>
-                                  <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#5ed29c] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
+                                  <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#7342e2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
                                     {selectedSessionId || running ? 'admin@domain.com' : ''}
                                   </div>
                                   <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#username]</span>
@@ -1193,7 +1193,7 @@ export const SimulationConsole: React.FC = () => {
 
                                 {/* Password Input (left: 32%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#7342e2]/15 hover:border-[#7342e2]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(115, 66, 226,0.06)]"
                                   style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Password</span>
@@ -1205,24 +1205,24 @@ export const SimulationConsole: React.FC = () => {
 
                                 {/* Forgot Password Link (left: 52%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#7342e2]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
                                   style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">Recovery</span>
-                                  <span className="text-[11px] text-[#5ed29c] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Reset Pass</span>
+                                  <span className="text-[11px] text-[#7342e2] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Reset Pass</span>
                                   <span className="text-[7.5px] text-zinc-500 uppercase font-mono tracking-wider">[link#forgot]</span>
                                 </div>
 
                                 {/* Log In Button (left: 72%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.12)]"
+                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#7342e2]/30 hover:border-[#7342e2]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(115, 66, 226,0.12)]"
                                   style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[9px] font-black text-white tracking-widest uppercase">Sign In</span>
                                   <div className="flex items-center justify-center py-1">
-                                    <MousePointer className="w-4 h-4 text-[#5ed29c] animate-pulse" />
+                                    <MousePointer className="w-4 h-4 text-[#7342e2] animate-pulse" />
                                   </div>
-                                  <span className="text-[7.5px] text-[#5ed29c]/70 font-mono tracking-wider">[btn#submit]</span>
+                                  <span className="text-[7.5px] text-[#7342e2]/70 font-mono tracking-wider">[btn#submit]</span>
                                 </div>
                               </>
                             )}
@@ -1231,22 +1231,22 @@ export const SimulationConsole: React.FC = () => {
                               <>
                                 {/* Starter Card Description (left: 12%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#7342e2]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
                                   style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Starter Plan</span>
-                                  <span className="text-[13px] font-black text-[#5ed29c]">$19<span className="text-[8.5px] text-zinc-500 font-normal">/mo</span></span>
+                                  <span className="text-[13px] font-black text-[#7342e2]">$19<span className="text-[8.5px] text-zinc-500 font-normal">/mo</span></span>
                                   <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[card#starter]</span>
                                 </div>
 
                                 {/* Select Starter CTA (left: 32%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1"
+                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#7342e2]/30 hover:border-[#7342e2]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1"
                                   style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[9px] font-black text-white tracking-widest uppercase">Select Starter</span>
-                                  <span className="text-[10.5px] font-bold text-[#5ed29c] uppercase">Get Started</span>
-                                  <span className="text-[7.5px] text-[#5ed29c]/60 font-mono tracking-wider">[btn#select-starter]</span>
+                                  <span className="text-[10.5px] font-bold text-[#7342e2] uppercase">Get Started</span>
+                                  <span className="text-[7.5px] text-[#7342e2]/60 font-mono tracking-wider">[btn#select-starter]</span>
                                 </div>
 
                                 {/* Pro Card Description (left: 52%) */}
@@ -1278,11 +1278,11 @@ export const SimulationConsole: React.FC = () => {
                               <>
                                 {/* Email Field (left: 12%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#7342e2]/15 hover:border-[#7342e2]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(115, 66, 226,0.06)]"
                                   style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Email Address</span>
-                                  <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#5ed29c] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
+                                  <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#7342e2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
                                     {selectedSessionId || running ? 'user@fricta.ai' : ''}
                                   </div>
                                   <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#email]</span>
@@ -1290,7 +1290,7 @@ export const SimulationConsole: React.FC = () => {
 
                                 {/* Password Field (left: 32%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#5ed29c]/15 hover:border-[#5ed29c]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.06)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-[#7342e2]/15 hover:border-[#7342e2]/40 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(115, 66, 226,0.06)]"
                                   style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Password</span>
@@ -1302,22 +1302,22 @@ export const SimulationConsole: React.FC = () => {
 
                                 {/* Help Link (left: 52%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#7342e2]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
                                   style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">Assistance</span>
-                                  <span className="text-[11px] text-[#5ed29c] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Get Help</span>
+                                  <span className="text-[11px] text-[#7342e2] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Get Help</span>
                                   <span className="text-[7.5px] text-zinc-500 uppercase font-mono tracking-wider">[link#help]</span>
                                 </div>
 
                                 {/* Submit Button (left: 72%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(94,210,156,0.12)]"
+                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#7342e2]/30 hover:border-[#7342e2]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(115, 66, 226,0.12)]"
                                   style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[9px] font-black text-white tracking-widest uppercase">Pay Now</span>
-                                  <span className="text-[10px] text-[#5ed29c] font-bold tracking-wider">Confirm Billing</span>
-                                  <span className="text-[7.5px] text-[#5ed29c]/60 font-mono tracking-wider">[btn#submit]</span>
+                                  <span className="text-[10px] text-[#7342e2] font-bold tracking-wider">Confirm Billing</span>
+                                  <span className="text-[7.5px] text-[#7342e2]/60 font-mono tracking-wider">[btn#submit]</span>
                                 </div>
                               </>
                             )}
@@ -1326,7 +1326,7 @@ export const SimulationConsole: React.FC = () => {
                               <>
                                 {/* Hero copy description (left: 12%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#7342e2]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
                                   style={{ left: '12%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Hero Copy</span>
@@ -1339,31 +1339,31 @@ export const SimulationConsole: React.FC = () => {
 
                                 {/* Get Started CTA (left: 32%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#5ed29c]/30 hover:border-[#5ed29c]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1"
+                                  className="absolute bg-gradient-to-b from-[#163527]/90 to-[#0b1b14]/95 border border-[#7342e2]/30 hover:border-[#7342e2]/60 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(16,185,129,0.06)] transition-all duration-300 hover:-translate-y-1"
                                   style={{ left: '32%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[9px] font-black text-white tracking-widest uppercase">Action Call</span>
-                                  <span className="text-[10.5px] font-bold text-[#5ed29c] uppercase">Get Started</span>
-                                  <span className="text-[7.5px] text-[#5ed29c]/60 font-mono tracking-wider">[cta#get-started]</span>
+                                  <span className="text-[10.5px] font-bold text-[#7342e2] uppercase">Get Started</span>
+                                  <span className="text-[7.5px] text-[#7342e2]/60 font-mono tracking-wider">[cta#get-started]</span>
                                 </div>
 
                                 {/* Learn More Link (left: 52%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#7342e2]/35 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(255,255,255,0.02)]"
                                   style={{ left: '52%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">Product Tours</span>
-                                  <span className="text-[11px] text-[#5ed29c] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Learn More</span>
+                                  <span className="text-[11px] text-[#7342e2] font-black underline cursor-pointer hover:text-emerald-300 transition-colors">Learn More</span>
                                   <span className="text-[7.5px] text-zinc-500 uppercase font-mono tracking-wider">[link#explore]</span>
                                 </div>
 
                                 {/* Newsletter Input (left: 72%) */}
                                 <div 
-                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#5ed29c]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
+                                  className="absolute bg-gradient-to-b from-[#121318]/90 to-[#090a0d]/95 border border-white/[0.04] hover:border-[#7342e2]/30 rounded-xl p-3 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-1"
                                   style={{ left: '72%', top: '35%', width: '15%', height: '48%' }}
                                 >
                                   <span className="text-[8px] uppercase tracking-widest text-zinc-400 font-bold">Newsletter</span>
-                                  <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#5ed29c] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
+                                  <div className="bg-[#18181b]/80 border border-white/[0.04] rounded-lg h-7 flex items-center px-2 text-[10px] text-[#7342e2] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)] overflow-hidden truncate">
                                     {selectedSessionId || running ? 'sub@email.com' : ''}
                                   </div>
                                   <span className="text-[7.5px] text-zinc-600 font-mono tracking-wider">[input#news]</span>
@@ -1393,7 +1393,7 @@ export const SimulationConsole: React.FC = () => {
                             <path
                               d={linePath}
                               fill="none"
-                              stroke="#5ed29c"
+                              stroke="#7342e2"
                               strokeWidth="2"
                               strokeDasharray="4 4"
                               style={{ animation: 'dash 2s linear infinite' }}
@@ -1408,13 +1408,13 @@ export const SimulationConsole: React.FC = () => {
                                   cy={p.y}
                                   r="5"
                                   fill="#0b0c0e"
-                                  stroke="#5ed29c"
+                                  stroke="#7342e2"
                                   strokeWidth="2"
                                 />
                                 <text
                                   x={p.x}
                                   y={p.y - 10}
-                                  fill="#5ed29c"
+                                  fill="#7342e2"
                                   fontSize="8"
                                   fontFamily="monospace"
                                   textAnchor="middle"
@@ -1430,7 +1430,7 @@ export const SimulationConsole: React.FC = () => {
                                     cy={p.y}
                                     r="10"
                                     fill="none"
-                                    stroke="#5ed29c"
+                                    stroke="#7342e2"
                                     strokeWidth="1"
                                     className="animate-ping"
                                   />
@@ -1460,8 +1460,8 @@ export const SimulationConsole: React.FC = () => {
                             }}
                           >
                             <div className="relative flex h-4 w-4">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5ed29c] opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#5ed29c] border border-white flex items-center justify-center shadow-lg">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7342e2] opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#7342e2] border border-white flex items-center justify-center shadow-lg">
                                 <span className="text-[7.5px] font-bold text-[#0c0d10] font-mono">{activeStep + 1}</span>
                               </span>
                             </div>
@@ -1476,7 +1476,7 @@ export const SimulationConsole: React.FC = () => {
                 {/* Live Navigation Confidence Graph */}
                 <div className="md:col-span-1 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
                   <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-[#5ed29c]" /> Confidence Curve
+                    <TrendingUp className="w-4 h-4 text-[#7342e2]" /> Confidence Curve
                   </h3>
 
                   {confidenceEvents.length === 0 ? (
@@ -1541,7 +1541,7 @@ export const SimulationConsole: React.FC = () => {
                             <path
                               d={linePath}
                               fill="none"
-                              stroke="#5ed29c"
+                              stroke="#7342e2"
                               strokeWidth="2"
                             />
                           )}
@@ -1565,7 +1565,7 @@ export const SimulationConsole: React.FC = () => {
               {/* Cognitive Friction timeline & reactions */}
               <div className="bg-[#121214] border border-[#222226] rounded-xl p-5">
                 <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-5 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-[#5ed29c]" /> Cognitive Hesitation & Reactions Timeline
+                  <AlertTriangle className="w-4 h-4 text-[#7342e2]" /> Cognitive Hesitation & Reactions Timeline
                 </h3>
 
                 {(() => {
@@ -1601,9 +1601,9 @@ export const SimulationConsole: React.FC = () => {
                           title = event.signalType.replace(/_/g, ' ');
                           badgeText = `${event.severity} SEVERITY`;
                           badgeColor = getSeverityColor(event.severity);
-                          iconColor = 'text-[#5ed29c]';
-                          iconBg = 'bg-[#5ed29c]/10 border-[#5ed29c]/20';
-                          borderHighlight = 'hover:border-[#5ed29c]/25 border-[#2d2d30]';
+                          iconColor = 'text-[#7342e2]';
+                          iconBg = 'bg-[#7342e2]/10 border-[#7342e2]/20';
+                          borderHighlight = 'hover:border-[#7342e2]/25 border-[#2d2d30]';
                         } else {
                           title = `FRICTION REACTION — ${event.reactionType.replace(/_/g, ' ')}`;
                           badgeText = `INTENSITY ${(event.intensity * 100).toFixed(0)}%`;
@@ -1658,7 +1658,7 @@ export const SimulationConsole: React.FC = () => {
                                   <>
                                     <span className="text-zinc-500 uppercase">Target Element:</span>
                                     {event.targetElement ? (
-                                      <code className="text-[#5ed29c] bg-[#5ed29c]/5 px-1.5 py-0.5 rounded border border-[#5ed29c]/10 text-[9px] font-mono">
+                                      <code className="text-[#7342e2] bg-[#7342e2]/5 px-1.5 py-0.5 rounded border border-[#7342e2]/10 text-[9px] font-mono">
                                         {event.targetElement}
                                       </code>
                                     ) : (
@@ -1708,8 +1708,8 @@ export const SimulationConsole: React.FC = () => {
                     const frictionAccum = latestRisk ? latestRisk.frictionAccumulated : 0;
                     const triggerSource = latestRisk ? latestRisk.triggerSource : 'NO_SIGNAL';
                     
-                    const ringColor = riskVal > 0.7 ? 'stroke-red-500' : riskVal > 0.4 ? 'stroke-orange-400' : 'stroke-[#5ed29c]';
-                    const textColor = riskVal > 0.7 ? 'text-red-400' : riskVal > 0.4 ? 'text-orange-400' : 'text-[#5ed29c]';
+                    const ringColor = riskVal > 0.7 ? 'stroke-red-500' : riskVal > 0.4 ? 'stroke-orange-400' : 'stroke-[#7342e2]';
+                    const textColor = riskVal > 0.7 ? 'text-red-400' : riskVal > 0.4 ? 'text-orange-400' : 'text-[#7342e2]';
                     const displayTrigger = triggerSource.replace(/_/g, ' ').toLowerCase();
                     
                     return (
@@ -1784,7 +1784,7 @@ export const SimulationConsole: React.FC = () => {
                           <span className="text-white font-bold shrink-0">{(focusHeat * 100).toFixed(0)}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-[#1c1c1f] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#5ed29c]" style={{ width: `${focusHeat * 100}%` }} />
+                          <div className="h-full bg-[#7342e2]" style={{ width: `${focusHeat * 100}%` }} />
                         </div>
 
                         <div className="flex justify-between items-center mt-0.5 gap-2">
@@ -1802,7 +1802,7 @@ export const SimulationConsole: React.FC = () => {
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col justify-between overflow-hidden">
                   <div>
                     <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-[#5ed29c] shrink-0" /> Schema Convention
+                      <Compass className="w-3.5 h-3.5 text-[#7342e2] shrink-0" /> Schema Convention
                     </h4>
                     <p className="text-[10px] text-zinc-500 font-mono uppercase">Conformity to UI expectation</p>
                   </div>
@@ -1814,7 +1814,7 @@ export const SimulationConsole: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center gap-2">
                       <span className="text-zinc-500 uppercase truncate">Schema Mismatches:</span>
-                      <span className={`font-bold shrink-0 ${expectationMismatches.length > 0 ? 'text-orange-400' : 'text-[#5ed29c]'}`}>
+                      <span className={`font-bold shrink-0 ${expectationMismatches.length > 0 ? 'text-orange-400' : 'text-[#7342e2]'}`}>
                         {expectationMismatches.length}
                       </span>
                     </div>
@@ -1934,8 +1934,8 @@ export const SimulationConsole: React.FC = () => {
                       </h4>
                       <p className="text-[9.5px] text-zinc-500 font-mono uppercase">Evolution of agent confidence & certainty level</p>
                     </div>
-                    <span className="flex items-center gap-1 text-[9px] font-mono text-[#5ed29c] shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#5ed29c]" /> CONFIDENCE SCORE
+                    <span className="flex items-center gap-1 text-[9px] font-mono text-[#7342e2] shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#7342e2]" /> CONFIDENCE SCORE
                     </span>
                   </div>
                   
@@ -1959,8 +1959,8 @@ export const SimulationConsole: React.FC = () => {
                         <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${w} ${h}`}>
                           <defs>
                             <linearGradient id="confGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.18" />
-                              <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0" />
+                              <stop offset="0%" stopColor="#7342e2" stopOpacity="0.18" />
+                              <stop offset="100%" stopColor="#7342e2" stopOpacity="0.0" />
                             </linearGradient>
                           </defs>
                           
@@ -1993,11 +1993,11 @@ export const SimulationConsole: React.FC = () => {
                           {confPaths.areaPath && <path d={confPaths.areaPath} fill="url(#confGrad)" />}
                           
                           {/* Stroke path */}
-                          {confPaths.path && <path d={confPaths.path} fill="none" stroke="#5ed29c" strokeWidth="2" />}
+                          {confPaths.path && <path d={confPaths.path} fill="none" stroke="#7342e2" strokeWidth="2" />}
                           
                           {/* Points */}
                           {confPaths.points.map((p, idx) => (
-                            <circle key={idx} cx={p.x} cy={p.y} r="3.5" fill="#5ed29c" stroke="#121214" strokeWidth="1" />
+                            <circle key={idx} cx={p.x} cy={p.y} r="3.5" fill="#7342e2" stroke="#121214" strokeWidth="1" />
                           ))}
                         </svg>
                       );
@@ -2014,7 +2014,7 @@ export const SimulationConsole: React.FC = () => {
                 <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col justify-between overflow-hidden">
                   <div>
                     <h4 className="text-xs font-black font-mono text-white uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                      <Activity className="w-3.5 h-3.5 text-[#5ed29c] shrink-0" /> Choice Overload & Ambiguity
+                      <Activity className="w-3.5 h-3.5 text-[#7342e2] shrink-0" /> Choice Overload & Ambiguity
                     </h4>
                     <p className="text-[10px] text-zinc-500 font-mono uppercase mb-4">Volume of options vs. focus clarity</p>
                   </div>
@@ -2039,7 +2039,7 @@ export const SimulationConsole: React.FC = () => {
                               const maxChoices = Math.max(...decisionComplexities.map(d => d.choiceCount), 5);
                               const heightPct = (item.choiceCount / maxChoices) * 100;
                               const score = item.ambiguityScore;
-                              const barColor = score > 0.7 ? 'bg-red-500/80 border border-red-500/50' : score > 0.4 ? 'bg-orange-500/80 border border-orange-500/50' : 'bg-[#5ed29c]/80 border border-[#5ed29c]/50';
+                              const barColor = score > 0.7 ? 'bg-red-500/80 border border-red-500/50' : score > 0.4 ? 'bg-orange-500/80 border border-orange-500/50' : 'bg-[#7342e2]/80 border border-[#7342e2]/50';
                               
                               return (
                                 <div key={idx} className="flex-1 flex flex-col items-center group relative h-full justify-end cursor-pointer">
@@ -2047,7 +2047,7 @@ export const SimulationConsole: React.FC = () => {
                                     Step: <span className="text-white font-bold">#{idx + 1}</span> <br />
                                     Choices: <span className="text-white font-bold">{item.choiceCount}</span> <br />
                                     Ambiguity: <span className="text-white font-bold">{(item.ambiguityScore * 100).toFixed(0)}%</span> <br />
-                                    Level: <span className="text-[#5ed29c] font-bold">{item.complexityLevel}</span>
+                                    Level: <span className="text-[#7342e2] font-bold">{item.complexityLevel}</span>
                                   </div>
                                   
                                   <div 
@@ -2503,7 +2503,7 @@ export const SimulationConsole: React.FC = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-[#5ed29c]" /> Predictive Intelligence Console
+                      <Zap className="w-4 h-4 text-[#7342e2]" /> Predictive Intelligence Console
                     </h3>
                     <p className="text-[10px] text-zinc-500 font-mono uppercase mt-0.5">Forecast operational UX risks and usability failures</p>
                   </div>
@@ -2530,7 +2530,7 @@ export const SimulationConsole: React.FC = () => {
                       <button
                         type="submit"
                         disabled={predictiveRunning || !selectedProjectId}
-                        className="bg-[#5ed29c]/10 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/20 text-[#5ed29c] font-black uppercase text-[10px] px-4 py-2 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="bg-[#7342e2]/10 border border-[#7342e2]/20 hover:bg-[#7342e2]/20 text-[#7342e2] font-black uppercase text-[10px] px-4 py-2 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         {predictiveRunning ? (
                           <>
@@ -2539,7 +2539,7 @@ export const SimulationConsole: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <Sparkles className="w-3.5 h-3.5 text-[#5ed29c]" />
+                            <Sparkles className="w-3.5 h-3.5 text-[#7342e2]" />
                             RUN FORECASTING
                           </>
                         )}
@@ -2560,8 +2560,8 @@ export const SimulationConsole: React.FC = () => {
                   );
                 }
 
-                const riskColor = activeForecast.riskLevel === 'CRITICAL' || activeForecast.riskLevel === 'HIGH' ? 'text-red-400' : activeForecast.riskLevel === 'MEDIUM' ? 'text-orange-400' : 'text-[#5ed29c]';
-                const progressColor = activeForecast.stabilityScore > 0.7 ? 'bg-[#5ed29c]' : activeForecast.stabilityScore > 0.4 ? 'bg-orange-400' : 'bg-red-400';
+                const riskColor = activeForecast.riskLevel === 'CRITICAL' || activeForecast.riskLevel === 'HIGH' ? 'text-red-400' : activeForecast.riskLevel === 'MEDIUM' ? 'text-orange-400' : 'text-[#7342e2]';
+                const progressColor = activeForecast.stabilityScore > 0.7 ? 'bg-[#7342e2]' : activeForecast.stabilityScore > 0.4 ? 'bg-orange-400' : 'bg-red-400';
 
                 return (
                   <div className="flex flex-col gap-6">
@@ -2649,7 +2649,7 @@ export const SimulationConsole: React.FC = () => {
                       {/* Regression Console */}
                       <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 shadow-xl flex flex-col gap-4">
                         <h3 className="text-xs font-black font-mono text-white uppercase tracking-wider flex items-center gap-1.5">
-                          <TrendingUp className="w-4 h-4 text-[#5ed29c] shrink-0" /> UX Regression & Drift Analytics
+                          <TrendingUp className="w-4 h-4 text-[#7342e2] shrink-0" /> UX Regression & Drift Analytics
                         </h3>
 
                         <div className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-1">
