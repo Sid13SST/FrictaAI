@@ -38,7 +38,7 @@ export const Landing = () => {
   }, []);
 
   return (
-    <div className="relative bg-background text-text-primary selection:bg-primary/30 min-h-screen">
+    <div className="relative bg-transparent text-text-primary selection:bg-primary/30 min-h-screen">
       <CustomCursor />
       <AnimatedBackground />
       <Navbar />
