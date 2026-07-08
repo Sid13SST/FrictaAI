@@ -190,12 +190,12 @@ export function AutonomousDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#5ed29c]/30 selection:text-white">
+    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#7342e2]/30 selection:text-white">
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-[#222226] pb-6 mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#5ed29c]/10 text-[#5ed29c] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#5ed29c]/20 uppercase tracking-widest">
+            <span className="bg-[#7342e2]/10 text-[#7342e2] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#7342e2]/20 uppercase tracking-widest">
               Autonomous Systems Engaged
             </span>
             <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">
@@ -203,7 +203,7 @@ export function AutonomousDashboard() {
             </span>
           </div>
           <h1 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-[#5ed29c]" /> Optimization Orchestration Command Center
+            <Cpu className="w-5 h-5 text-[#7342e2]" /> Optimization Orchestration Command Center
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
             Supervised UX outcome simulation, threshold adaptation rules, human-in-the-loop approvals, and state rollbacks.
@@ -228,16 +228,16 @@ export function AutonomousDashboard() {
 
           <button
             onClick={() => setShowProposalModal(true)}
-            className="flex items-center gap-2 bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase font-mono"
+            className="flex items-center gap-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase font-mono"
           >
-            <Play className="w-3.5 h-3.5 fill-[#5ed29c]" /> Propose Optimization Run
+            <Play className="w-3.5 h-3.5 fill-[#7342e2]" /> Propose Optimization Run
           </button>
         </div>
       </header>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-[#121214] border border-[#222226] rounded-2xl">
-          <RefreshCw className="w-8 h-8 text-[#5ed29c] animate-spin mb-4" />
+          <RefreshCw className="w-8 h-8 text-[#7342e2] animate-spin mb-4" />
           <span className="text-xs text-zinc-500 uppercase">Syncing orchestration state...</span>
         </div>
       ) : (
@@ -261,7 +261,7 @@ export function AutonomousDashboard() {
                     const isSelected = selectedRun && selectedRun.id === r.id;
                     const statusColors: any = {
                       PENDING_APPROVAL: 'border-yellow-500/20 bg-yellow-500/5 text-yellow-400',
-                      APPLIED: 'border-emerald-500/20 bg-emerald-500/5 text-[#5ed29c]',
+                      APPLIED: 'border-emerald-500/20 bg-emerald-500/5 text-[#7342e2]',
                       ROLLED_BACK: 'border-amber-500/20 bg-amber-500/5 text-amber-400',
                       FAILED: 'border-red-500/20 bg-red-500/5 text-red-400'
                     };
@@ -270,7 +270,7 @@ export function AutonomousDashboard() {
                         key={r.id}
                         onClick={() => setSelectedRun(r)}
                         className={`border p-4 rounded-xl cursor-pointer transition-all ${
-                          isSelected ? 'border-[#5ed29c]/50 bg-[#161619]' : 'border-[#222226] bg-[#0f0f11] hover:border-zinc-700'
+                          isSelected ? 'border-[#7342e2]/50 bg-[#161619]' : 'border-[#222226] bg-[#0f0f11] hover:border-zinc-700'
                         }`}
                       >
                         <div className="flex justify-between items-start gap-2 mb-2">
@@ -309,7 +309,7 @@ export function AutonomousDashboard() {
                     <span>Cognitive Load Comparison (% Load)</span>
                     <div className="flex gap-4">
                       <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-red-400 rounded-full" /> Before</div>
-                      <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-[#5ed29c] rounded-full" /> After</div>
+                      <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-[#7342e2] rounded-full" /> After</div>
                     </div>
                   </div>
 
@@ -330,13 +330,13 @@ export function AutonomousDashboard() {
                           <div className="flex items-center gap-2">
                             <span className="text-[8px] text-zinc-500 w-8">After:</span>
                             <div className="flex-1 bg-zinc-800 h-2 rounded-full overflow-hidden">
-                              <div className="bg-[#5ed29c] h-full" style={{ width: `${sim.cognitiveLoadAfter}%` }} />
+                              <div className="bg-[#7342e2] h-full" style={{ width: `${sim.cognitiveLoadAfter}%` }} />
                             </div>
                             <span className="text-[9px] text-white font-bold w-8 text-right">{sim.cognitiveLoadAfter}%</span>
                           </div>
                         </div>
                         <div className="w-20 text-right flex-shrink-0">
-                          <span className="text-[10px] text-[#5ed29c] font-extrabold">+{sim.simulatedSurvivalGain}% Survivability</span>
+                          <span className="text-[10px] text-[#7342e2] font-extrabold">+{sim.simulatedSurvivalGain}% Survivability</span>
                         </div>
                       </div>
                     ))}
@@ -349,7 +349,7 @@ export function AutonomousDashboard() {
                   <div className="flex flex-col gap-3 border-l border-[#222226] pl-4 ml-2 relative">
                     {selectedRun.decisionTraces?.map((trace: any) => (
                       <div key={trace.id} className="relative">
-                        <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-[#5ed29c] border-2 border-[#121214]" />
+                        <div className="absolute -left-[20.5px] top-1 w-2.5 h-2.5 rounded-full bg-[#7342e2] border-2 border-[#121214]" />
                         <span className="text-[9px] text-zinc-500 block uppercase">Step #{trace.stepIndex} — {trace.decisionNode.replace('_', ' ')}</span>
                         <p className="text-[10.5px] text-zinc-300 mt-0.5">{trace.outcomeDescription}</p>
                       </div>
@@ -382,14 +382,14 @@ export function AutonomousDashboard() {
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   placeholder="Enter evaluation remarks or review comments..."
-                  className="w-full bg-[#0c0c0e] border border-[#222226] p-3 rounded-xl text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#5ed29c]/50 font-mono min-h-[80px]"
+                  className="w-full bg-[#0c0c0e] border border-[#222226] p-3 rounded-xl text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#7342e2]/50 font-mono min-h-[80px]"
                 />
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => submitReview('APPROVED')}
                     disabled={submittingReview}
-                    className="bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/20 font-bold px-4 py-2 rounded-xl text-[10px] uppercase font-mono transition-all"
+                    className="bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/20 font-bold px-4 py-2 rounded-xl text-[10px] uppercase font-mono transition-all"
                   >
                     Approve Run
                   </button>
@@ -441,7 +441,7 @@ export function AutonomousDashboard() {
             {selectedRun && (
               <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl flex flex-col gap-4">
                 <h2 className="text-xs font-black uppercase text-white flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-[#5ed29c]" /> Safety Verification checklist
+                  <Shield className="w-4 h-4 text-[#7342e2]" /> Safety Verification checklist
                 </h2>
                 <div className="flex flex-col gap-3">
                   {selectedRun.safetySignals?.map((sig: any) => (
@@ -452,7 +452,7 @@ export function AutonomousDashboard() {
                       </div>
                       <div className="text-right">
                         <span className="text-[9px] text-zinc-500 block uppercase">Limit: {sig.thresholdLimit}%</span>
-                        <span className={`text-[10px] font-bold ${sig.policyPassed ? 'text-[#5ed29c]' : 'text-red-400'}`}>
+                        <span className={`text-[10px] font-bold ${sig.policyPassed ? 'text-[#7342e2]' : 'text-red-400'}`}>
                           Value: {sig.metricValue}% {sig.policyPassed ? '✓' : '✗'}
                         </span>
                       </div>
@@ -474,7 +474,7 @@ export function AutonomousDashboard() {
                   governanceEvents.map((ev) => (
                     <div key={ev.id} className="bg-[#18181b] border border-[#222226] p-2.5 rounded-xl text-[10px]">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[#5ed29c] font-bold uppercase">{ev.action}</span>
+                        <span className="text-[#7342e2] font-bold uppercase">{ev.action}</span>
                         <span className="text-zinc-600 text-[8px]">{new Date(ev.createdAt).toLocaleTimeString()}</span>
                       </div>
                       <p className="text-zinc-400 leading-normal">{ev.description}</p>
@@ -500,7 +500,7 @@ export function AutonomousDashboard() {
             </button>
 
             <h3 className="text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 mb-4">
-              <Cpu className="w-4 h-4 text-[#5ed29c]" /> Propose Optimization Run
+              <Cpu className="w-4 h-4 text-[#7342e2]" /> Propose Optimization Run
             </h3>
 
             <div className="flex flex-col gap-4 text-xs">
@@ -510,7 +510,7 @@ export function AutonomousDashboard() {
                   type="text"
                   value={workflowPath}
                   onChange={(e) => setWorkflowPath(e.target.value)}
-                  className="bg-[#0c0c0e] border border-[#222226] px-3 py-2 rounded-xl text-white focus:outline-none focus:border-[#5ed29c]/50 font-mono"
+                  className="bg-[#0c0c0e] border border-[#222226] px-3 py-2 rounded-xl text-white focus:outline-none focus:border-[#7342e2]/50 font-mono"
                 />
               </div>
 
@@ -520,7 +520,7 @@ export function AutonomousDashboard() {
                   type="text"
                   value={targetSelector}
                   onChange={(e) => setTargetSelector(e.target.value)}
-                  className="bg-[#0c0c0e] border border-[#222226] px-3 py-2 rounded-xl text-white focus:outline-none focus:border-[#5ed29c]/50 font-mono"
+                  className="bg-[#0c0c0e] border border-[#222226] px-3 py-2 rounded-xl text-white focus:outline-none focus:border-[#7342e2]/50 font-mono"
                 />
               </div>
 
@@ -529,14 +529,14 @@ export function AutonomousDashboard() {
                 <textarea
                   value={remediationPlan}
                   onChange={(e) => setRemediationPlan(e.target.value)}
-                  className="bg-[#0c0c0e] border border-[#222226] p-3 rounded-xl text-white focus:outline-none focus:border-[#5ed29c]/50 font-mono min-h-[80px]"
+                  className="bg-[#0c0c0e] border border-[#222226] p-3 rounded-xl text-white focus:outline-none focus:border-[#7342e2]/50 font-mono min-h-[80px]"
                 />
               </div>
 
               <button
                 onClick={triggerProposal}
                 disabled={runningProposal}
-                className="bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/20 font-bold py-2.5 rounded-xl uppercase font-mono transition-all mt-2"
+                className="bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/20 font-bold py-2.5 rounded-xl uppercase font-mono transition-all mt-2"
               >
                 {runningProposal ? 'Running simulations...' : 'Initialize proposal'}
               </button>
