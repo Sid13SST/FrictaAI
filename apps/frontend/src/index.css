@@ -44,7 +44,7 @@
     color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    cursor: none; /* Custom cursor */
+    cursor: none;
   }
 
   /* Exclude cursor:none on touch devices */
@@ -55,7 +55,7 @@
   }
 
   ::selection {
-    background: rgba(94, 210, 156, 0.25);
+    background: rgba(115, 66, 226, 0.25);
   }
 }
 
@@ -169,3 +169,24 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.16);
 }
+
+/* ─── Blur Fade Up Animation ─────────────────────────────────────────────── */
+
+@keyframes blurFadeUp {
+  0% {
+    opacity: 0;
+    filter: blur(20px);
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+.animate-blur-fade-up {
+  opacity: 0;
+  animation: blurFadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
