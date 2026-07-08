@@ -22,7 +22,7 @@ export function PricingFAQSection() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <section className="py-32 bg-background-alt relative" id="pricing">
+    <section className="py-32 bg-transparent relative" id="pricing">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20">
         
         {/* Left: Pricing */}
