@@ -236,8 +236,8 @@ export const HistoricalDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="h-screen w-screen bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-zinc-400 font-mono">
-        <div className="w-10 h-10 border-2 border-t-transparent animate-spin rounded-full border-[#5ed29c]/20 border-t-[#5ed29c]" />
-        <span className="text-[10px] tracking-[0.2em] text-[#5ed29c] font-black uppercase animate-pulse">
+        <div className="w-10 h-10 border-2 border-t-transparent animate-spin rounded-full border-[#7342e2]/20 border-t-[#7342e2]" />
+        <span className="text-[10px] tracking-[0.2em] text-[#7342e2] font-black uppercase animate-pulse">
           AGGREGATING ORGANIZATIONAL UX MEMORY...
         </span>
       </div>
@@ -257,7 +257,7 @@ export const HistoricalDashboard: React.FC = () => {
       case 'MEDIUM':
         return 'text-yellow-400 border-yellow-500/20 bg-yellow-500/5';
       default:
-        return 'text-[#5ed29c] border-[#5ed29c]/20 bg-[#5ed29c]/5';
+        return 'text-[#7342e2] border-[#7342e2]/20 bg-[#7342e2]/5';
     }
   };
 
@@ -268,8 +268,8 @@ export const HistoricalDashboard: React.FC = () => {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#222226] pb-5 mb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#5ed29c]/5 border border-[#5ed29c]/20 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-[#5ed29c]" />
+            <div className="w-8 h-8 rounded-xl bg-[#7342e2]/5 border border-[#7342e2]/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-[#7342e2]" />
             </div>
             <div>
               <h1 className="text-lg font-black tracking-tight text-white uppercase font-mono">
@@ -301,7 +301,7 @@ export const HistoricalDashboard: React.FC = () => {
           <button
             onClick={handleForceAnalyze}
             disabled={analyzing || !selectedProjectId}
-            className="flex items-center gap-2 text-xs font-mono font-bold text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/20 hover:bg-[#5ed29c]/10 px-4 py-2 rounded-xl transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-xs font-mono font-bold text-[#7342e2] bg-[#7342e2]/5 border border-[#7342e2]/20 hover:bg-[#7342e2]/10 px-4 py-2 rounded-xl transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin' : ''}`} />
             {analyzing ? 'RUNNING ANALYTICS...' : 'FORCE RE-ANALYZE'}
@@ -346,11 +346,11 @@ export const HistoricalDashboard: React.FC = () => {
                   onClick={() => setActiveTab(tab.key as SubTab)}
                   className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-mono font-bold border text-left transition-all ${
                     isActive
-                      ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/20'
+                      ? 'bg-[#7342e2]/10 text-white border-[#7342e2]/20'
                       : 'border-transparent text-zinc-400 hover:bg-[#121214] hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#5ed29c]' : 'text-zinc-500'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#7342e2]' : 'text-zinc-500'}`} />
                   {tab.label}
                 </button>
               );
@@ -365,7 +365,7 @@ export const HistoricalDashboard: React.FC = () => {
               </div>
               <div className="w-full h-1.5 bg-[#222226] rounded-full mt-3 overflow-hidden">
                 <div 
-                  className="h-full bg-[#5ed29c] rounded-full transition-all duration-500" 
+                  className="h-full bg-[#7342e2] rounded-full transition-all duration-500" 
                   style={{ width: `${averageStability}%` }}
                 />
               </div>
@@ -389,7 +389,7 @@ export const HistoricalDashboard: React.FC = () => {
                       UX Stability Index Curve
                     </h3>
                     {hoveredPoint ? (
-                      <span className="text-[10px] font-mono text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/10 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                      <span className="text-[10px] font-mono text-[#7342e2] bg-[#7342e2]/5 border border-[#7342e2]/10 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                         Run #{hoveredPoint.index + 1}: {hoveredPoint.score}% Stability
                       </span>
                     ) : (
@@ -446,8 +446,8 @@ export const HistoricalDashboard: React.FC = () => {
                         <svg className="w-full h-full overflow-visible" viewBox="0 0 600 240">
                           <defs>
                             <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.25"/>
-                              <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0"/>
+                              <stop offset="0%" stopColor="#7342e2" stopOpacity="0.25"/>
+                              <stop offset="100%" stopColor="#7342e2" stopOpacity="0.0"/>
                             </linearGradient>
                             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
                               <feGaussianBlur stdDeviation="4" result="blur" />
@@ -502,7 +502,7 @@ export const HistoricalDashboard: React.FC = () => {
                               y1={chartTop}
                               x2={p.x}
                               y2={chartTop + chartHeight}
-                              stroke={hoveredPoint?.sessionId === p.sessionId || selectedSessionId === p.sessionId ? 'rgba(94, 210, 156, 0.25)' : '#1c1c1f'}
+                              stroke={hoveredPoint?.sessionId === p.sessionId || selectedSessionId === p.sessionId ? 'rgba(115, 66, 226, 0.25)' : '#1c1c1f'}
                               strokeDasharray="3 3"
                               strokeWidth={selectedSessionId === p.sessionId ? 1.5 : 1}
                               className="transition-all duration-150"
@@ -522,7 +522,7 @@ export const HistoricalDashboard: React.FC = () => {
                             <path
                               d={linePath}
                               fill="none"
-                              stroke="#5ed29c"
+                              stroke="#7342e2"
                               strokeWidth="2.5"
                               strokeLinecap="round"
                               filter="url(#glow)"
@@ -576,7 +576,7 @@ export const HistoricalDashboard: React.FC = () => {
                                     cx={p.x}
                                     cy={p.y}
                                     fill="none"
-                                    stroke="#5ed29c"
+                                    stroke="#7342e2"
                                     className="pulse-ring"
                                   />
                                 )}
@@ -584,8 +584,8 @@ export const HistoricalDashboard: React.FC = () => {
                                   cx={p.x}
                                   cy={p.y}
                                   r={isHovered ? 6 : isSelected ? 5.5 : 4}
-                                  fill={isHovered ? '#5ed29c' : isSelected ? '#5ed29c' : '#09090b'}
-                                  stroke="#5ed29c"
+                                  fill={isHovered ? '#7342e2' : isSelected ? '#7342e2' : '#09090b'}
+                                  stroke="#7342e2"
                                   strokeWidth={isHovered || isSelected ? 3 : 2}
                                   className="transition-all duration-150 cursor-pointer"
                                   onMouseEnter={() => setHoveredPoint(p)}
@@ -613,7 +613,7 @@ export const HistoricalDashboard: React.FC = () => {
                               Run #{hoveredPoint.index + 1}
                             </div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#5ed29c] animate-pulse"></span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#7342e2] animate-pulse"></span>
                               <span className="text-white font-bold text-xs">{hoveredPoint.score}% Stability</span>
                             </div>
                             <div className="text-zinc-400 text-[9px] mb-1">
@@ -624,7 +624,7 @@ export const HistoricalDashboard: React.FC = () => {
                                 minute: '2-digit'
                               })}
                             </div>
-                            <div className="text-[#5ed29c] text-[8px] uppercase tracking-wider font-semibold">
+                            <div className="text-[#7342e2] text-[8px] uppercase tracking-wider font-semibold">
                               Click to select session
                             </div>
                           </div>
@@ -674,7 +674,7 @@ export const HistoricalDashboard: React.FC = () => {
                                 <td className={`py-3 text-center ${crit > 0 ? 'text-red-400 font-black' : 'text-zinc-700'}`}>{crit}</td>
                                 <td className={`py-3 text-center ${high > 0 ? 'text-orange-400 font-black' : 'text-zinc-700'}`}>{high}</td>
                                 <td className={`py-3 text-center ${med > 0 ? 'text-yellow-400 font-black' : 'text-zinc-700'}`}>{med}</td>
-                                <td className={`py-3 text-center ${low > 0 ? 'text-[#5ed29c] font-black' : 'text-zinc-700'}`}>{low}</td>
+                                <td className={`py-3 text-center ${low > 0 ? 'text-[#7342e2] font-black' : 'text-zinc-700'}`}>{low}</td>
                               </tr>
                             );
                           })}
@@ -700,7 +700,7 @@ export const HistoricalDashboard: React.FC = () => {
                           <div className="flex justify-between items-start gap-3">
                             <div>
                               <h4 className="text-xs font-black font-mono text-white uppercase">{p.name}</h4>
-                              <p className="text-[10px] text-[#5ed29c] font-mono mt-0.5 uppercase tracking-wide">
+                              <p className="text-[10px] text-[#7342e2] font-mono mt-0.5 uppercase tracking-wide">
                                 Pattern: {p.patternType.replace(/_/g, ' ')}
                               </p>
                             </div>
@@ -711,7 +711,7 @@ export const HistoricalDashboard: React.FC = () => {
                           <p className="text-[11px] text-zinc-400 leading-relaxed">{p.description}</p>
                           <div className="text-[9.5px] font-mono text-zinc-500 bg-[#070b0a] border border-[#222226] p-2 rounded-lg flex items-center justify-between">
                             <span>{p.evidenceSummary}</span>
-                            <span className="text-[#5ed29c] font-bold">{(p.confidence * 100).toFixed(0)}% Conf.</span>
+                            <span className="text-[#7342e2] font-bold">{(p.confidence * 100).toFixed(0)}% Conf.</span>
                           </div>
                         </div>
                       ))
@@ -768,7 +768,7 @@ export const HistoricalDashboard: React.FC = () => {
 
                     <button
                       onClick={handleCompareSessions}
-                      className="text-[10px] font-mono font-bold text-black bg-[#5ed29c] hover:bg-[#5ed29c]/90 px-3 py-1.5 rounded-lg transition-all"
+                      className="text-[10px] font-mono font-bold text-black bg-[#7342e2] hover:bg-[#7342e2]/90 px-3 py-1.5 rounded-lg transition-all"
                     >
                       COMPARE
                     </button>
@@ -821,7 +821,7 @@ export const HistoricalDashboard: React.FC = () => {
                               <span className="text-[10px] font-mono text-zinc-500">vs {stat.format(stat.base)}</span>
                             </div>
                             {delta !== 0 && (
-                              <span className={`text-[9.5px] font-mono font-bold mt-2 ${isDegraded ? 'text-red-400' : 'text-[#5ed29c]'}`}>
+                              <span className={`text-[9.5px] font-mono font-bold mt-2 ${isDegraded ? 'text-red-400' : 'text-[#7342e2]'}`}>
                                 {delta > 0 ? `+${delta}` : delta} ({isDegraded ? 'Regressed' : 'Improved'})
                               </span>
                             )}
@@ -837,7 +837,7 @@ export const HistoricalDashboard: React.FC = () => {
                       </h3>
                       <div className="flex flex-col gap-4">
                         {comparisonResult.regressions.length === 0 ? (
-                          <div className="text-center py-12 text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/20 p-4 rounded-xl flex items-center justify-center gap-2 font-mono text-xs font-bold">
+                          <div className="text-center py-12 text-[#7342e2] bg-[#7342e2]/5 border border-[#7342e2]/20 p-4 rounded-xl flex items-center justify-center gap-2 font-mono text-xs font-bold">
                             <CheckCircle className="w-4 h-4" /> NO USABILITY REGRESSIONS DETECTED FOR THIS VERSION DELTA
                           </div>
                         ) : (
@@ -892,7 +892,7 @@ export const HistoricalDashboard: React.FC = () => {
                         return (
                           <div key={persona} className="p-4 bg-[#0d0d0f]/60 border border-[#222226] rounded-xl flex flex-col gap-4">
                             <div className="flex items-center gap-2 border-b border-[#222226] pb-2">
-                              <Cpu className="w-4 h-4 text-[#5ed29c]" />
+                              <Cpu className="w-4 h-4 text-[#7342e2]" />
                               <h4 className="text-xs font-black font-mono text-white uppercase">{persona.replace(/_/g, ' ')} Archetype</h4>
                             </div>
 
@@ -904,7 +904,7 @@ export const HistoricalDashboard: React.FC = () => {
                                       {cleanMetricName(stat.metricName)}
                                     </span>
                                     <span className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded uppercase ${
-                                      stat.trendDirection === 'IMPROVING' ? 'text-[#5ed29c] bg-[#5ed29c]/5 border border-[#5ed29c]/20' :
+                                      stat.trendDirection === 'IMPROVING' ? 'text-[#7342e2] bg-[#7342e2]/5 border border-[#7342e2]/20' :
                                       stat.trendDirection === 'DEGRADING' ? 'text-red-400 bg-red-500/5 border border-red-500/20' :
                                       'text-zinc-400 bg-zinc-800'
                                     }`}>
@@ -955,7 +955,7 @@ export const HistoricalDashboard: React.FC = () => {
                               <p className="text-[9.5px] text-zinc-500 font-mono mt-0.5">Trigger: {prof.reasonTrigger}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[8px] bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20 px-2 py-0.5 rounded font-bold font-mono">
+                              <span className="text-[8px] bg-[#7342e2]/10 text-[#7342e2] border border-[#7342e2]/20 px-2 py-0.5 rounded font-bold font-mono">
                                 ACTIVE GUIDED ADAPTATION
                               </span>
                               <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${getSeverityBadge(prof.targetPriority)}`}>
@@ -976,7 +976,7 @@ export const HistoricalDashboard: React.FC = () => {
 
                           <div className="text-[9.5px] font-mono text-zinc-500 flex justify-between items-center mt-1">
                             <span>Evidence: {prof.metadata?.evidenceSummary}</span>
-                            <span className="text-[#5ed29c] font-bold">Confidence: {(prof.metadata?.confidence * 100).toFixed(0)}%</span>
+                            <span className="text-[#7342e2] font-bold">Confidence: {(prof.metadata?.confidence * 100).toFixed(0)}%</span>
                           </div>
                         </div>
                       ))
