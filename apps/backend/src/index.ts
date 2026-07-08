@@ -238,7 +238,8 @@ app.route('/', protectedEngineering);
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 console.log(`Server is running on port ${port}`);
 
-// Start BullMQ Worker
+// Start BullMQ Worker (Disabled for local dev without Redis)
+/*
 const worker = startWorker();
 worker.on('completed', async (job: any) => {
   const sessionId = job.data?.sessionId;
@@ -269,6 +270,7 @@ worker.on('failed', async (job: any, err: any) => {
 startRuntime(prisma).catch((err: any) => {
   console.error('Failed to start distributed runtime:', err);
 });
+*/
 
 const server = serve({
   fetch: app.fetch,
