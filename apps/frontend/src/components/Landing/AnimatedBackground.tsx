@@ -1,8 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import customVideo2 from '../BG_Videos/Video_better_Fricta.mp4';
 
 export function AnimatedBackground() {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [particles, setParticles] = useState<{ id: number; x: number; y: number; size: number; duration: number; delay: number }[]>([]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let animationFrameId: number;
+    const fadeDuration = 1.5; // seconds to fade out/in
+    const maxOpacity = 0.12; // Reduced from 0.3 so shining dots don't block text
+
+    const checkTime = () => {
+      if (video.duration) {
+        const timeLeft = video.duration - video.currentTime;
+        let currentOpacity = maxOpacity;
+        
+        if (timeLeft < fadeDuration) {
+          currentOpacity = maxOpacity * (timeLeft / fadeDuration);
+        } else if (video.currentTime < fadeDuration) {
+          currentOpacity = maxOpacity * (video.currentTime / fadeDuration);
+        }
+        
+        video.style.opacity = currentOpacity.toString();
+      }
+      animationFrameId = requestAnimationFrame(checkTime);
+    };
+
+    animationFrameId = requestAnimationFrame(checkTime);
+    
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
 
   useEffect(() => {
     // Generate some slow floating particles
@@ -19,8 +50,40 @@ export function AnimatedBackground() {
 
   return (
     <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-      {/* Base Dark Background */}
-      <div className="absolute inset-0 bg-background-deep" />
+      {/* Global Background Cinematic Video */}
+      <div className="absolute inset-0 z-0 bg-background-deep overflow-hidden">
+        <video 
+          ref={videoRef}
+          autoPlay 
+          muted 
+          loop 
+          playsInline 
+          className="w-full h-full object-cover scale-[1.15] translate-x-[2%] translate-y-[2%]"
+          style={{ opacity: 0 }} // Start invisible, fade in
+        >
+          <source src={customVideo2} type="video/mp4" />
+        </video>
+      </div>
+
+      {/* Base Dark Background overlay to blend */}
+      <div className="absolute inset-0 bg-background-deep/50" />
+
+      {/* Massive Background Watermark Text */}
+      <div className="absolute inset-0 flex items-center justify-center mt-20 pointer-events-none select-none overflow-hidden">
+        <span 
+          className="font-display font-black uppercase text-transparent whitespace-nowrap opacity-[0.07]"
+          style={{
+            fontSize: 'clamp(120px, 25vw, 400px)',
+            letterSpacing: '-0.05em',
+            backgroundImage: 'radial-gradient(circle at center, rgba(115, 66, 226, 0) 0%, #7342e2 80%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          FRICTA
+        </span>
+      </div>
 
       {/* Subtle Aurora Gradients */}
       <div className="absolute top-0 left-[-10%] w-[50%] h-[50%] rounded-full bg-accent/5 blur-[120px] mix-blend-screen opacity-50" />
@@ -73,7 +136,7 @@ export function AnimatedBackground() {
           animate={{
             y: ['0vh', '-20vh'],
             x: ['0vw', `${Math.random() * 10 - 5}vw`],
-            opacity: [0, 0.5, 0],
+            opacity: [0, 0.15, 0], // Reduced max opacity for text readability
           }}
           transition={{
             duration: p.duration,
