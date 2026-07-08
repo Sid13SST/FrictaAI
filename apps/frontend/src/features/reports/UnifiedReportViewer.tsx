@@ -315,7 +315,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           <div className="flex items-center gap-2.5 flex-wrap mb-2 sm:mb-0">
             <Link
               to={`/app/console/${sessionId}`}
-              className="flex items-center gap-2 px-4 py-2 bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/30 text-[#5ed29c] text-xs font-bold rounded-lg transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 border border-[#7342e2]/30 text-[#7342e2] text-xs font-bold rounded-lg transition-all"
             >
               <Activity className="w-3.5 h-3.5" />
               <span>Launch Operational Console</span>

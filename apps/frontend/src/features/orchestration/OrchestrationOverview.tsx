@@ -54,7 +54,7 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
     { name: 'Critical', value: severity.CRITICAL || 0, color: '#ef4444' },
     { name: 'High', value: severity.HIGH || 0, color: '#f97316' },
     { name: 'Medium', value: severity.MEDIUM || 0, color: '#eab308' },
-    { name: 'Low', value: severity.LOW || 0, color: '#5ed29c' },
+    { name: 'Low', value: severity.LOW || 0, color: '#7342e2' },
   ].filter(item => item.value > 0);
 
   const totalFindings = (severity.CRITICAL || 0) + (severity.HIGH || 0) + (severity.MEDIUM || 0) + (severity.LOW || 0);
@@ -62,9 +62,9 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
   const getAgentStatusStyles = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return 'text-[#5ed29c] border-[#5ed29c]/20 bg-[#5ed29c]/5';
+        return 'text-[#7342e2] border-[#7342e2]/20 bg-[#7342e2]/5';
       case 'RUNNING':
-        return 'text-[#5ed29c] border-[#5ed29c]/40 bg-[#5ed29c]/10 animate-pulse';
+        return 'text-[#7342e2] border-[#7342e2]/40 bg-[#7342e2]/10 animate-pulse';
       case 'FAILED':
         return 'text-red-400 border-red-500/20 bg-red-500/5';
       case 'QUEUED':
@@ -78,10 +78,10 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
     <div className="flex flex-col gap-6 w-full font-sans">
       {/* ── Goal & Executive Status Panel ─────────────────────────────────── */}
       <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#5ed29c]/30 to-transparent" />
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#7342e2]/30 to-transparent" />
         <span className="text-[9px] font-mono text-zinc-500 font-black uppercase tracking-widest">Orchestration Target Goal</span>
         <h3 className="text-base font-bold text-white mt-1 leading-snug">"{session.goal || 'UX Scenario Audit'}"</h3>
-        <p className="text-[11px] text-zinc-400 mt-1">Session status: <span className="font-mono text-[#5ed29c] font-bold">{session.status}</span></p>
+        <p className="text-[11px] text-zinc-400 mt-1">Session status: <span className="font-mono text-[#7342e2] font-bold">{session.status}</span></p>
       </div>
 
       {/* ── Key Metrics Metrics Grid ──────────────────────────────────────── */}
@@ -93,8 +93,8 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
           { label: 'Cooperative Insights', value: `${insightsCount || 0} alerts`, desc: 'Cross-agent correlations', icon: Sparkles },
         ].map((item, i) => (
           <div key={i} className="bg-[#121214] border border-[#222226] rounded-xl p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#5ed29c]/5 border border-[#5ed29c]/10 flex items-center justify-center shrink-0">
-              <item.icon className="w-4 h-4 text-[#5ed29c]" />
+            <div className="w-9 h-9 rounded-lg bg-[#7342e2]/5 border border-[#7342e2]/10 flex items-center justify-center shrink-0">
+              <item.icon className="w-4 h-4 text-[#7342e2]" />
             </div>
             <div>
               <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest font-black block">{item.label}</span>
@@ -125,10 +125,10 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded bg-[#16161a] border border-[#222226] flex items-center justify-center shrink-0">
-                    <CpuIcon className="w-4 h-4 text-[#5ed29c] group-hover:scale-105 transition-transform" />
+                    <CpuIcon className="w-4 h-4 text-[#7342e2] group-hover:scale-105 transition-transform" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-bold text-white block group-hover:text-[#5ed29c] transition-colors truncate">
+                    <span className="text-xs font-bold text-white block group-hover:text-[#7342e2] transition-colors truncate">
                       {agent.agentType.replace(/_AGENT/g, '').replace(/_/g, ' ')}
                     </span>
                     <span className="text-[9.5px] text-zinc-500 block truncate max-w-[160px] leading-tight">
@@ -188,7 +188,7 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
                     { label: 'Critical', val: severity.CRITICAL || 0, color: 'text-red-400' },
                     { label: 'High', val: severity.HIGH || 0, color: 'text-orange-400' },
                     { label: 'Medium', val: severity.MEDIUM || 0, color: 'text-yellow-400' },
-                    { label: 'Low', val: severity.LOW || 0, color: 'text-[#5ed29c]' },
+                    { label: 'Low', val: severity.LOW || 0, color: 'text-[#7342e2]' },
                   ].map((s, i) => (
                     <div key={i} className="flex justify-between items-center text-xs font-mono">
                       <span className="text-zinc-500 flex items-center gap-1.5">

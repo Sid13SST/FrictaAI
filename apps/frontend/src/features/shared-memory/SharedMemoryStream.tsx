@@ -41,10 +41,10 @@ export const SharedMemoryStream: React.FC<SharedMemoryStreamProps> = ({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded bg-[#5ed29c]/5 border border-[#5ed29c]/20 flex items-center justify-center">
-                        <Database className="w-3 h-3 text-[#5ed29c]" />
+                      <div className="w-5 h-5 rounded bg-[#7342e2]/5 border border-[#7342e2]/20 flex items-center justify-center">
+                        <Database className="w-3 h-3 text-[#7342e2]" />
                       </div>
-                      <span className="text-[10px] font-mono text-[#5ed29c] font-black uppercase tracking-wider">
+                      <span className="text-[10px] font-mono text-[#7342e2] font-black uppercase tracking-wider">
                         {event.eventType}
                       </span>
                       <span className="text-[9.5px] font-mono text-zinc-500">

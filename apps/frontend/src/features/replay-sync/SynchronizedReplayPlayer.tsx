@@ -156,7 +156,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
             {/* Play / Pause */}
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className="p-2 rounded-full bg-[#5ed29c] hover:bg-[#4bc089] text-black shadow-lg transition-transform active:scale-95 flex items-center justify-center"
+              className="p-2 rounded-full bg-[#7342e2] hover:bg-[#4bc089] text-black shadow-lg transition-transform active:scale-95 flex items-center justify-center"
             >
               {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
             </button>
@@ -171,15 +171,15 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
             </button>
 
             <span className="text-[10px] font-mono text-zinc-400 ml-2">
-              STEP <span className="text-[#5ed29c] font-black">{activeStep + 1}</span> / {totalSteps}
+              STEP <span className="text-[#7342e2] font-black">{activeStep + 1}</span> / {totalSteps}
             </span>
 
             {liveStepCount > 0 && (
               <button
                 onClick={onResetLiveStep}
-                className="ml-2 px-1.5 py-0.5 rounded bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/20 text-[#5ed29c] text-[9px] font-mono flex items-center gap-1 cursor-pointer transition-all animate-pulse"
+                className="ml-2 px-1.5 py-0.5 rounded bg-[#7342e2]/10 hover:bg-[#7342e2]/20 border border-[#7342e2]/20 text-[#7342e2] text-[9px] font-mono flex items-center gap-1 cursor-pointer transition-all animate-pulse"
               >
-                <span className="w-1 h-1 rounded-full bg-[#5ed29c] inline-block" />
+                <span className="w-1 h-1 rounded-full bg-[#7342e2] inline-block" />
                 +{liveStepCount} Live Step{liveStepCount > 1 ? 's' : ''}
               </button>
             )}
@@ -199,7 +199,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                 onClick={() => setPlaybackSpeed(speed)}
                 className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
                   playbackSpeed === speed 
-                    ? 'bg-[#5ed29c]/15 text-[#5ed29c] border border-[#5ed29c]/20' 
+                    ? 'bg-[#7342e2]/15 text-[#7342e2] border border-[#7342e2]/20' 
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -222,7 +222,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                 setIsPlaying(false);
                 setActiveStep(parseInt(e.target.value, 10));
               }}
-              className="w-full accent-[#5ed29c] bg-[#222226] h-1 rounded appearance-none cursor-pointer"
+              className="w-full accent-[#7342e2] bg-[#222226] h-1 rounded appearance-none cursor-pointer"
             />
           </div>
           <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest font-black">END</span>
@@ -273,9 +273,9 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                 ? 'border-red-500 bg-red-500/5 shadow-[0_0_8px_rgba(239,68,68,0.3)]' 
                 : isHigh 
                   ? 'border-orange-500 bg-orange-500/5 shadow-[0_0_8px_rgba(249,115,22,0.3)]'
-                  : 'border-[#5ed29c] bg-[#5ed29c]/5 shadow-[0_0_8px_rgba(94,210,156,0.3)]';
+                  : 'border-[#7342e2] bg-[#7342e2]/5 shadow-[0_0_8px_rgba(115, 66, 226,0.3)]';
 
-              const badgeColor = isCritical ? 'bg-red-500' : isHigh ? 'bg-orange-500' : 'bg-[#5ed29c] text-black';
+              const badgeColor = isCritical ? 'bg-red-500' : isHigh ? 'bg-orange-500' : 'bg-[#7342e2] text-black';
 
               return (
                 <div
@@ -305,7 +305,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                   <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-black font-mono tracking-wider ${
                     hoveredBox.parent.severity.toLowerCase() === 'critical' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
                     hoveredBox.parent.severity.toLowerCase() === 'high' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                    'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
+                    'bg-[#7342e2]/10 text-[#7342e2] border border-[#7342e2]/20'
                   }`}>
                     {hoveredBox.parent.severity}
                   </span>
@@ -332,7 +332,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
               {/* Play / Pause */}
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="p-3 rounded-full bg-[#5ed29c] hover:bg-[#4bc089] text-black shadow-lg transition-transform active:scale-95 flex items-center justify-center"
+                className="p-3 rounded-full bg-[#7342e2] hover:bg-[#4bc089] text-black shadow-lg transition-transform active:scale-95 flex items-center justify-center"
               >
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
               </button>
@@ -347,15 +347,15 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
               </button>
 
               <span className="text-[11px] font-mono text-zinc-400 ml-2">
-                STEP <span className="text-[#5ed29c] font-black">{activeStep + 1}</span> / {totalSteps}
+                STEP <span className="text-[#7342e2] font-black">{activeStep + 1}</span> / {totalSteps}
               </span>
 
               {liveStepCount > 0 && (
                 <button
                   onClick={onResetLiveStep}
-                  className="ml-2 px-1.5 py-0.5 rounded bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 border border-[#5ed29c]/20 text-[#5ed29c] text-[9.5px] font-mono flex items-center gap-1 cursor-pointer transition-all animate-pulse"
+                  className="ml-2 px-1.5 py-0.5 rounded bg-[#7342e2]/10 hover:bg-[#7342e2]/20 border border-[#7342e2]/20 text-[#7342e2] text-[9.5px] font-mono flex items-center gap-1 cursor-pointer transition-all animate-pulse"
                 >
-                  <span className="w-1 h-1 rounded-full bg-[#5ed29c] inline-block" />
+                  <span className="w-1 h-1 rounded-full bg-[#7342e2] inline-block" />
                   +{liveStepCount} Live Step{liveStepCount > 1 ? 's' : ''}
                 </button>
               )}
@@ -369,7 +369,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                   onClick={() => setPlaybackSpeed(speed)}
                   className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${
                     playbackSpeed === speed 
-                      ? 'bg-[#5ed29c]/15 text-[#5ed29c] border border-[#5ed29c]/20' 
+                      ? 'bg-[#7342e2]/15 text-[#7342e2] border border-[#7342e2]/20' 
                       : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
@@ -392,7 +392,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                   setIsPlaying(false);
                   setActiveStep(parseInt(e.target.value, 10));
                 }}
-                className="w-full accent-[#5ed29c] bg-[#222226] h-1 rounded appearance-none cursor-pointer"
+                className="w-full accent-[#7342e2] bg-[#222226] h-1 rounded appearance-none cursor-pointer"
               />
             </div>
             <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest font-black">END</span>
@@ -406,7 +406,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-[#222226] pb-3">
             <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">Step Diagnostics</h4>
-            <span className="text-[9px] font-mono text-[#5ed29c] bg-[#5ed29c]/10 border border-[#5ed29c]/20 px-2 py-0.5 rounded-md font-bold">
+            <span className="text-[9px] font-mono text-[#7342e2] bg-[#7342e2]/10 border border-[#7342e2]/20 px-2 py-0.5 rounded-md font-bold">
               ACTIVE STEP
             </span>
           </div>
@@ -417,7 +417,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
             {currentFrame.action ? (
               <div className="p-3 bg-[#0d0d10] border border-[#222226] rounded-lg">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-mono font-bold text-[#5ed29c] uppercase">{currentFrame.action.type}</span>
+                  <span className="text-[11px] font-mono font-bold text-[#7342e2] uppercase">{currentFrame.action.type}</span>
                   <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 bg-[#222226] rounded uppercase text-zinc-400">
                     {currentFrame.action.status}
                   </span>
@@ -467,7 +467,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
                       </span>
                     </div>
                     {f.recommendation && (
-                      <p className="text-[9.5px] font-mono text-[#5ed29c] mt-1 border-t border-[#222226] pt-1 leading-snug">
+                      <p className="text-[9.5px] font-mono text-[#7342e2] mt-1 border-t border-[#222226] pt-1 leading-snug">
                         → Rec: {f.recommendation}
                       </p>
                     )}

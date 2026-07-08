@@ -51,9 +51,9 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
   const getAgentStatusBadge = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return 'text-[#5ed29c] border-[#5ed29c]/20 bg-[#5ed29c]/5';
+        return 'text-[#7342e2] border-[#7342e2]/20 bg-[#7342e2]/5';
       case 'RUNNING':
-        return 'text-[#5ed29c] border-[#5ed29c]/40 bg-[#5ed29c]/10 animate-pulse';
+        return 'text-[#7342e2] border-[#7342e2]/40 bg-[#7342e2]/10 animate-pulse';
       case 'FAILED':
         return 'text-red-400 border-red-500/20 bg-red-500/5';
       case 'QUEUED':
@@ -87,14 +87,14 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
                 onClick={() => onSelectAgent(agent.agentType)}
                 className={`px-3 py-2.5 rounded-lg border text-left text-xs font-mono font-bold transition-all flex items-center justify-between group ${
                   isActive
-                    ? 'bg-[#5ed29c]/10 text-white border-[#5ed29c]/30'
+                    ? 'bg-[#7342e2]/10 text-white border-[#7342e2]/30'
                     : 'bg-[#0d0d0f]/40 text-zinc-400 border-transparent hover:bg-[#121214] hover:text-white'
                 }`}
               >
                 <span className="truncate">{agent.agentType.replace(/_AGENT/g, '').replace(/_/g, ' ')}</span>
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  agent.status === 'RUNNING' ? 'bg-[#5ed29c] animate-ping' : 
-                  agent.status === 'COMPLETED' ? 'bg-[#5ed29c]' :
+                  agent.status === 'RUNNING' ? 'bg-[#7342e2] animate-ping' : 
+                  agent.status === 'COMPLETED' ? 'bg-[#7342e2]' :
                   agent.status === 'FAILED' ? 'bg-red-500' : 'bg-zinc-700'
                 }`} />
               </button>
@@ -107,10 +107,10 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
       <div className="flex-1 flex flex-col gap-6 min-w-0">
         {/* Core Agent Profile Card */}
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 relative overflow-hidden flex flex-col sm:flex-row justify-between gap-4">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#5ed29c]/30 to-transparent" />
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#7342e2]/30 to-transparent" />
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#5ed29c]/5 border border-[#5ed29c]/20 flex items-center justify-center shrink-0">
-              <Cpu className="w-6 h-6 text-[#5ed29c]" />
+            <div className="w-12 h-12 rounded-xl bg-[#7342e2]/5 border border-[#7342e2]/20 flex items-center justify-center shrink-0">
+              <Cpu className="w-6 h-6 text-[#7342e2]" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -136,7 +136,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
             </div>
             <div className="w-full sm:w-24 h-1.5 bg-[#222226] rounded-full mt-1.5 overflow-hidden">
               <div 
-                className="h-full bg-[#5ed29c] rounded-full transition-all duration-500" 
+                className="h-full bg-[#7342e2] rounded-full transition-all duration-500" 
                 style={{ width: `${confidenceScore}%` }}
               />
             </div>
@@ -149,7 +149,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
           <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[#222226] pb-3">
               <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">Generated Findings</h4>
-              <span className="text-[9.5px] font-mono text-[#5ed29c] bg-[#5ed29c]/10 border border-[#5ed29c]/20 px-2 py-0.5 rounded font-bold">
+              <span className="text-[9.5px] font-mono text-[#7342e2] bg-[#7342e2]/10 border border-[#7342e2]/20 px-2 py-0.5 rounded font-bold">
                 {currentAgent.findings.length} DEFECTS
               </span>
             </div>
@@ -167,7 +167,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
                       <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded uppercase font-bold shrink-0 ${
                         f.severity.toLowerCase() === 'critical' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
                         f.severity.toLowerCase() === 'high' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                        'bg-[#5ed29c]/10 text-[#5ed29c] border border-[#5ed29c]/20'
+                        'bg-[#7342e2]/10 text-[#7342e2] border border-[#7342e2]/20'
                       }`}>
                         {f.severity}
                       </span>
@@ -243,7 +243,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
                     <span className="text-zinc-500 font-black uppercase">To:</span>
                     <span className="text-white font-bold">{d.toAgent.replace(/_AGENT/g, '')}</span>
                     <span className="text-zinc-500 font-black px-1">|</span>
-                    <span className="text-[#5ed29c] font-semibold">{d.eventType}</span>
+                    <span className="text-[#7342e2] font-semibold">{d.eventType}</span>
                   </div>
                   <span className="text-[9.5px] font-mono text-zinc-600 shrink-0">
                     {new Date(d.timestamp).toLocaleTimeString()}

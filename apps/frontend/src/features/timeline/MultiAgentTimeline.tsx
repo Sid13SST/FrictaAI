@@ -59,7 +59,7 @@ export const MultiAgentTimeline: React.FC<MultiAgentTimelineProps> = ({
       case 'SCREENSHOT':
         return {
           icon: Eye,
-          color: 'text-[#5ed29c] bg-[#5ed29c]/10 border-[#5ed29c]/20',
+          color: 'text-[#7342e2] bg-[#7342e2]/10 border-[#7342e2]/20',
           label: 'Screenshot Capture'
         };
       case 'RECOVERY':
@@ -103,7 +103,7 @@ export const MultiAgentTimeline: React.FC<MultiAgentTimelineProps> = ({
             onClick={() => setFilterType(f.key)}
             className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
               filterType === f.key
-                ? 'bg-[#5ed29c]/15 text-[#5ed29c] border border-[#5ed29c]/20'
+                ? 'bg-[#7342e2]/15 text-[#7342e2] border border-[#7342e2]/20'
                 : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
             }`}
           >
@@ -139,7 +139,7 @@ export const MultiAgentTimeline: React.FC<MultiAgentTimelineProps> = ({
                   <div 
                     onClick={() => handleEventClick(event)}
                     className={`p-3.5 bg-[#0d0d0f]/60 hover:bg-[#0d0d0f]/90 border border-[#222226] hover:border-zinc-800 rounded-lg flex flex-col sm:flex-row justify-between gap-3 transition-all cursor-pointer ${
-                      hasScrubbableStep ? 'hover:border-[#5ed29c]/30' : ''
+                      hasScrubbableStep ? 'hover:border-[#7342e2]/30' : ''
                     }`}
                   >
                     <div className="flex-1 min-w-0">
@@ -167,7 +167,7 @@ export const MultiAgentTimeline: React.FC<MultiAgentTimelineProps> = ({
                         {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </span>
                       {hasScrubbableStep && (
-                        <span className="text-[8px] font-mono text-zinc-500 bg-[#16161a] border border-[#222226] px-1.5 py-0.5 rounded group-hover:text-[#5ed29c] group-hover:border-[#5ed29c]/30 transition-all font-bold uppercase">
+                        <span className="text-[8px] font-mono text-zinc-500 bg-[#16161a] border border-[#222226] px-1.5 py-0.5 rounded group-hover:text-[#7342e2] group-hover:border-[#7342e2]/30 transition-all font-bold uppercase">
                           SCRUB TO STEP {event.metadata.stepIndex !== undefined ? event.metadata.stepIndex + 1 : event.metadata.stepNumber + 1}
                         </span>
                       )}

@@ -27,7 +27,7 @@ export const CollaborativeInsightCenter: React.FC<CollaborativeInsightCenterProp
       case 'MEDIUM':
         return 'text-yellow-400 border-yellow-500/20 bg-yellow-500/5';
       default:
-        return 'text-[#5ed29c] border-[#5ed29c]/20 bg-[#5ed29c]/5';
+        return 'text-[#7342e2] border-[#7342e2]/20 bg-[#7342e2]/5';
     }
   };
 
@@ -54,7 +54,7 @@ export const CollaborativeInsightCenter: React.FC<CollaborativeInsightCenterProp
                 className="p-4 bg-[#0d0d0f]/60 border border-[#222226] rounded-xl flex flex-col gap-3 relative overflow-hidden"
               >
                 {/* Visual Top Glow Edge */}
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#5ed29c]/20 to-transparent" />
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#7342e2]/20 to-transparent" />
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -66,13 +66,13 @@ export const CollaborativeInsightCenter: React.FC<CollaborativeInsightCenterProp
                     </span>
                   </div>
                   <span className="text-[9.5px] font-mono text-zinc-500">
-                    Confidence Metric: <span className="font-bold text-[#5ed29c]">{Math.round(insight.confidence * 100)}%</span>
+                    Confidence Metric: <span className="font-bold text-[#7342e2]">{Math.round(insight.confidence * 100)}%</span>
                   </span>
                 </div>
 
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded bg-[#5ed29c]/5 border border-[#5ed29c]/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 text-[#5ed29c]" />
+                  <div className="w-8 h-8 rounded bg-[#7342e2]/5 border border-[#7342e2]/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-[#7342e2]" />
                   </div>
                   <div className="flex-1">
                     <h5 className="text-xs font-bold text-white font-mono leading-tight">{insight.title}</h5>

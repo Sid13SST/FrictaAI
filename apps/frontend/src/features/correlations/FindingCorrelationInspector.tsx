@@ -88,15 +88,15 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
                 key={i}
                 onClick={() => setSelectedCorrelation(c)}
                 className={`p-4 bg-[#0d0d0f]/60 hover:bg-[#0d0d0f]/90 border border-[#222226] hover:border-zinc-800 rounded-lg text-left transition-all relative overflow-hidden flex flex-col gap-1.5 ${
-                  selectedCorrelation?.id === c.id ? 'border-[#5ed29c]/40 bg-[#0d0d0f]/90' : ''
+                  selectedCorrelation?.id === c.id ? 'border-[#7342e2]/40 bg-[#0d0d0f]/90' : ''
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-mono font-bold text-[#5ed29c] bg-[#5ed29c]/10 border border-[#5ed29c]/20 px-1.5 py-0.5 rounded uppercase">
+                  <span className="text-[9px] font-mono font-bold text-[#7342e2] bg-[#7342e2]/10 border border-[#7342e2]/20 px-1.5 py-0.5 rounded uppercase">
                     {c.correlationType}
                   </span>
                   <span className="text-[9.5px] font-mono text-zinc-500">
-                    Confidence: <span className="font-bold text-[#5ed29c]">{Math.round(c.confidence * 100)}%</span>
+                    Confidence: <span className="font-bold text-[#7342e2]">{Math.round(c.confidence * 100)}%</span>
                   </span>
                 </div>
                 <p className="text-xs text-white font-bold leading-tight font-mono">{c.summary}</p>
@@ -125,7 +125,7 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
               <div className="grid grid-cols-2 gap-2 text-[10px] font-mono mt-1">
                 <div className="flex flex-col gap-0.5 bg-[#121214] p-2 rounded border border-zinc-900">
                   <span className="text-zinc-500">Correlation Type</span>
-                  <span className="text-[#5ed29c] font-black">{selectedCorrelation.correlationType}</span>
+                  <span className="text-[#7342e2] font-black">{selectedCorrelation.correlationType}</span>
                 </div>
                 <div className="flex flex-col gap-0.5 bg-[#121214] p-2 rounded border border-zinc-900">
                   <span className="text-zinc-500">Session Step Range</span>
@@ -157,7 +157,7 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
               <div
                 key={s.id}
                 onClick={() => onSelectStep(s.stepIndex)}
-                className="bg-[#0d0d0f] border border-[#222226] hover:border-[#5ed29c]/40 rounded-xl overflow-hidden cursor-pointer group transition-all"
+                className="bg-[#0d0d0f] border border-[#222226] hover:border-[#7342e2]/40 rounded-xl overflow-hidden cursor-pointer group transition-all"
               >
                 <div className="relative aspect-video bg-black overflow-hidden flex items-center justify-center">
                   <img
@@ -209,7 +209,7 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
                 <div key={i} className="p-3 bg-[#0d0d0f]/60 border border-[#222226] rounded-lg flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white font-mono leading-none truncate max-w-[70%]">{type}</span>
-                    <span className="text-[9.5px] font-mono text-[#5ed29c] bg-[#5ed29c]/10 px-1.5 py-0.5 rounded border border-[#5ed29c]/20 font-bold shrink-0">
+                    <span className="text-[9.5px] font-mono text-[#7342e2] bg-[#7342e2]/10 px-1.5 py-0.5 rounded border border-[#7342e2]/20 font-bold shrink-0">
                       INT: {avgIntensity}%
                     </span>
                   </div>
@@ -219,7 +219,7 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
                   </div>
                   <div className="w-full bg-[#16161a] h-1.5 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-[#5ed29c] rounded-full transition-all duration-300"
+                      className="h-full bg-[#7342e2] rounded-full transition-all duration-300"
                       style={{ width: `${avgIntensity}%` }}
                     />
                   </div>
