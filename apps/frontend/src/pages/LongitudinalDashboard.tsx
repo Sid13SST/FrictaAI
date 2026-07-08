@@ -205,18 +205,18 @@ export default function LongitudinalDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#5ed29c]/30 selection:text-white">
+    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 p-6 font-mono selection:bg-[#7342e2]/30 selection:text-white">
       
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-[#222226] pb-6 mb-8 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#5ed29c]/10 text-[#5ed29c] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#5ed29c]/20 uppercase tracking-widest">
+            <span className="bg-[#7342e2]/10 text-[#7342e2] text-[9px] font-bold px-2 py-0.5 rounded-full border border-[#7342e2]/20 uppercase tracking-widest">
               Autonomous Intelligence
             </span>
           </div>
           <h1 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#5ed29c]" /> Longitudinal UX Intelligence Console
+            <TrendingUp className="w-5 h-5 text-[#7342e2]" /> Longitudinal UX Intelligence Console
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
             Reasoning across sessions, projects, user personas, and version-to-version regressions.
@@ -242,7 +242,7 @@ export default function LongitudinalDashboard() {
           <button
             onClick={triggerSynthesis}
             disabled={synthesizing}
-            className="flex items-center gap-2 bg-[#5ed29c]/10 hover:bg-[#5ed29c]/20 text-[#5ed29c] border border-[#5ed29c]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase disabled:opacity-50"
+            className="flex items-center gap-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 text-[#7342e2] border border-[#7342e2]/20 font-bold px-4 py-2 rounded-xl text-xs transition-all uppercase disabled:opacity-50"
           >
             {synthesizing ? (
               <>
@@ -250,7 +250,7 @@ export default function LongitudinalDashboard() {
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-[#5ed29c]" /> Trigger Synthesis Pipeline
+                <Play className="w-3.5 h-3.5 fill-[#7342e2]" /> Trigger Synthesis Pipeline
               </>
             )}
           </button>
@@ -278,7 +278,7 @@ export default function LongitudinalDashboard() {
                   : 'bg-transparent text-zinc-500 border-transparent hover:text-white'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-[#5ed29c]' : 'text-zinc-500'}`} />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[#7342e2]' : 'text-zinc-500'}`} />
               {tab.label}
             </button>
           );
@@ -287,7 +287,7 @@ export default function LongitudinalDashboard() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-[#121214] border border-[#222226] rounded-2xl">
-          <RefreshCw className="w-8 h-8 text-[#5ed29c] animate-spin mb-4" />
+          <RefreshCw className="w-8 h-8 text-[#7342e2] animate-spin mb-4" />
           <span className="text-xs text-zinc-500 uppercase">Synchronizing longitudinal memory records...</span>
         </div>
       ) : (
@@ -303,7 +303,7 @@ export default function LongitudinalDashboard() {
               <div className="lg:col-span-2 bg-[#121214] border border-[#222226] p-6 rounded-2xl flex flex-col justify-between">
                 <div>
                   <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                    <Activity className="w-4 h-4 text-[#5ed29c]" /> Longitudinal Stability Index
+                    <Activity className="w-4 h-4 text-[#7342e2]" /> Longitudinal Stability Index
                   </h3>
                   <p className="text-[10px] text-zinc-500 uppercase">Long-term usability health trajectory</p>
                 </div>
@@ -313,8 +313,8 @@ export default function LongitudinalDashboard() {
                   <svg className="w-full h-48 overflow-visible" viewBox="0 0 600 200">
                     <defs>
                       <linearGradient id="gradient-stability" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#5ed29c" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#5ed29c" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#7342e2" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#7342e2" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
 
@@ -328,7 +328,7 @@ export default function LongitudinalDashboard() {
                       <path
                         d={pathD}
                         fill="none"
-                        stroke="#5ed29c"
+                        stroke="#7342e2"
                         strokeWidth="3.5"
                         strokeLinecap="round"
                       />
@@ -346,7 +346,7 @@ export default function LongitudinalDashboard() {
                     {points.map((pt, idx) => {
                       return (
                         <g key={pt.id}>
-                          <circle cx={pt.x} cy={pt.y} r="5" className="fill-[#5ed29c] stroke-[#121214] stroke-2" />
+                          <circle cx={pt.x} cy={pt.y} r="5" className="fill-[#7342e2] stroke-[#121214] stroke-2" />
                           <text x={pt.x} y={pt.y - 12} className="fill-zinc-300 text-[9px] font-mono text-center" textAnchor="middle">
                             {Math.round(pt.scoreValue)}%
                           </text>
@@ -394,7 +394,7 @@ export default function LongitudinalDashboard() {
                         <p className="text-[9.5px] text-zinc-400 leading-relaxed mb-2">{p.description}</p>
                         <div className="flex flex-wrap gap-1">
                           {p.supportingData?.targetElements?.map((el: string, idx: number) => (
-                            <code key={idx} className="bg-[#0c0c0e] text-[#5ed29c] text-[8.5px] px-1.5 py-0.5 rounded border border-[#222226]">
+                            <code key={idx} className="bg-[#0c0c0e] text-[#7342e2] text-[8.5px] px-1.5 py-0.5 rounded border border-[#222226]">
                               {el}
                             </code>
                           ))}
@@ -422,7 +422,7 @@ export default function LongitudinalDashboard() {
               <div className="mt-8 flex flex-col gap-6 relative pl-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#222226]">
                 {regressions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-zinc-600">
-                    <CheckCircle2 className="w-8 h-8 mb-2 text-[#5ed29c]" />
+                    <CheckCircle2 className="w-8 h-8 mb-2 text-[#7342e2]" />
                     <span className="text-[10px] uppercase">All metrics stable or improved vs. baseline</span>
                   </div>
                 ) : (
@@ -480,7 +480,7 @@ export default function LongitudinalDashboard() {
               {/* Persona adaptation overview */}
               <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl">
                 <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-[#5ed29c]" /> Long-Term Archetype Metrics
+                  <Users className="w-4 h-4 text-[#7342e2]" /> Long-Term Archetype Metrics
                 </h3>
                 <p className="text-[10px] text-zinc-500 uppercase">Success rate and task adaptation evolution</p>
 
@@ -489,7 +489,7 @@ export default function LongitudinalDashboard() {
                     <div key={p.id} className="bg-[#18181b] border border-[#222226] p-4 rounded-xl">
                       <div className="flex items-center justify-between gap-3 mb-3">
                         <span className="text-white text-xs font-bold">{p.personaName}</span>
-                        <span className="text-[9.5px] text-[#5ed29c] font-mono">Success Rate: {p.successRate}%</span>
+                        <span className="text-[9.5px] text-[#7342e2] font-mono">Success Rate: {p.successRate}%</span>
                       </div>
 
                       {/* Bar meters */}
@@ -500,7 +500,7 @@ export default function LongitudinalDashboard() {
                             <span className="text-white">{Math.round(p.adaptationRate)}%</span>
                           </div>
                           <div className="w-full h-1.5 bg-[#0c0c0e] rounded-full overflow-hidden border border-[#222226]">
-                            <div className="h-full bg-[#5ed29c]" style={{ width: `${p.adaptationRate}%` }}></div>
+                            <div className="h-full bg-[#7342e2]" style={{ width: `${p.adaptationRate}%` }}></div>
                           </div>
                         </div>
 
@@ -585,7 +585,7 @@ export default function LongitudinalDashboard() {
                       <div className="flex items-center gap-3">
                         <div className="bg-[#0c0c0e] border border-[#222226] px-3 py-2 rounded-xl text-center min-w-[70px]">
                           <span className="text-[8px] text-zinc-500 block uppercase">Health</span>
-                          <span className="text-xs text-[#5ed29c] font-black">{Math.round(s.trendHealth)}%</span>
+                          <span className="text-xs text-[#7342e2] font-black">{Math.round(s.trendHealth)}%</span>
                         </div>
                         <div className="bg-[#0c0c0e] border border-[#222226] px-3 py-2 rounded-xl text-center min-w-[70px]">
                           <span className="text-[8px] text-zinc-500 block uppercase">Patterns</span>
@@ -609,7 +609,7 @@ export default function LongitudinalDashboard() {
           {activeTab === 'comparison' && (
             <div className="bg-[#121214] border border-[#222226] p-6 rounded-2xl">
               <h3 className="text-xs font-black uppercase text-white mb-2 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-[#5ed29c]" /> A/B Cross-Session Comparison
+                <Layers className="w-4 h-4 text-[#7342e2]" /> A/B Cross-Session Comparison
               </h3>
               <p className="text-[10px] text-zinc-500 uppercase">Compare usability blockages side-by-side between two session runs</p>
 
@@ -619,7 +619,7 @@ export default function LongitudinalDashboard() {
                   <select
                     value={sessionA}
                     onChange={(e) => setSessionA(e.target.value)}
-                    className="w-full bg-[#18181b] border border-[#222226] text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-[#5ed29c]/50 font-bold"
+                    className="w-full bg-[#18181b] border border-[#222226] text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-[#7342e2]/50 font-bold"
                   >
                     {sessions.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -634,7 +634,7 @@ export default function LongitudinalDashboard() {
                   <select
                     value={sessionB}
                     onChange={(e) => setSessionB(e.target.value)}
-                    className="w-full bg-[#18181b] border border-[#222226] text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-[#5ed29c]/50 font-bold"
+                    className="w-full bg-[#18181b] border border-[#222226] text-white text-xs px-3 py-2 rounded-xl focus:outline-none focus:border-[#7342e2]/50 font-bold"
                   >
                     {sessions.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -647,7 +647,7 @@ export default function LongitudinalDashboard() {
                 <div className="pt-4">
                   <button
                     onClick={runComparison}
-                    className="w-full bg-[#5ed29c] hover:bg-[#5ed29c]/90 text-[#0c0c0e] font-black uppercase text-xs px-4 py-2.5 rounded-xl transition-all"
+                    className="w-full bg-[#7342e2] hover:bg-[#7342e2]/90 text-[#0c0c0e] font-black uppercase text-xs px-4 py-2.5 rounded-xl transition-all"
                   >
                     Run Comparison delta
                   </button>
@@ -661,7 +661,7 @@ export default function LongitudinalDashboard() {
                     {/* Similarity score */}
                     <div className="lg:col-span-1 flex flex-col items-center py-4 bg-[#18181b] border border-[#222226] rounded-2xl">
                       <span className="text-[10px] text-zinc-500 uppercase mb-2">Usability Similarity</span>
-                      <div className="text-3xl font-black text-[#5ed29c]">{Math.round(comparison.similarity * 100)}%</div>
+                      <div className="text-3xl font-black text-[#7342e2]">{Math.round(comparison.similarity * 100)}%</div>
                       <span className="text-[8px] text-zinc-500 uppercase tracking-widest mt-1">Friction Overlap</span>
                     </div>
 
