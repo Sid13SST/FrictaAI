@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Code, Settings2, Copy, Check } from 'lucide-react';
 
+
 const TABS = [
   { id: 'cli', label: 'CLI', icon: Terminal },
   { id: 'api', label: 'REST API', icon: Code },
@@ -61,7 +62,7 @@ export function DeveloperExperience() {
   };
 
   return (
-    <section className="py-32 bg-background relative overflow-hidden" id="docs">
+    <section className="py-32 bg-transparent relative overflow-hidden" id="docs">
       
       <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         
