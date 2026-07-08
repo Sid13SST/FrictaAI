@@ -6,7 +6,7 @@ const features = [
     icon: Shield,
     title: 'SOC2 Type II Certified',
     desc: 'Enterprise-grade security controls and continuous compliance monitoring.',
-    color: 'text-[#5ED29C]'
+    color: 'text-[#7342e2]'
   },
   {
     icon: Key,
@@ -30,7 +30,7 @@ const features = [
 
 export function EnterpriseSection() {
   return (
-    <section className="py-24 bg-background border-t border-white/5 relative overflow-hidden" id="enterprise">
+    <section className="py-24 bg-transparent border-t border-white/5 relative overflow-hidden" id="enterprise">
       <div className="max-w-7xl mx-auto px-6">
         
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-12 mb-16">
@@ -76,7 +76,7 @@ export function EnterpriseSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 * i }}
-                className="bg-background-alt border border-white/5 rounded-2xl p-8 hover:bg-card hover:border-white/10 transition-colors group"
+                className="bg-transparent border border-white/5 rounded-2xl p-8 hover:bg-card hover:border-white/10 transition-colors group"
               >
                 <div className={`w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <Icon className={`w-6 h-6 ${feature.color}`} />
