@@ -13,24 +13,15 @@ const NodeConnection = ({ delay }: { delay: number }) => (
 
 export function AiIntelligence() {
   return (
-    <section className="py-32 bg-background relative overflow-hidden">
+    <section className="py-32 bg-transparent relative overflow-hidden">
       
-      {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent-secondary/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         
         <div className="text-center mb-20">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-semibold tracking-wide uppercase">Cognitive Engine</span>
-          </motion.div>
+
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -108,8 +99,8 @@ export function AiIntelligence() {
             
             {/* Center Brain Node */}
             <motion.div 
-              className="absolute z-30 w-24 h-24 rounded-full bg-card border-2 border-primary shadow-[0_0_50px_rgba(94,210,156,0.3)] flex items-center justify-center"
-              animate={{ boxShadow: ['0 0 30px rgba(94,210,156,0.2)', '0 0 70px rgba(94,210,156,0.6)', '0 0 30px rgba(94,210,156,0.2)'] }}
+              className="absolute z-30 w-24 h-24 rounded-full bg-card border-2 border-primary shadow-[0_0_50px_rgba(115, 66, 226,0.3)] flex items-center justify-center"
+              animate={{ boxShadow: ['0 0 30px rgba(115, 66, 226,0.2)', '0 0 70px rgba(115, 66, 226,0.6)', '0 0 30px rgba(115, 66, 226,0.2)'] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             >
               <img src="/logo.png" alt="Fricta Engine" className="w-12 h-12 rounded-xl shadow-lg relative z-10 object-cover" />
