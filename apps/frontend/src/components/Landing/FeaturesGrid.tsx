@@ -29,7 +29,7 @@ const row2 = features.slice(7, 14);
 const FeatureCard = ({ feature }: { feature: typeof features[0] }) => {
   const Icon = feature.icon;
   return (
-    <div className="w-[320px] md:w-[380px] shrink-0 group relative bg-card/30 backdrop-blur-md rounded-2xl p-6 border border-white/5 hover:border-primary/50 transition-all duration-500 hover:bg-card hover:shadow-[0_0_40px_rgba(94,210,156,0.15)] overflow-hidden cursor-default">
+    <div className="w-[320px] md:w-[380px] shrink-0 group relative bg-card/30 backdrop-blur-md rounded-2xl p-6 border border-white/5 hover:border-primary/50 transition-all duration-500 hover:bg-card hover:shadow-[0_0_40px_rgba(115, 66, 226,0.15)] overflow-hidden cursor-default">
       {/* Background flare on hover */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
       
@@ -67,7 +67,7 @@ const MarqueeRow = ({ row, reverse }: { row: typeof features, reverse?: boolean 
 
 export function FeaturesGrid() {
   return (
-    <section className="py-32 bg-background relative overflow-hidden flex flex-col border-y border-white/5">
+    <section className="py-32 bg-transparent relative overflow-hidden flex flex-col border-y border-white/5">
       
       {/* Dynamic Keyframes for Marquee */}
       <style>{`
@@ -85,15 +85,7 @@ export function FeaturesGrid() {
 
       <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
         <div className="text-center mb-16">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-text-tertiary mb-6"
-          >
-            <Zap className="w-4 h-4" />
-            <span className="text-sm font-semibold tracking-wide uppercase">Core Capabilities</span>
-          </motion.div>
+
 
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
