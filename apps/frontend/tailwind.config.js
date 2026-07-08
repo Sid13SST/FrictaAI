@@ -9,25 +9,52 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#4f46e5",
-          foreground: "#ffffff",
+          DEFAULT: "#5ED29C",
+          foreground: "#050505",
         },
-        background: "#070b0a",
-        foreground: "#fafafa",
-        accent: "#6366f1",
-        "hero-sub": "hsl(var(--hero-sub, 40 6% 82%))",
+        background: {
+          DEFAULT: "#050505",
+          alt: "#080808",
+          deep: "#0B0B0B",
+        },
         card: {
-          DEFAULT: "#18181b",
-          foreground: "#fafafa",
+          DEFAULT: "#101010",
+          hover: "#131313",
         },
-        border: "#27272a",
+        accent: {
+          DEFAULT: "#5ED29C",
+          secondary: "#74F3B8",
+        },
+        text: {
+          primary: "#FFFFFF",
+          secondary: "#CFCFCF",
+          tertiary: "#8E8E8E",
+          quaternary: "#5F5F5F",
+        },
+        border: {
+          DEFAULT: "rgba(255, 255, 255, 0.08)",
+          hover: "rgba(94, 210, 156, 0.45)",
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         inter: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Urbanist', 'Space Grotesk', 'system-ui', 'sans-serif'],
         jakarta: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         serif: ['"Instrument Serif"', 'Georgia', 'serif'],
       },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      animation: {
+        'marquee': 'marquee 30s linear infinite',
+      },
+      keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        }
+      }
     },
   },
   plugins: [],
