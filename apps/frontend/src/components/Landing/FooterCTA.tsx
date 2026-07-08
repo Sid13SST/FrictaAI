@@ -4,11 +4,8 @@ import { Link } from 'react-router-dom';
 
 export function FooterCTA() {
   return (
-    <footer className="relative bg-background overflow-hidden border-t border-white/5">
+    <footer className="relative bg-transparent overflow-hidden border-t border-white/5">
       
-      {/* Aurora Background for CTA */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-gradient-to-r from-primary/20 via-accent-secondary/10 to-primary/20 blur-[100px] opacity-40 pointer-events-none" />
-
       {/* CTA Section */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 pt-32 pb-24 text-center border-b border-white/5">
         <motion.h2 
@@ -39,7 +36,7 @@ export function FooterCTA() {
         >
           <Link to="/app" className="group relative">
             <div className="absolute -inset-[1px] bg-gradient-to-r from-primary to-accent-secondary rounded-full opacity-50 blur-sm group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative px-8 py-4 bg-primary rounded-full flex items-center gap-2 transition-transform duration-300 group-hover:-translate-y-0.5 shadow-[0_0_30px_rgba(94,210,156,0.3)]">
+            <div className="relative px-8 py-4 bg-primary rounded-full flex items-center gap-2 transition-transform duration-300 group-hover:-translate-y-0.5 shadow-[0_0_30px_rgba(115, 66, 226,0.3)]">
               <span className="text-background-deep font-bold text-[15px]">Start Free Trial</span>
               <ArrowRight className="w-5 h-5 text-background-deep group-hover:translate-x-1 transition-transform" />
             </div>
