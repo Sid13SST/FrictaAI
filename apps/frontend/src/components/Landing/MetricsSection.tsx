@@ -39,7 +39,7 @@ const AnimatedCounter = ({ from, to, duration, suffix = "", prefix = "" }: any) 
 
 export function MetricsSection() {
   return (
-    <section className="py-24 border-y border-white/5 bg-background-alt relative overflow-hidden">
+    <section className="py-24 border-y border-white/5 bg-transparent relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]" />
       
       <div className="max-w-7xl mx-auto px-6 relative z-10">
