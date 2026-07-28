@@ -12,11 +12,31 @@ import { encryptToken, decryptToken } from './crypto';
  */
 export class OAuthManager {
   /**
+   * Builds the where-clause that scopes a WorkspaceIntegration lookup.
+   * Workspace-owned integrations (workspaceId set) are intentionally shared
+   * with the whole workspace — role gating happens in
+   * IntegrationPermissionGuard, not here. Solo-mode integrations
+   * (workspaceId null) have no workspace to share within, so they must also
+   * be scoped to the individual owner or every solo user would see (and could
+   * clobber) every other solo user's connections.
+   */
+  private static scopeWhere(
+    workspaceId: string | null,
+    userId: string | null,
+    provider: IntegrationProvider
+  ) {
+    return workspaceId
+      ? { workspaceId, provider }
+      : { workspaceId: null, userId, provider };
+  }
+
+  /**
    * Store or update an OAuth token set for a workspace+provider pair.
    * Called after completing an OAuth authorization code exchange.
    */
   static async upsertToken(
     workspaceId: string | null,
+    userId: string | null,
     provider: IntegrationProvider,
     accessToken: string,
     refreshToken?: string,
@@ -27,7 +47,7 @@ export class OAuthManager {
     metadata?: Record<string, any>
   ): Promise<WorkspaceIntegrationSummary> {
     const existing = await prisma.workspaceIntegration.findFirst({
-      where: { workspaceId: workspaceId ?? null, provider },
+      where: this.scopeWhere(workspaceId, userId, provider),
       include: { connections: true }
     });
 
@@ -55,6 +75,7 @@ export class OAuthManager {
       record = await prisma.workspaceIntegration.create({
         data: {
           workspaceId: workspaceId ?? null,
+          userId: workspaceId ? null : userId,
           provider,
           accessToken: encryptedAccessToken,
           refreshToken: encryptedRefreshToken,
@@ -78,10 +99,11 @@ export class OAuthManager {
    */
   static async getToken(
     workspaceId: string | null,
+    userId: string | null,
     provider: IntegrationProvider
   ): Promise<{ accessToken: string; refreshToken?: string; expiresAt?: Date } | null> {
     const record = await prisma.workspaceIntegration.findFirst({
-      where: { workspaceId: workspaceId ?? null, provider, status: 'CONNECTED' }
+      where: { ...this.scopeWhere(workspaceId, userId, provider), status: 'CONNECTED' }
     });
 
     if (!record || !record.accessToken) return null;
@@ -99,10 +121,11 @@ export class OAuthManager {
    */
   static async revokeToken(
     workspaceId: string | null,
+    userId: string | null,
     provider: IntegrationProvider
   ): Promise<void> {
     await prisma.workspaceIntegration.updateMany({
-      where: { workspaceId: workspaceId ?? null, provider },
+      where: this.scopeWhere(workspaceId, userId, provider),
       data: {
         status: 'DISCONNECTED',
         accessToken: null,
@@ -117,22 +140,26 @@ export class OAuthManager {
    */
   static async markTokenExpired(
     workspaceId: string | null,
+    userId: string | null,
     provider: IntegrationProvider
   ): Promise<void> {
     await prisma.workspaceIntegration.updateMany({
-      where: { workspaceId: workspaceId ?? null, provider },
+      where: this.scopeWhere(workspaceId, userId, provider),
       data: { status: 'ERROR', tokenExpiresAt: new Date() }
     });
   }
 
   /**
    * List all integration statuses for a workspace (or solo context).
+   * In solo mode, scoped to the caller's own connections — otherwise every
+   * solo user would see every other solo user's integrations.
    */
   static async listIntegrations(
-    workspaceId: string | null
+    workspaceId: string | null,
+    userId: string | null
   ): Promise<WorkspaceIntegrationSummary[]> {
     const records = await prisma.workspaceIntegration.findMany({
-      where: { workspaceId: workspaceId ?? null },
+      where: workspaceId ? { workspaceId } : { workspaceId: null, userId },
       include: { connections: true },
       orderBy: { createdAt: 'asc' }
     });

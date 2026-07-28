@@ -8,6 +8,7 @@ import { IntegrationProvider } from '../types';
 export class IntegrationTimeline {
   static async getUnifiedTimeline(
     workspaceId: string | null,
+    userId: string | null,
     projectId?: string,
     provider?: IntegrationProvider,
     limit = 100
@@ -15,7 +16,11 @@ export class IntegrationTimeline {
     const [events, replayLinks, attachments] = await Promise.all([
       prisma.integrationEvent.findMany({
         where: {
-          workspaceId: workspaceId ?? null,
+          // Solo mode: events aren't tagged with a userId directly, so scope
+          // via their parent integration's owner instead. Events with no
+          // linked integration (e.g. bare webhooks) are excluded rather than
+          // shown to everyone.
+          ...(workspaceId ? { workspaceId } : { workspaceId: null, integration: { userId } }),
           ...(provider ? { provider } : {})
         },
         orderBy: { createdAt: 'desc' },

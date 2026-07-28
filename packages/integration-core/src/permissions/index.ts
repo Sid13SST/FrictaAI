@@ -65,13 +65,18 @@ export class IntegrationPermissionGuard {
 
   /**
    * Validate that a provider integration exists and is CONNECTED before allowing sync ops.
+   * In solo mode (workspaceId null), scoped to the caller's own connection —
+   * otherwise this would report another solo user's integration as "connected".
    */
   static async requireConnected(
     workspaceId: string | null,
+    userId: string | null,
     provider: IntegrationProvider
   ): Promise<boolean> {
     const integration = await prisma.workspaceIntegration.findFirst({
-      where: { workspaceId: workspaceId ?? null, provider, status: 'CONNECTED' }
+      where: workspaceId
+        ? { workspaceId, provider, status: 'CONNECTED' }
+        : { workspaceId: null, userId, provider, status: 'CONNECTED' }
     });
     return !!integration;
   }

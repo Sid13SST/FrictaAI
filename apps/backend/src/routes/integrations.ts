@@ -71,7 +71,7 @@ integrationRoutes.get('/connections', async (c) => {
   const canRead = await IntegrationPermissionGuard.canReadIntegrations(user?.id || '', workspaceId);
   if (!canRead) return c.json({ error: 'Forbidden' }, 403);
 
-  const integrations = await OAuthManager.listIntegrations(workspaceId);
+  const integrations = await OAuthManager.listIntegrations(workspaceId, user?.id || null);
   return c.json({ integrations });
 });
 
@@ -92,6 +92,7 @@ integrationRoutes.post('/oauth/connect', async (c) => {
 
   const integration = await OAuthManager.upsertToken(
     workspaceId || null,
+    user?.id || null,
     provider,
     accessToken,
     refreshToken,
@@ -123,7 +124,7 @@ integrationRoutes.delete('/oauth/revoke', async (c) => {
   const canManage = await IntegrationPermissionGuard.canManageIntegrations(user?.id || '', workspaceId || null);
   if (!canManage) return c.json({ error: 'Forbidden' }, 403);
 
-  await OAuthManager.revokeToken(workspaceId || null, provider);
+  await OAuthManager.revokeToken(workspaceId || null, user?.id || null, provider);
   await IntegrationGovernanceLogger.log(
     provider, 'DISCONNECT',
     `${provider} integration token revoked`,
@@ -321,8 +322,13 @@ integrationRoutes.get('/events', async (c) => {
   const provider = c.req.query('provider') || undefined;
   const limit = parseInt(c.req.query('limit') || '100');
 
+  if (projectId) {
+    const accessError = await requireProjectAccess(c, projectId);
+    if (accessError) return accessError;
+  }
+
   const timeline = await IntegrationTimeline.getUnifiedTimeline(
-    workspaceId, projectId, provider as any, limit
+    workspaceId, user?.id || null, projectId, provider as any, limit
   );
 
   return c.json(timeline);
@@ -330,10 +336,22 @@ integrationRoutes.get('/events', async (c) => {
 
 // ─── GET /api/integrations/sync/jobs ─────────────────────────────────────────
 integrationRoutes.get('/sync/jobs', async (c) => {
+  const user = await resolveUser(c);
   const integrationId = c.req.query('integrationId');
   const status = c.req.query('status');
 
   if (!integrationId) return c.json({ error: 'integrationId is required' }, 400);
+
+  // integrationId is caller-supplied — verify the caller actually owns (solo
+  // mode) or can read (workspace mode) this integration before returning its
+  // sync jobs, instead of trusting any authenticated caller with any id.
+  const integration = await prisma.workspaceIntegration.findUnique({ where: { id: integrationId } });
+  if (!integration) return c.json({ error: 'Integration not found' }, 404);
+
+  const canRead = integration.workspaceId
+    ? await IntegrationPermissionGuard.canReadIntegrations(user?.id || '', integration.workspaceId)
+    : integration.userId === (user?.id || null);
+  if (!canRead) return c.json({ error: 'Forbidden' }, 403);
 
   const jobs = await SyncJobOrchestrator.listJobs(integrationId, status as any);
   return c.json({ jobs });
@@ -345,7 +363,7 @@ integrationRoutes.get('/governance', async (c) => {
   const workspaceId = c.req.query('workspaceId') || null;
   const provider = c.req.query('provider') || undefined;
 
-  const events = await IntegrationGovernanceLogger.getAuditLog(workspaceId, provider as any);
+  const events = await IntegrationGovernanceLogger.getAuditLog(workspaceId, user?.id || null, provider as any);
   return c.json({ events });
 });
 

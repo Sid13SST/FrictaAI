@@ -37,15 +37,18 @@ export class IntegrationGovernanceLogger {
 
   /**
    * Retrieve governance audit events for a workspace (or solo context).
+   * In solo mode (workspaceId null), scoped to the caller's own events —
+   * otherwise any solo user could read every other solo user's audit trail.
    */
   static async getAuditLog(
     workspaceId: string | null,
+    userId: string | null,
     provider?: IntegrationProvider,
     limit = 100
   ): Promise<any[]> {
     return prisma.integrationAuditEvent.findMany({
       where: {
-        workspaceId: workspaceId ?? null,
+        ...(workspaceId ? { workspaceId } : { workspaceId: null, userId }),
         ...(provider ? { provider } : {})
       },
       orderBy: { createdAt: 'desc' },

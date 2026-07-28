@@ -2002,6 +2002,11 @@ model WorkspaceIntegration {
   id             String     @id @default(uuid())
   workspaceId    String?
   workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // Owner in solo mode (workspaceId null) — lets solo users' connections be
+  // scoped to the individual who connected them instead of shared platform-wide.
+  // Null when workspace-owned (workspaceId set): those are intentionally
+  // shared with the whole workspace, gated by IntegrationPermissionGuard instead.
+  userId         String?
   provider       String // "FIGMA" | "FIGJAM" | "NOTION" | "JIRA" | "LINEAR" | "GITHUB" | "PRODUCTBOARD"
   status         String     @default("DISCONNECTED") // "CONNECTED" | "DISCONNECTED" | "ERROR" | "PENDING"
   accessToken    String? // encrypted at rest
@@ -2020,6 +2025,8 @@ model WorkspaceIntegration {
   syncJobs    SyncJob[]
   Project     Project?                @relation(fields: [projectId], references: [id])
   projectId   String?
+
+  @@index([workspaceId, userId, provider])
 }
 
 model IntegrationConnection {
