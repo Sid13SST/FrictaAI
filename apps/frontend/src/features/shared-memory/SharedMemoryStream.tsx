@@ -17,8 +17,8 @@ export const SharedMemoryStream: React.FC<SharedMemoryStreamProps> = ({
   memoryEvents,
 }) => {
   return (
-    <div className="flex flex-col gap-6 w-full font-sans">
-      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
+    <div className="flex flex-col gap-6 w-full font-sans h-full">
+      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 flex-1 min-h-0">
         <div className="flex items-center justify-between border-b border-[#222226] pb-3">
           <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">Shared Memory Context Event Stream</h4>
           <span className="text-[9.5px] font-mono text-zinc-500">
@@ -31,7 +31,7 @@ export const SharedMemoryStream: React.FC<SharedMemoryStreamProps> = ({
             No shared memory synchronization events recorded.
           </div>
         ) : (
-          <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
+          <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1">
             {memoryEvents.map((event, idx) => {
               const keys = event.payload && typeof event.payload === 'object' ? Object.keys(event.payload) : [];
               return (

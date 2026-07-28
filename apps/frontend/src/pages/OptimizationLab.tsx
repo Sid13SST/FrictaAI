@@ -101,11 +101,11 @@ const statusColor: Record<string, string> = {
   DRAFT:     'rgba(100,116,139,0.2)',
   ACTIVE:    'rgba(16,185,129,0.15)',
   PAUSED:    'rgba(234,179,8,0.15)',
-  COMPLETED: 'rgba(99,102,241,0.15)',
+  COMPLETED: 'rgba(115,66,226,0.15)',
   ABANDONED: 'rgba(239,68,68,0.1)',
 };
 const statusText: Record<string, string> = {
-  DRAFT: '#94a3b8', ACTIVE: '#10b981', PAUSED: '#eab308', COMPLETED: '#818cf8', ABANDONED: '#ef4444',
+  DRAFT: '#94a3b8', ACTIVE: '#10b981', PAUSED: '#eab308', COMPLETED: '#9B72FA', ABANDONED: '#ef4444',
 };
 
 const conclusionIcon = (c: string) => {
@@ -170,9 +170,9 @@ function NewExperimentModal({ projectId, onClose, onCreated }: {
 
   return (
     <div style={{ position:'fixed',inset:0,zIndex:50,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center' }}>
-      <div style={{ background:'#0f1117',border:'1px solid rgba(99,102,241,0.25)',borderRadius:16,padding:32,width:520,maxHeight:'85vh',overflowY:'auto' }}>
+      <div style={{ background:'#0f1117',border:'1px solid rgba(115,66,226,0.25)',borderRadius:16,padding:32,width:520,maxHeight:'85vh',overflowY:'auto' }}>
         <div style={{ display:'flex',alignItems:'center',gap:10,marginBottom:24 }}>
-          <FlaskConical size={20} color="#818cf8" />
+          <FlaskConical size={20} color="#9B72FA" />
           <span style={{ color:'#e2e8f0',fontWeight:700,fontSize:16 }}>New UX Experiment</span>
         </div>
 
@@ -215,7 +215,7 @@ function NewExperimentModal({ projectId, onClose, onCreated }: {
 
         <div style={{ display:'flex',gap:10 }}>
           <button onClick={onClose} style={{ flex:1,padding:'10px 0',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'transparent',color:'#64748b',cursor:'pointer',fontSize:13 }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={loading} style={{ flex:2,padding:'10px 0',borderRadius:8,border:'none',background:'rgba(99,102,241,0.85)',color:'#fff',cursor:'pointer',fontSize:13,fontWeight:600,opacity:loading?0.6:1 }}>
+          <button onClick={handleSubmit} disabled={loading} style={{ flex:2,padding:'10px 0',borderRadius:8,border:'none',background:'rgba(115,66,226,0.85)',color:'#fff',cursor:'pointer',fontSize:13,fontWeight:600,opacity:loading?0.6:1 }}>
             {loading ? 'Creating…' : 'Create Experiment'}
           </button>
         </div>
@@ -233,7 +233,7 @@ function ExperimentCard({ exp, onClick }: { exp: Experiment; onClick: () => void
       width:'100%',textAlign:'left',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',
       borderRadius:12,padding:20,cursor:'pointer',transition:'all 0.2s',
     }}
-    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='rgba(99,102,241,0.3)'; (e.currentTarget as HTMLElement).style.background='rgba(99,102,241,0.04)'; }}
+    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='rgba(115,66,226,0.3)'; (e.currentTarget as HTMLElement).style.background='rgba(115,66,226,0.04)'; }}
     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.02)'; }}
     >
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10 }}>
@@ -263,10 +263,10 @@ function ExperimentDetail({ exp, onClose }: { exp: Experiment; onClose: () => vo
   const latestOutcome = exp.outcomes?.[0];
 
   return (
-    <div style={{ background:'rgba(255,255,255,0.02)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:12,padding:24 }}>
+    <div style={{ background:'rgba(255,255,255,0.02)',border:'1px solid rgba(115,66,226,0.2)',borderRadius:12,padding:24 }}>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20 }}>
         <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-          <FlaskConical size={16} color="#818cf8" />
+          <FlaskConical size={16} color="#9B72FA" />
           <span style={{ color:'#e2e8f0',fontWeight:700,fontSize:14 }}>{exp.name}</span>
         </div>
         <button onClick={onClose} style={{ background:'transparent',border:'none',color:'#475569',cursor:'pointer',fontSize:18,lineHeight:1 }}>×</button>
@@ -274,10 +274,10 @@ function ExperimentDetail({ exp, onClose }: { exp: Experiment; onClose: () => vo
 
       {/* Hypothesis */}
       {exp.hypothesis && (
-        <div style={{ background:'rgba(99,102,241,0.06)',borderRadius:10,padding:16,marginBottom:16,border:'1px solid rgba(99,102,241,0.12)' }}>
+        <div style={{ background:'rgba(115,66,226,0.06)',borderRadius:10,padding:16,marginBottom:16,border:'1px solid rgba(115,66,226,0.12)' }}>
           <div style={{ display:'flex',alignItems:'center',gap:6,marginBottom:10 }}>
-            <Lightbulb size={13} color="#818cf8" />
-            <span style={{ fontSize:11,color:'#818cf8',fontWeight:700,letterSpacing:'0.06em' }}>HYPOTHESIS</span>
+            <Lightbulb size={13} color="#9B72FA" />
+            <span style={{ fontSize:11,color:'#9B72FA',fontWeight:700,letterSpacing:'0.06em' }}>HYPOTHESIS</span>
           </div>
           <p style={{ fontSize:12,color:'#cbd5e1',marginBottom:8,lineHeight:1.6 }}><strong style={{ color:'#94a3b8' }}>Problem:</strong> {exp.hypothesis.problemStatement}</p>
           <p style={{ fontSize:12,color:'#cbd5e1',marginBottom:8,lineHeight:1.6 }}><strong style={{ color:'#94a3b8' }}>Expected:</strong> {exp.hypothesis.expectedImprovement}</p>
@@ -346,7 +346,7 @@ function MemoryExplorer({ memory, summary }: { memory: MemoryEntry[]; summary?: 
       {/* Summary stats */}
       <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:24 }}>
         {[
-          { label:'Total Patterns', value: summary.total, color:'#818cf8' },
+          { label:'Total Patterns', value: summary.total, color:'#9B72FA' },
           { label:'Successful', value: summary.successes, color:'#10b981' },
           { label:'Failed', value: summary.failures, color:'#ef4444' },
           { label:'Success Rate', value: `${summary.successRate.toFixed(0)}%`, color:'#f59e0b' },
@@ -406,7 +406,7 @@ function ImpactTracker({ impacts }: { impacts: Impact[] }) {
               <span style={{ fontSize:11,color:'#64748b' }}>{imp.description}</span>
             </div>
             <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4 }}>
-              <span style={{ fontSize:10,padding:'2px 8px',borderRadius:20,background:'rgba(99,102,241,0.15)',color:'#818cf8',fontWeight:700 }}>{imp.adoptionStatus}</span>
+              <span style={{ fontSize:10,padding:'2px 8px',borderRadius:20,background:'rgba(115,66,226,0.15)',color:'#9B72FA',fontWeight:700 }}>{imp.adoptionStatus}</span>
               <span style={{ fontSize:10,color:vStatusColor[imp.verificationStatus] }}>{imp.verificationStatus.replace('VERIFIED_','')}</span>
             </div>
           </div>
@@ -493,7 +493,7 @@ export function OptimizationLab() {
 
   const stats = [
     { label:'Active Experiments', value: experiments.filter(e => e.status === 'ACTIVE').length, icon: FlaskConical, color:'#10b981' },
-    { label:'Completed', value: experiments.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle2, color:'#818cf8' },
+    { label:'Completed', value: experiments.filter(e => e.status === 'COMPLETED').length, icon: CheckCircle2, color:'#9B72FA' },
     { label:'Hypotheses Built', value: hypotheses.length, icon: Lightbulb, color:'#f59e0b' },
     { label:'Outcomes Recorded', value: outcomes.length, icon: BarChart3, color:'#06b6d4' },
     { label:'Impacts Tracked', value: impacts.length, icon: Target, color:'#a78bfa' },
@@ -515,8 +515,8 @@ export function OptimizationLab() {
       <div style={{ marginBottom:32 }}>
         <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6 }}>
           <div style={{ display:'flex',alignItems:'center',gap:12 }}>
-            <div style={{ width:36,height:36,background:'rgba(99,102,241,0.12)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(99,102,241,0.25)' }}>
-              <FlaskConical size={18} color="#818cf8" />
+            <div style={{ width:36,height:36,background:'rgba(115,66,226,0.12)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(115,66,226,0.25)' }}>
+              <FlaskConical size={18} color="#9B72FA" />
             </div>
             <div>
               <h1 style={{ margin:0,fontSize:20,fontWeight:800,color:'#f1f5f9',letterSpacing:'-0.02em' }}>Optimization Lab</h1>
@@ -527,7 +527,7 @@ export function OptimizationLab() {
             <button onClick={loadAll} disabled={loading} style={{ display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.03)',color:'#64748b',cursor:'pointer',fontSize:12 }}>
               <RotateCcw size={12} />Refresh
             </button>
-            <button onClick={() => setShowNewExp(true)} style={{ display:'flex',alignItems:'center',gap:6,padding:'8px 16px',borderRadius:8,border:'none',background:'rgba(99,102,241,0.85)',color:'#fff',cursor:'pointer',fontSize:12,fontWeight:600 }}>
+            <button onClick={() => setShowNewExp(true)} style={{ display:'flex',alignItems:'center',gap:6,padding:'8px 16px',borderRadius:8,border:'none',background:'rgba(115,66,226,0.85)',color:'#fff',cursor:'pointer',fontSize:12,fontWeight:600 }}>
               <Plus size={13} />New Experiment
             </button>
           </div>
@@ -587,10 +587,10 @@ export function OptimizationLab() {
           transform: scale(0.97);
         }
         .opt-tab-btn.active {
-          background: rgba(99, 102, 241, 0.12);
-          color: #c7d2fe;
-          border-color: rgba(99, 102, 241, 0.35);
-          box-shadow: 0 0 16px rgba(99, 102, 241, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          background: rgba(115, 66, 226, 0.12);
+          color: #D9C6FB;
+          border-color: rgba(115, 66, 226, 0.35);
+          box-shadow: 0 0 16px rgba(115, 66, 226, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         .opt-tab-icon {
           transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -605,7 +605,7 @@ export function OptimizationLab() {
         {tabs.map(t => {
           const isActive = activeTab === t.key;
           const activeColors: Record<string, string> = {
-            experiments: '#818cf8',
+            experiments: '#9B72FA',
             hypotheses: '#fbbf24',
             outcomes: '#22d3ee',
             impact: '#f472b6',
@@ -663,7 +663,7 @@ export function OptimizationLab() {
                 {[
                   { label:'Problem', text: h.problemStatement, color:'#94a3b8' },
                   { label:'Expected', text: h.expectedImprovement, color:'#10b981' },
-                  { label:'Measurement', text: h.measurementStrategy, color:'#818cf8' },
+                  { label:'Measurement', text: h.measurementStrategy, color:'#9B72FA' },
                   { label:'Risk', text: h.riskAssessment, color:'#ef4444' },
                 ].map(f => (
                   <div key={f.label} style={{ background:'rgba(255,255,255,0.02)',borderRadius:8,padding:12 }}>
@@ -697,7 +697,7 @@ export function OptimizationLab() {
               <div style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10 }}>
                 {[
                   { label:'Conclusion', value: o.conclusion, style: { color: o.conclusion==='IMPROVED'?'#10b981':o.conclusion==='REGRESSED'?'#ef4444':'#94a3b8' } },
-                  { label:'Confidence', value: `${(o.confidenceScore * 100).toFixed(0)}%`, style: { color:'#818cf8' } },
+                  { label:'Confidence', value: `${(o.confidenceScore * 100).toFixed(0)}%`, style: { color:'#9B72FA' } },
                   { label:'Baseline', value: o.baselineMetricValue.toFixed(3), style: { color:'#94a3b8' } },
                   { label:'Outcome', value: o.outcomeMetricValue.toFixed(3), style: { color:'#e2e8f0' } },
                   { label:'Delta', value: `${o.deltaPercent > 0 ? '+' : ''}${o.deltaPercent.toFixed(1)}%`, style: { color: deltaColor(o.deltaPercent) } },

@@ -153,23 +153,23 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center items-center relative min-h-[160px]">
+          <div className="flex-1 flex flex-col justify-center items-center relative min-h-[160px] w-full">
             {totalFindings === 0 ? (
               <div className="text-center py-6 text-zinc-600 font-mono text-[11px] italic">
                 No usability defects flagged by intelligence agents
               </div>
             ) : (
-              <div className="w-full flex items-center justify-between">
+              <div className="w-full flex flex-col xl:flex-row items-center justify-center gap-4">
                 {/* Visual Circle chart */}
-                <div className="w-32 h-32 shrink-0">
+                <div className="w-28 h-28 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={severityChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={36}
-                        outerRadius={48}
+                        innerRadius={32}
+                        outerRadius={44}
                         paddingAngle={4}
                         dataKey="value"
                       >
@@ -183,19 +183,19 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
                 </div>
 
                 {/* Legend checklist */}
-                <div className="flex-1 flex flex-col gap-2 pl-4">
+                <div className="flex-1 flex flex-col gap-2 w-full xl:w-auto px-2 xl:px-0">
                   {[
-                    { label: 'Critical', val: severity.CRITICAL || 0, color: 'text-red-400' },
-                    { label: 'High', val: severity.HIGH || 0, color: 'text-orange-400' },
-                    { label: 'Medium', val: severity.MEDIUM || 0, color: 'text-yellow-400' },
-                    { label: 'Low', val: severity.LOW || 0, color: 'text-[#7342e2]' },
+                    { label: 'Critical', val: severity.CRITICAL || 0, color: 'text-red-400', hex: '#f87171' },
+                    { label: 'High', val: severity.HIGH || 0, color: 'text-orange-400', hex: '#fb923c' },
+                    { label: 'Medium', val: severity.MEDIUM || 0, color: 'text-yellow-400', hex: '#facc15' },
+                    { label: 'Low', val: severity.LOW || 0, color: 'text-[#7342e2]', hex: '#7342e2' },
                   ].map((s, i) => (
-                    <div key={i} className="flex justify-between items-center text-xs font-mono">
+                    <div key={i} className="flex justify-between items-center text-xs font-mono w-full">
                       <span className="text-zinc-500 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" style={{ color: s.color.replace('text-', '') }} />
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.hex }} />
                         {s.label}
                       </span>
-                      <span className={`font-black ${s.color}`}>{s.val}</span>
+                      <span className={`font-black ml-2 ${s.color}`}>{s.val}</span>
                     </div>
                   ))}
                 </div>

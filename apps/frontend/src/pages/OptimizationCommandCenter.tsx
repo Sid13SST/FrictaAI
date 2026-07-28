@@ -241,7 +241,7 @@ export function OptimizationCommandCenter() {
     APPROVED: { bg: 'rgba(16,185,129,0.15)', text: '#10b981' },
     REJECTED: { bg: 'rgba(239,68,68,0.15)', text: '#ef4444' },
     ARCHIVED: { bg: 'rgba(71,85,105,0.2)', text: '#64748b' },
-    CONVERTED_TO_EXPERIMENT: { bg: 'rgba(99,102,241,0.15)', text: '#818cf8' },
+    CONVERTED_TO_EXPERIMENT: { bg: 'rgba(115,66,226,0.15)', text: '#9B72FA' },
     CONVERTED_TO_INVESTIGATION: { bg: 'rgba(6,182,212,0.15)', text: '#06b6d4' },
     CONVERTED_TO_JIRA: { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa' }
   };
@@ -329,7 +329,7 @@ export function OptimizationCommandCenter() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
         {[
           { label: 'Active Opportunities', value: opportunities.length, icon: AlertCircle, color: '#f59e0b' },
-          { label: 'Pending Approvals', value: recommendations.filter(r => r.status === 'PROPOSED').length, icon: Clock, color: '#818cf8' },
+          { label: 'Pending Approvals', value: recommendations.filter(r => r.status === 'PROPOSED').length, icon: Clock, color: '#9B72FA' },
           { label: 'Avg Confidence', value: opportunities.length > 0 ? `${(opportunities.reduce((acc, o) => acc + o.confidence, 0) / opportunities.length * 100).toFixed(0)}%` : '0%', icon: Brain, color: '#10b981' },
           { label: 'Forecasted Gain', value: opportunities.length > 0 ? `+${(opportunities.reduce((acc, o) => acc + o.survivabilityGain, 0) / opportunities.length * 100).toFixed(1)}%` : '+0%', icon: TrendingUp, color: '#06b6d4' }
         ].map((s, idx) => (
@@ -665,7 +665,7 @@ export function OptimizationCommandCenter() {
                     {/* Bullet marker */}
                     <div style={{
                       position: 'absolute', left: -30, top: 4, width: 10, height: 10, borderRadius: '50%',
-                      background: e.type === 'DECISION' ? '#818cf8' : e.type === 'OUTCOME' ? '#10b981' : '#f59e0b',
+                      background: e.type === 'DECISION' ? '#9B72FA' : e.type === 'OUTCOME' ? '#10b981' : '#f59e0b',
                       border: '3px solid #070b0a'
                     }} />
 

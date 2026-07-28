@@ -94,9 +94,9 @@ export const MultiAgentTimeline: React.FC<MultiAgentTimelineProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full font-sans">
+    <div className="flex flex-col gap-5 w-full font-sans h-full">
       {/* ── Filter Rail ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-1.5 p-1 bg-[#0d0d0f] border border-[#222226] rounded-xl w-fit">
+      <div className="flex flex-wrap gap-1.5 p-1 bg-[#0d0d0f] border border-[#222226] rounded-xl w-fit shrink-0">
         {filters.map(f => (
           <button
             key={f.key}
@@ -113,7 +113,7 @@ export const MultiAgentTimeline: React.FC<MultiAgentTimelineProps> = ({
       </div>
 
       {/* ── Chronological Event Stream ───────────────────────────────────────── */}
-      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden">
+      <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 relative overflow-y-auto flex-1 min-h-0 pr-2">
         {timelineEvents.length === 0 ? (
           <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic">
             No events logged in the investigation timeline.

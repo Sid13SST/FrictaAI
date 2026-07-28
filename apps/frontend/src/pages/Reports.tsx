@@ -17,7 +17,7 @@ const ScoreRing = ({ score }: { score: number }) => {
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   const color =
-    score >= 80 ? '#6366f1' :
+    score >= 80 ? '#7342E2' :
     score >= 60 ? '#eab308' :
     score >= 40 ? '#f97316' :
     '#f43f5e';
@@ -53,7 +53,7 @@ const severityStyle = (sev: string) => {
     case 'CRITICAL': return { color: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.2)' };
     case 'HIGH':     return { color: '#fb923c', bg: 'rgba(251,146,60,0.08)',  border: 'rgba(251,146,60,0.2)' };
     case 'MEDIUM':   return { color: '#facc15', bg: 'rgba(250,204,21,0.08)', border: 'rgba(250,204,21,0.2)' };
-    default:         return { color: '#6366f1', bg: 'rgba(99, 102, 241,0.08)', border: 'rgba(99, 102, 241,0.2)' };
+    default:         return { color: '#7342E2', bg: 'rgba(115, 66, 226,0.08)', border: 'rgba(115, 66, 226,0.2)' };
   }
 };
 
@@ -116,7 +116,7 @@ export const Reports = () => {
           <div className="flex items-center gap-2 mb-2">
             <span
               className="text-[9px] font-black uppercase tracking-widest font-mono px-2.5 py-0.5 rounded-full"
-              style={{ color: '#6366f1', background: 'rgba(99, 102, 241,0.1)', border: '1px solid rgba(99, 102, 241,0.2)' }}
+              style={{ color: '#7342E2', background: 'rgba(115, 66, 226,0.1)', border: '1px solid rgba(115, 66, 226,0.2)' }}
             >
               Intelligence Reports
             </span>
@@ -124,9 +124,9 @@ export const Reports = () => {
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(99, 102, 241,0.1)', border: '1px solid rgba(99, 102, 241,0.2)' }}
+              style={{ background: 'rgba(115, 66, 226,0.1)', border: '1px solid rgba(115, 66, 226,0.2)' }}
             >
-              <FileText className="w-5 h-5" style={{ color: '#6366f1' }} />
+              <FileText className="w-5 h-5" style={{ color: '#7342E2' }} />
             </div>
             UX Analysis Reports
           </h1>
@@ -148,8 +148,8 @@ export const Reports = () => {
       {reports.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Reports', value: String(reports.length), icon: Layers,       color: '#6366f1',  glow: 'rgba(99, 102, 241,0.15)'  },
-            { label: 'Avg UX Score',  value: `${avgScore}/100`,      icon: TrendingUp,   color: '#6366f1',  glow: 'rgba(99, 102, 241,0.12)'  },
+            { label: 'Total Reports', value: String(reports.length), icon: Layers,       color: '#7342E2',  glow: 'rgba(115, 66, 226,0.15)'  },
+            { label: 'Avg UX Score',  value: `${avgScore}/100`,      icon: TrendingUp,   color: '#7342E2',  glow: 'rgba(115, 66, 226,0.12)'  },
             { label: 'Excellent (A+)',value: String(excellent),       icon: CheckCircle2, color: '#34d399',  glow: 'rgba(52,211,153,0.12)'  },
             { label: 'Critical Issues',value: String(critical),       icon: AlertTriangle,color: '#fb923c',  glow: 'rgba(251,146,60,0.12)'  },
           ].map((stat, i) => (
@@ -190,7 +190,7 @@ export const Reports = () => {
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 text-sm text-white placeholder-zinc-600 rounded-xl focus:outline-none transition-all"
               style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.08)' }}
-              onFocus={e => (e.target.style.borderColor = 'rgba(99, 102, 241,0.35)')}
+              onFocus={e => (e.target.style.borderColor = 'rgba(115, 66, 226,0.35)')}
               onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
             />
           </div>
@@ -203,9 +203,9 @@ export const Reports = () => {
                 onClick={() => setFilterGrade(g)}
                 className="px-3 py-1.5 rounded-lg text-[9px] font-black font-mono uppercase tracking-wider transition-all"
                 style={{
-                  background: filterGrade === g ? 'rgba(99, 102, 241,0.12)' : 'transparent',
-                  border: filterGrade === g ? '1px solid rgba(99, 102, 241,0.25)' : '1px solid transparent',
-                  color: filterGrade === g ? '#6366f1' : 'rgba(255,255,255,0.4)',
+                  background: filterGrade === g ? 'rgba(115, 66, 226,0.12)' : 'transparent',
+                  border: filterGrade === g ? '1px solid rgba(115, 66, 226,0.25)' : '1px solid transparent',
+                  color: filterGrade === g ? '#7342E2' : 'rgba(255,255,255,0.4)',
                 }}
               >
                 {g}
@@ -230,7 +230,7 @@ export const Reports = () => {
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <Activity className="w-6 h-6 animate-spin" style={{ color: '#6366f1' }} />
+          <Activity className="w-6 h-6 animate-spin" style={{ color: '#7342E2' }} />
           <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
             Loading intelligence reports...
           </span>
@@ -243,13 +243,13 @@ export const Reports = () => {
         >
           <div
             className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.2), transparent)' }}
+            style={{ background: 'linear-gradient(to right, transparent, rgba(115, 66, 226,0.2), transparent)' }}
           />
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: 'rgba(99, 102, 241,0.08)', border: '1px solid rgba(99, 102, 241,0.18)' }}
+            style={{ background: 'rgba(115, 66, 226,0.08)', border: '1px solid rgba(115, 66, 226,0.18)' }}
           >
-            <Brain className="w-8 h-8" style={{ color: '#6366f1' }} />
+            <Brain className="w-8 h-8" style={{ color: '#7342E2' }} />
           </div>
           <h3 className="text-white font-bold text-lg">No Reports Yet</h3>
           <p className="text-sm mt-2 max-w-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -258,7 +258,7 @@ export const Reports = () => {
           <Link
             to="/app/workflow"
             className="mt-6 flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded-xl font-mono uppercase tracking-wider"
-            style={{ background: '#6366f1', color: '#070b0a' }}
+            style={{ background: '#7342E2', color: '#070b0a' }}
           >
             Run First Audit <ArrowRight className="w-3.5 h-3.5" />
           </Link>
@@ -297,8 +297,8 @@ export const Reports = () => {
                   border: '1px solid rgba(255,255,255,0.07)',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.border = '1px solid rgba(99, 102, 241,0.2)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(99, 102, 241,0.06)';
+                  (e.currentTarget as HTMLElement).style.border = '1px solid rgba(115, 66, 226,0.2)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(115, 66, 226,0.06)';
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.border = '1px solid rgba(255,255,255,0.07)';
@@ -308,7 +308,7 @@ export const Reports = () => {
                 {/* Top mint edge */}
                 <div
                   className="absolute top-0 left-0 right-0 h-px"
-                  style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.18), transparent)' }}
+                  style={{ background: 'linear-gradient(to right, transparent, rgba(115, 66, 226,0.18), transparent)' }}
                 />
 
                 {/* Header row */}
@@ -331,7 +331,7 @@ export const Reports = () => {
                         </span>
                       </div>
                       <h3 className="text-sm font-bold text-white mt-1.5">
-                        Session <span className="font-mono text-[#6366f1]">{report.sessionId?.slice(0, 8) ?? '—'}</span>
+                        Session <span className="font-mono text-[#7342E2]">{report.sessionId?.slice(0, 8) ?? '—'}</span>
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Clock className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.3)' }} />
@@ -348,7 +348,7 @@ export const Reports = () => {
                   {[
                     { label: 'Overall UX',   val: report.score ?? 0 },
                   ].map(bar => {
-                    const barColor = bar.val >= 80 ? '#6366f1' : bar.val >= 60 ? '#eab308' : bar.val >= 40 ? '#f97316' : '#f43f5e';
+                    const barColor = bar.val >= 80 ? '#7342E2' : bar.val >= 60 ? '#eab308' : bar.val >= 40 ? '#f97316' : '#f43f5e';
                     return (
                       <div key={bar.label} className="flex items-center gap-3">
                         <span className="text-[10px] w-24 flex-shrink-0 font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>{bar.label}</span>
@@ -401,9 +401,9 @@ export const Reports = () => {
                       to={`/app/reports/${report.sessionId}`}
                       className="flex items-center gap-1.5 text-[10px] font-black font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
                       style={{
-                        background: 'rgba(99, 102, 241,0.08)',
-                        border: '1px solid rgba(99, 102, 241,0.2)',
-                        color: '#6366f1',
+                        background: 'rgba(115, 66, 226,0.08)',
+                        border: '1px solid rgba(115, 66, 226,0.2)',
+                        color: '#7342E2',
                       }}
                     >
                       View Analysis <ArrowRight className="w-3 h-3" />

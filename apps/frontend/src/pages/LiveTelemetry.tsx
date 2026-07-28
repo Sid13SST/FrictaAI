@@ -107,11 +107,11 @@ export const LiveTelemetry: React.FC = () => {
       const pId = projData[0]?.id || '56b8722a-c7c4-47db-a855-b5d3e0ad32cb';
       setProjectId(pId);
 
-      const sigRes = await fetch(`/api/telemetry/signals?limit=15`);
+      const sigRes = await fetch(`/api/telemetry/signals?projectId=${pId}&limit=15`);
       const sigData = await sigRes.json();
       setSignals(sigData.signals || []);
 
-      const evtRes = await fetch(`/api/telemetry/events?limit=25`);
+      const evtRes = await fetch(`/api/telemetry/events?projectId=${pId}&limit=25`);
       const evtData = await evtRes.json();
       setLiveEvents(evtData.events || []);
 
@@ -274,7 +274,7 @@ export const LiveTelemetry: React.FC = () => {
         }
 
         // Re-fetch database lists
-        const sigRes = await fetch(`/api/telemetry/signals?limit=15`);
+        const sigRes = await fetch(`/api/telemetry/signals?projectId=${projectId}&limit=15`);
         const sigData = await sigRes.json();
         setSignals(sigData.signals || []);
 
@@ -352,7 +352,7 @@ export const LiveTelemetry: React.FC = () => {
       <div 
         className="relative overflow-hidden p-6 md:p-8 rounded-3xl border border-white/[0.04] shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]"
         style={{
-          background: 'radial-gradient(circle at top right, rgba(16, 185, 129, 0.09), transparent 50%), radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.04), transparent 50%), #09090b',
+          background: 'radial-gradient(circle at top right, rgba(16, 185, 129, 0.09), transparent 50%), radial-gradient(circle at bottom left, rgba(115, 66, 226, 0.04), transparent 50%), #09090b',
         }}
       >
         {/* Glow Effects */}
@@ -488,7 +488,7 @@ export const LiveTelemetry: React.FC = () => {
             <div className="text-[10px] font-mono text-zinc-500 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" /> Masked PII Buffers
             </div>
-            {renderSparkline([10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10], '#818cf8')}
+            {renderSparkline([10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10], '#9B72FA')}
           </div>
         </div>
 
@@ -1118,27 +1118,13 @@ export const LiveTelemetry: React.FC = () => {
                   );
                 })
               ) : (
-                <>
-                  <div className="p-3.5 rounded-2xl bg-red-500/[0.02] border border-red-500/20 text-red-200 text-xs">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-mono text-[8px] px-1.5 py-0.5 rounded font-bold bg-red-500/10 text-red-400">RAGE_CLICK</span>
-                      <span className="text-[9px] text-zinc-500 font-mono">Just Now</span>
-                    </div>
-                    <p className="text-red-300 font-mono text-[10px] leading-relaxed">
-                      5 quick clicks detected on unresponsive payment gateway button (button#pay-button)
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-red-500/[0.02] border border-red-500/20 text-red-200 text-xs">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-mono text-[8px] px-1.5 py-0.5 rounded font-bold bg-red-500/10 text-red-400">SCRIPT_ERROR</span>
-                      <span className="text-[9px] text-zinc-500 font-mono">2 min ago</span>
-                    </div>
-                    <p className="text-red-300 font-mono text-[10px] leading-relaxed">
-                      TypeError: Cannot read properties of undefined (reading "chargeCard") at checkout.js:45
-                    </p>
-                  </div>
-                </>
+                <div className="p-6 text-center">
+                  <ShieldAlert className="w-6 h-6 text-zinc-700 mx-auto mb-2" />
+                  <p className="text-xs text-zinc-500">No alerts yet.</p>
+                  <p className="text-[10px] text-zinc-600 mt-1">
+                    Connect real telemetry or use "Inject Rage Click" / "Inject Exception" below to preview how alerts look here.
+                  </p>
+                </div>
               )}
             </div>
           </div>

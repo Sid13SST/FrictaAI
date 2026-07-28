@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Globe, Plus, ChevronRight, ChevronDown, ChevronUp,
   Loader2, ArrowRight, Zap, CheckCircle, AlertCircle, X,
@@ -66,16 +66,16 @@ const StepBar = ({ step }: { step: 1 | 2 }) => (
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
               style={{
-                background: done ? '#6366f1' : active ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.05)',
-                border: done || active ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                color: done || active ? (done ? '#fff' : '#818cf8') : 'rgba(255,255,255,0.3)',
+                background: done ? '#7342E2' : active ? 'rgba(115,66,226,0.15)' : 'rgba(255,255,255,0.05)',
+                border: done || active ? '1px solid rgba(115,66,226,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                color: done || active ? (done ? '#fff' : '#9B72FA') : 'rgba(255,255,255,0.3)',
               }}
             >
               {done ? <CheckCircle className="w-3.5 h-3.5" /> : n}
             </div>
             <span
               className="text-xs font-semibold"
-              style={{ color: active ? '#fff' : done ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.3)' }}
+              style={{ color: active ? '#fff' : done ? 'rgba(115,66,226,0.8)' : 'rgba(255,255,255,0.3)' }}
             >
               {n === 1 ? 'Select Project' : 'Configure Audit'}
             </span>
@@ -83,7 +83,7 @@ const StepBar = ({ step }: { step: 1 | 2 }) => (
           {n < 2 && (
             <div
               className="flex-1 h-px transition-all duration-500"
-              style={{ background: step > 1 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.06)' }}
+              style={{ background: step > 1 ? 'rgba(115,66,226,0.4)' : 'rgba(255,255,255,0.06)' }}
             />
           )}
         </React.Fragment>
@@ -101,24 +101,24 @@ const ProjectCard = ({
     onClick={onClick}
     className="w-full text-left p-4 rounded-2xl transition-all duration-200 relative group"
     style={{
-      background: selected ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
-      border: selected ? '1px solid rgba(99,102,241,0.45)' : '1px solid rgba(255,255,255,0.06)',
-      boxShadow: selected ? '0 0 24px rgba(99,102,241,0.12)' : 'none',
+      background: selected ? 'rgba(115,66,226,0.1)' : 'rgba(255,255,255,0.02)',
+      border: selected ? '1px solid rgba(115,66,226,0.45)' : '1px solid rgba(255,255,255,0.06)',
+      boxShadow: selected ? '0 0 24px rgba(115,66,226,0.12)' : 'none',
     }}
   >
     {selected && (
-      <div className="absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#6366f1' }}>
+      <div className="absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#7342E2' }}>
         <CheckCircle className="w-3 h-3 text-white" />
       </div>
     )}
     <div
       className="w-8 h-8 rounded-xl flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105"
       style={{
-        background: selected ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-        border: selected ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.06)',
+        background: selected ? 'rgba(115,66,226,0.15)' : 'rgba(255,255,255,0.04)',
+        border: selected ? '1px solid rgba(115,66,226,0.3)' : '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      <Globe className="w-4 h-4" style={{ color: selected ? '#818cf8' : 'rgba(255,255,255,0.4)' }} />
+      <Globe className="w-4 h-4" style={{ color: selected ? '#9B72FA' : 'rgba(255,255,255,0.4)' }} />
     </div>
     <p className="text-sm font-bold text-white leading-tight truncate pr-6">{project.projectName}</p>
     <p className="text-xs mt-1 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{project.websiteUrl}</p>
@@ -154,7 +154,7 @@ const CreateProjectForm = ({
   return (
     <div
       className="rounded-2xl p-5 space-y-4"
-      style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.2)' }}
+      style={{ background: 'rgba(115,66,226,0.05)', border: '1px solid rgba(115,66,226,0.2)' }}
     >
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold text-white">New Project</p>
@@ -174,7 +174,7 @@ const CreateProjectForm = ({
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="e.g. My SaaS App"
-            onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+            onFocus={e => (e.target.style.borderColor = 'rgba(115,66,226,0.5)')}
             onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
           />
           <FieldError msg={errs.name} />
@@ -188,7 +188,7 @@ const CreateProjectForm = ({
             value={url}
             onChange={e => setUrl(e.target.value)}
             placeholder="https://yourwebsite.com"
-            onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+            onFocus={e => (e.target.style.borderColor = 'rgba(115,66,226,0.5)')}
             onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
           />
           <FieldError msg={errs.url} />
@@ -204,7 +204,7 @@ const CreateProjectForm = ({
           type="submit"
           disabled={isPending}
           className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 24px rgba(99,102,241,0.2)' }}
+          style={{ background: 'linear-gradient(135deg,#7342E2,#8b5cf6)', boxShadow: '0 0 24px rgba(115,66,226,0.2)' }}
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
           {isPending ? 'Creating…' : 'Save Project'}
@@ -218,10 +218,12 @@ const CreateProjectForm = ({
 
 export const WorkflowRunner = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedProjectId = searchParams.get('projectId') || '';
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [step, setStep] = useState<1 | 2>(1);
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(preselectedProjectId);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   // Step 2 fields
@@ -333,7 +335,7 @@ export const WorkflowRunner = () => {
       <div className="mb-8">
         <div
           className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono uppercase tracking-widest px-3 py-1 rounded-full mb-3"
-          style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#818cf8' }}
+          style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.2)', color: '#9B72FA' }}
         >
           <Zap className="w-3 h-3" /> Workflow Auditor
         </div>
@@ -347,7 +349,7 @@ export const WorkflowRunner = () => {
       <div
         className="rounded-3xl p-8"
         style={{
-          background: 'radial-gradient(ellipse at top left, rgba(99,102,241,0.06), transparent 60%), rgba(9,9,11,0.8)',
+          background: 'radial-gradient(ellipse at top left, rgba(115,66,226,0.06), transparent 60%), rgba(9,9,11,0.8)',
           border: '1px solid rgba(255,255,255,0.07)',
         }}
       >
@@ -388,17 +390,17 @@ export const WorkflowRunner = () => {
                       onClick={() => { setShowCreateForm(true); setSelectedProjectId(''); setErrors({}); }}
                       className="p-4 rounded-2xl text-left transition-all duration-200 group"
                       style={{
-                        background: showCreateForm ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.01)',
-                        border: showCreateForm ? '1px solid rgba(99,102,241,0.35)' : '1px dashed rgba(255,255,255,0.12)',
+                        background: showCreateForm ? 'rgba(115,66,226,0.08)' : 'rgba(255,255,255,0.01)',
+                        border: showCreateForm ? '1px solid rgba(115,66,226,0.35)' : '1px dashed rgba(255,255,255,0.12)',
                       }}
                     >
                       <div
                         className="w-8 h-8 rounded-xl flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-105"
-                        style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }}
+                        style={{ background: 'rgba(115,66,226,0.1)', border: '1px solid rgba(115,66,226,0.25)' }}
                       >
-                        <Plus className="w-4 h-4" style={{ color: '#818cf8' }} />
+                        <Plus className="w-4 h-4" style={{ color: '#9B72FA' }} />
                       </div>
-                      <p className="text-sm font-bold" style={{ color: '#818cf8' }}>New Project</p>
+                      <p className="text-sm font-bold" style={{ color: '#9B72FA' }}>New Project</p>
                       <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>Add a website to audit</p>
                     </button>
                   </div>
@@ -427,7 +429,7 @@ export const WorkflowRunner = () => {
                 onClick={handleStep1Continue}
                 disabled={!selectedProjectId}
                 className="w-full py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2 mt-2"
-                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 32px rgba(99,102,241,0.25)' }}
+                style={{ background: 'linear-gradient(135deg,#7342E2,#8b5cf6)', boxShadow: '0 0 32px rgba(115,66,226,0.25)' }}
               >
                 Continue <ChevronRight className="w-4 h-4" />
               </button>
@@ -448,10 +450,10 @@ export const WorkflowRunner = () => {
             {/* Selected project pill */}
             <div
               className="flex items-center justify-between px-4 py-2.5 rounded-xl"
-              style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}
+              style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.2)' }}
             >
               <div className="flex items-center gap-2.5">
-                <Globe className="w-4 h-4" style={{ color: '#818cf8' }} />
+                <Globe className="w-4 h-4" style={{ color: '#9B72FA' }} />
                 <div>
                   <p className="text-xs font-bold text-white">{selectedProject?.projectName}</p>
                   <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{selectedProject?.websiteUrl}</p>
@@ -460,7 +462,7 @@ export const WorkflowRunner = () => {
               <button
                 onClick={() => { setStep(1); setErrors({}); }}
                 className="text-xs font-semibold transition-colors hover:text-white"
-                style={{ color: 'rgba(99,102,241,0.7)' }}
+                style={{ color: 'rgba(115,66,226,0.7)' }}
               >
                 Change
               </button>
@@ -476,7 +478,7 @@ export const WorkflowRunner = () => {
                 value={targetUrl}
                 onChange={e => { setTargetUrl(e.target.value); if (errors.targetUrl) setErrors(p => ({ ...p, targetUrl: '' })); }}
                 placeholder="https://yoursite.com/specific-page"
-                onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+                onFocus={e => (e.target.style.borderColor = 'rgba(115,66,226,0.5)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
               <FieldError msg={errors.targetUrl} />
@@ -493,7 +495,7 @@ export const WorkflowRunner = () => {
                 value={goal}
                 onChange={e => { setGoal(e.target.value); if (errors.goal) setErrors(p => ({ ...p, goal: '' })); }}
                 placeholder="e.g. Find and complete the sign-up flow. Check for any confusing steps, unclear labels, or friction points along the way."
-                onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+                onFocus={e => (e.target.style.borderColor = 'rgba(115,66,226,0.5)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
               <div className="flex items-start justify-between mt-1">
@@ -548,7 +550,7 @@ export const WorkflowRunner = () => {
                     value={variablesInput}
                     onChange={e => setVariablesInput(e.target.value)}
                     placeholder={'username=testuser\npassword=secret'}
-                    onFocus={e => (e.target.style.borderColor = 'rgba(99,102,241,0.5)')}
+                    onFocus={e => (e.target.style.borderColor = 'rgba(115,66,226,0.5)')}
                     onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
                   />
                 </div>
@@ -581,8 +583,8 @@ export const WorkflowRunner = () => {
                 disabled={submitWorkflow.isPending}
                 className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2.5 group"
                 style={{
-                  background: submitWorkflow.isPending ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-                  boxShadow: submitWorkflow.isPending ? 'none' : '0 0 40px rgba(99,102,241,0.3)',
+                  background: submitWorkflow.isPending ? 'rgba(115,66,226,0.4)' : 'linear-gradient(135deg,#7342E2,#8b5cf6)',
+                  boxShadow: submitWorkflow.isPending ? 'none' : '0 0 40px rgba(115,66,226,0.3)',
                 }}
               >
                 {submitWorkflow.isPending ? (

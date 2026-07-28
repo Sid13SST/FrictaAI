@@ -265,7 +265,7 @@ export function ForecastCenter() {
           <button
             onClick={handleTriggerEvaluation}
             disabled={evaluating || !projectId}
-            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(115,66,226,0.2)]"
           >
             <RefreshCcw className={`w-3.5 h-3.5 ${evaluating ? 'animate-spin' : ''}`} />
             <span>{evaluating ? 'Evaluating...' : 'Refresh Forecasts'}</span>
@@ -385,7 +385,7 @@ export function ForecastCenter() {
                         onClick={() => setSelectedForecast(f)}
                         className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 relative ${
                           selectedForecast?.id === f.id
-                            ? 'bg-indigo-500/[0.03] border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                            ? 'bg-indigo-500/[0.03] border-indigo-500/40 shadow-[0_0_15px_rgba(115,66,226,0.2)]'
                             : 'bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.02]'
                         }`}
                       >

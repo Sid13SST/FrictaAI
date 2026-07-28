@@ -1339,6 +1339,22 @@ export const WorkspaceConsole: React.FC = () => {
     }
   };
 
+  const handleDownloadExport = async (exportId: string, format: string) => {
+    try {
+      const res = await apiFetch(`/reports/exports/${exportId}/download`);
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fricta-export-${exportId}.${format.toLowerCase()}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   const handleGenerateReportShare = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedReportId) return;
@@ -3721,10 +3737,10 @@ export const WorkspaceConsole: React.FC = () => {
                                   {e.status === 'COMPLETED' && e.filePath && (
                                     <button
                                       type="button"
-                                      onClick={() => copyToClipboard(e.filePath)}
+                                      onClick={() => handleDownloadExport(e.id, e.format)}
                                       className="text-[#7342e2] hover:underline"
                                     >
-                                      Copy Path
+                                      Download
                                     </button>
                                   )}
                                 </div>

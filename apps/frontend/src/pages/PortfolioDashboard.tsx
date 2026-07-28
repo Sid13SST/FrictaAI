@@ -355,10 +355,10 @@ export function PortfolioDashboard() {
           background: rgba(255, 255, 255, 0.02);
         }
         .port-tab-btn.active {
-          background: rgba(99, 102, 241, 0.12);
-          color: #c7d2fe;
-          border-color: rgba(99, 102, 241, 0.35);
-          box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+          background: rgba(115, 66, 226, 0.12);
+          color: #D9C6FB;
+          border-color: rgba(115, 66, 226, 0.35);
+          box-shadow: 0 0 12px rgba(115, 66, 226, 0.15);
         }
         .port-card {
           background: rgba(15, 23, 23, 0.6);
@@ -369,7 +369,7 @@ export function PortfolioDashboard() {
           transition: transform 0.2s, border-color 0.2s;
         }
         .port-card:hover {
-          border-color: rgba(99, 102, 241, 0.3);
+          border-color: rgba(115, 66, 226, 0.3);
           transform: translateY(-2px);
         }
         .port-glass-panel {
@@ -379,7 +379,7 @@ export function PortfolioDashboard() {
           padding: 18px;
         }
         .port-btn-primary {
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+          background: linear-gradient(135deg, #7342E2 0%, #5C2FC2 100%);
           border: none;
           color: #ffffff;
           padding: 9px 16px;
@@ -387,7 +387,7 @@ export function PortfolioDashboard() {
           font-size: 12px;
           font-weight: 600;
           cursor: pointer;
-          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+          box-shadow: 0 4px 14px rgba(115, 66, 226, 0.3);
           transition: opacity 0.2s;
         }
         .port-btn-primary:hover {
@@ -446,8 +446,8 @@ export function PortfolioDashboard() {
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 42, height: 42, background: 'rgba(99, 102, 241, 0.12)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-              <GitMerge size={22} color="#6366f1" />
+            <div style={{ width: 42, height: 42, background: 'rgba(115, 66, 226, 0.12)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(115, 66, 226, 0.25)' }}>
+              <GitMerge size={22} color="#7342E2" />
             </div>
             <div>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#f3f4f6', letterSpacing: '-0.02em' }}>Portfolio Intelligence Center</h1>
@@ -469,10 +469,10 @@ export function PortfolioDashboard() {
       </div>
 
       {/* Governance Banner */}
-      <div className="port-glass-panel" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'rgba(99, 102, 241, 0.03)', borderColor: 'rgba(99, 102, 241, 0.15)', marginBottom: 24 }}>
-        <ShieldCheck size={20} color="#6366f1" style={{ marginTop: 2, flexShrink: 0 }} />
+      <div className="port-glass-panel" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'rgba(115, 66, 226, 0.03)', borderColor: 'rgba(115, 66, 226, 0.15)', marginBottom: 24 }}>
+        <ShieldCheck size={20} color="#7342E2" style={{ marginTop: 2, flexShrink: 0 }} />
         <div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#c7d2fe', display: 'block' }}>Advisory Strategic Radar & Alignment Boundary</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#D9C6FB', display: 'block' }}>Advisory Strategic Radar & Alignment Boundary</span>
           <span style={{ fontSize: 11, color: '#9ca3af', lineHeight: '1.5', marginTop: 3, display: 'block' }}>
             Fricta highlights strategic gaps, dependency risks, and concentration metrics, but does not perform autonomous mutations to priority sequences or resource staffing. All organizational decisions and roadmap alterations remain under direct human supervision.
           </span>
@@ -503,7 +503,7 @@ export function PortfolioDashboard() {
         <div>
           {/* Health index card rows */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
-            <div className="port-card" style={{ borderLeft: '4px solid #6366f1' }}>
+            <div className="port-card" style={{ borderLeft: '4px solid #7342E2' }}>
               <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Portfolio Health Rating</span>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#f3f4f6', margin: '6px 0 2px 0' }}>{healthAverages.healthRating.toFixed(1)}%</div>
               <p style={{ margin: 0, fontSize: 10, color: '#9ca3af' }}>Composite index rating</p>
@@ -543,7 +543,7 @@ export function PortfolioDashboard() {
                       <YAxis domain={[0, 100]} stroke="#4b5563" fontSize={9} />
                       <Tooltip contentStyle={{ background: '#090d0d', border: '1px solid rgba(255,255,255,0.08)' }} />
                       <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: 10 }} />
-                      <Bar name="Health Rating" dataKey="healthRating" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                      <Bar name="Health Rating" dataKey="healthRating" fill="#7342E2" radius={[4, 4, 0, 0]} />
                       <Bar name="Coverage Score" dataKey="coverageScore" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       <Bar name="Alignment Score" dataKey="alignmentScore" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -583,7 +583,7 @@ export function PortfolioDashboard() {
                             <div className="custom-tooltip">
                               <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#fff' }}>{data.name}</p>
                               <p style={{ margin: '4px 0 0 0', fontSize: 10, color: '#9ca3af' }}>Allocation: {data.value}%</p>
-                              {data.amount && <p style={{ margin: '2px 0 0 0', fontSize: 10, color: '#6366f1' }}>Budget: ${data.amount.toLocaleString()}</p>}
+                              {data.amount && <p style={{ margin: '2px 0 0 0', fontSize: 10, color: '#7342E2' }}>Budget: ${data.amount.toLocaleString()}</p>}
                             </div>
                           );
                         }
@@ -641,7 +641,7 @@ export function PortfolioDashboard() {
                 {/* Alignment trace map */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '12px 14px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 12, fontSize: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <GitCommit size={12} color="#6366f1" />
+                    <GitCommit size={12} color="#7342E2" />
                     <span style={{ color: '#9ca3af' }}>Initiative:</span>
                     <span style={{ color: '#fff', fontWeight: 600 }}>{align.initiativeTitle}</span>
                   </div>
@@ -738,7 +738,7 @@ export function PortfolioDashboard() {
                 <div key={dep.id} className="port-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
-                      <span className="port-badge status-gapped" style={{ fontSize: 9, padding: '2px 6px', color: '#818cf8', background: 'rgba(129, 140, 248, 0.1)', borderColor: 'rgba(129,140,248,0.2)' }}>
+                      <span className="port-badge status-gapped" style={{ fontSize: 9, padding: '2px 6px', color: '#9B72FA', background: 'rgba(155, 114, 250, 0.1)', borderColor: 'rgba(155,114,250,0.2)' }}>
                         {dep.dependencyType}
                       </span>
                       <h4 style={{ margin: '8px 0 2px 0', fontSize: 13, fontWeight: 700 }}>Blocking Trace Mapped</h4>
@@ -797,7 +797,7 @@ export function PortfolioDashboard() {
       {/* ── Modal: Define Portfolio ───────────────────────────────────────────── */}
       {showPortfolioModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}>
-          <div className="port-card" style={{ width: '100%', maxWidth: 500, background: '#0a0d0d', border: '1px solid rgba(99, 102, 241, 0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="port-card" style={{ width: '100%', maxWidth: 500, background: '#0a0d0d', border: '1px solid rgba(115, 66, 226, 0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 800 }}>Define New Portfolio</h3>
             
             <form onSubmit={handleCreatePortfolio} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -845,7 +845,7 @@ export function PortfolioDashboard() {
       {/* ── Modal: Link Strategic Objective ──────────────────────────────────── */}
       {showLinkObjectiveModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}>
-          <div className="port-card" style={{ width: '100%', maxWidth: 450, background: '#0a0d0d', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div className="port-card" style={{ width: '100%', maxWidth: 450, background: '#0a0d0d', border: '1px solid rgba(115, 66, 226, 0.3)' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 800 }}>Link Strategic Objective</h3>
             
             <form onSubmit={handleLinkObjective} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -871,7 +871,7 @@ export function PortfolioDashboard() {
       {/* ── Modal: Link Dependency ───────────────────────────────────────────── */}
       {showDependencyModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}>
-          <div className="port-card" style={{ width: '100%', maxWidth: 460, background: '#0a0d0d', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div className="port-card" style={{ width: '100%', maxWidth: 460, background: '#0a0d0d', border: '1px solid rgba(115, 66, 226, 0.3)' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 800 }}>Link Roadmap Dependency</h3>
             
             <form onSubmit={handleCreateDependency} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

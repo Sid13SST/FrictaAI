@@ -199,10 +199,10 @@ export const LiveIntelligence: React.FC = () => {
       <div 
         className="relative overflow-hidden p-6 md:p-8 rounded-3xl border border-white/[0.04] shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]"
         style={{
-          background: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 50%), radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.04), transparent 50%), #09090b',
+          background: 'radial-gradient(circle at top right, rgba(115, 66, 226, 0.08), transparent 50%), radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.04), transparent 50%), #09090b',
         }}
       >
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-mono font-bold tracking-wider shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-mono font-bold tracking-wider shadow-[0_0_15px_rgba(115,66,226,0.1)]">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
           UX OBSERVABILITY ACTIVE
         </div>
@@ -210,7 +210,7 @@ export const LiveIntelligence: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 z-10 relative">
           <div className="space-y-2">
             <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(115,66,226,0.15)]">
                 <Cpu className="w-5 h-5" />
               </div>
               Real-Time Command Center
@@ -254,7 +254,7 @@ export const LiveIntelligence: React.FC = () => {
               <Icon className="w-4 h-4" />
               {tab.label}
               {active && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-400 shadow-[0_0_8px_rgba(115,66,226,0.8)]" />
               )}
             </button>
           );

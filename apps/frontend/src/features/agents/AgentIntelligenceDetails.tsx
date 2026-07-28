@@ -144,9 +144,9 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
         </div>
 
         {/* Dynamic Panels: Trace logs, Findings list, Delegation logs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
           {/* Active findings panel */}
-          <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
+          <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 min-h-0">
             <div className="flex items-center justify-between border-b border-[#222226] pb-3">
               <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">Generated Findings</h4>
               <span className="text-[9.5px] font-mono text-[#7342e2] bg-[#7342e2]/10 border border-[#7342e2]/20 px-2 py-0.5 rounded font-bold">
@@ -154,7 +154,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[300px] flex flex-col gap-3 pr-1">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
               {currentAgent.findings.length === 0 ? (
                 <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic">
                   No layout or heuristic defects flagged.
@@ -185,7 +185,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
           </div>
 
           {/* Reasoning traces panel */}
-          <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
+          <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4 min-h-0">
             <div className="flex items-center justify-between border-b border-[#222226] pb-3">
               <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">Reasoning Traces</h4>
               <span className="text-[9.5px] font-mono text-zinc-500">
@@ -193,7 +193,7 @@ export const AgentIntelligenceDetails: React.FC<AgentIntelligenceDetailsProps> =
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[300px] flex flex-col gap-3 pr-1">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
               {currentAgent.reasoningTraces.length === 0 ? (
                 <div className="text-center py-12 text-zinc-600 font-mono text-[11px] italic">
                   No execution or reasoning logs captured.

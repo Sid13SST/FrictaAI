@@ -147,7 +147,7 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
     <div
       className="relative rounded-3xl overflow-hidden"
       style={{
-        background: 'radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(168,85,247,0.06) 0%, transparent 50%), rgba(255,255,255,0.015)',
+        background: 'radial-gradient(ellipse at 20% 50%, rgba(115,66,226,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(168,85,247,0.06) 0%, transparent 50%), rgba(255,255,255,0.015)',
         border: '1px solid rgba(255,255,255,0.06)',
         minHeight: '420px',
       }}
@@ -157,7 +157,7 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
         <div
           className="absolute w-96 h-96 rounded-full opacity-20"
           style={{
-            background: 'radial-gradient(circle, rgba(99,102,241,0.4), transparent)',
+            background: 'radial-gradient(circle, rgba(115,66,226,0.4), transparent)',
             top: '-10%', left: '-5%',
             animation: 'float1 8s ease-in-out infinite',
           }}
@@ -184,7 +184,7 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
         @keyframes float1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -20px) scale(1.05); } }
         @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-15px, 15px) scale(0.97); } }
         @keyframes float3 { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(10px, -10px); } 66% { transform: translate(-10px, 10px); } }
-        @keyframes glow-pulse { 0%, 100% { box-shadow: 0 0 30px rgba(99,102,241,0.3), 0 0 60px rgba(99,102,241,0.1); } 50% { box-shadow: 0 0 50px rgba(99,102,241,0.5), 0 0 100px rgba(99,102,241,0.2); } }
+        @keyframes glow-pulse { 0%, 100% { box-shadow: 0 0 30px rgba(115,66,226,0.3), 0 0 60px rgba(115,66,226,0.1); } 50% { box-shadow: 0 0 50px rgba(115,66,226,0.5), 0 0 100px rgba(115,66,226,0.2); } }
       `}</style>
 
       {/* Content */}
@@ -193,12 +193,12 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
         <div
           className="w-24 h-24 rounded-3xl flex items-center justify-center mb-8 relative"
           style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.1))',
-            border: '1px solid rgba(99,102,241,0.3)',
+            background: 'linear-gradient(135deg, rgba(115,66,226,0.2), rgba(168,85,247,0.1))',
+            border: '1px solid rgba(115,66,226,0.3)',
             animation: 'glow-pulse 3s ease-in-out infinite',
           }}
         >
-          <Sparkles className="w-10 h-10" style={{ color: '#818cf8' }} />
+          <Sparkles className="w-10 h-10" style={{ color: '#9B72FA' }} />
           {/* Corner dots */}
           <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-400 opacity-60" />
           <div className="absolute bottom-2 left-2 w-1.5 h-1.5 rounded-full bg-purple-400 opacity-40" />
@@ -215,7 +215,7 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
         <div className="flex flex-wrap gap-2 justify-center mb-10">
           {[
             { icon: <Zap className="w-3 h-3" />, label: 'AI-Powered', color: '#f59e0b' },
-            { icon: <Globe className="w-3 h-3" />, label: 'Any Website', color: '#6366f1' },
+            { icon: <Globe className="w-3 h-3" />, label: 'Any Website', color: '#7342E2' },
             { icon: <TrendingUp className="w-3 h-3" />, label: 'UX Insights', color: '#10b981' },
           ].map(({ icon, label, color }) => (
             <span
@@ -234,11 +234,11 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
           onClick={onCreateProject}
           className="group flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-bold text-white transition-all duration-300 hover:scale-105 active:scale-100"
           style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            boxShadow: '0 0 40px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+            background: 'linear-gradient(135deg, #7342E2, #8b5cf6)',
+            boxShadow: '0 0 40px rgba(115,66,226,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
           }}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 60px rgba(99,102,241,0.5), inset 0 1px 0 rgba(255,255,255,0.2)')}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 0 40px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)')}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 60px rgba(115,66,226,0.5), inset 0 1px 0 rgba(255,255,255,0.2)')}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 0 40px rgba(115,66,226,0.35), inset 0 1px 0 rgba(255,255,255,0.15)')}
         >
           <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
           Create Your First Project
@@ -254,7 +254,7 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
     {/* Teaser cards row */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {[
-        { icon: <Activity className="w-5 h-5" />, title: 'Automated Audits', desc: 'AI agents crawl your site and surface UX issues automatically.', color: '#6366f1' },
+        { icon: <Activity className="w-5 h-5" />, title: 'Automated Audits', desc: 'AI agents crawl your site and surface UX issues automatically.', color: '#7342E2' },
         { icon: <TrendingUp className="w-5 h-5" />, title: 'Longitudinal Tracking', desc: 'Track UX quality over time across releases and experiments.', color: '#10b981' },
         { icon: <Sparkles className="w-5 h-5" />, title: 'Redesign Suggestions', desc: 'Get AI-powered fix recommendations with code snippets.', color: '#f59e0b' },
       ].map(({ icon, title, desc, color }) => (
@@ -281,7 +281,7 @@ const EmptyState = ({ onCreateProject }: { onCreateProject: () => void }) => (
 const StatusBadge = ({ status }: { status: string }) => {
   const cfg = {
     RUNNING:   { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b', dot: '#f59e0b', label: 'Running'   },
-    PENDING:   { bg: 'rgba(99,102,241,0.1)',  color: '#818cf8', dot: '#6366f1', label: 'Queued'    },
+    PENDING:   { bg: 'rgba(115,66,226,0.1)',  color: '#9B72FA', dot: '#7342E2', label: 'Queued'    },
     COMPLETED: { bg: 'rgba(16,185,129,0.1)',  color: '#10b981', dot: '#10b981', label: 'Done'      },
     FAILED:    { bg: 'rgba(239,68,68,0.1)',   color: '#f87171', dot: '#ef4444', label: 'Failed'    },
   }[status] ?? { bg: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', dot: '#555', label: status };
@@ -346,7 +346,7 @@ export const Dashboard = () => {
   const runningWorkflows = workflows?.filter(w => w.status === 'RUNNING' || w.status === 'PENDING').length || 0;
 
   const stats = [
-    { label: 'Total Projects',   value: totalProjects,       icon: <Folder className="w-4 h-4" />,       accentColor: '#818cf8', glowColor: '#6366f1', trend: 'Active projects' },
+    { label: 'Total Projects',   value: totalProjects,       icon: <Folder className="w-4 h-4" />,       accentColor: '#9B72FA', glowColor: '#7342E2', trend: 'Active projects' },
     { label: 'Total Runs',       value: totalWorkflows,      icon: <Activity className="w-4 h-4" />,      accentColor: '#34d399', glowColor: '#10b981', trend: 'Across all projects' },
     { label: 'Completed',        value: completedWorkflows,  icon: <CheckCircle2 className="w-4 h-4" />,  accentColor: '#34d399', glowColor: '#10b981', trend: 'Successful audits' },
     { label: 'Active Sessions',  value: runningWorkflows,    icon: <Clock className="w-4 h-4" />,         accentColor: '#fbbf24', glowColor: '#f59e0b', trend: 'Running now' },
@@ -359,7 +359,7 @@ export const Dashboard = () => {
       `}</style>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Overview</h1>
           <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -369,10 +369,10 @@ export const Dashboard = () => {
         <button
           id="run-new-test-btn"
           onClick={() => navigate('/app/workflow')}
-          className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-300 hover:scale-105"
+          className="group flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-300 hover:scale-105 self-start sm:self-auto"
           style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            boxShadow: '0 0 24px rgba(99,102,241,0.25)',
+            background: 'linear-gradient(135deg, #7342E2, #8b5cf6)',
+            boxShadow: '0 0 24px rgba(115,66,226,0.25)',
           }}
         >
           <Plus className="w-3.5 h-3.5 transition-transform duration-300 group-hover:rotate-90" />
@@ -415,7 +415,7 @@ export const Dashboard = () => {
                 <Link
                   to="/app/reports"
                   className="flex items-center gap-1 text-xs font-semibold transition-colors hover:text-white"
-                  style={{ color: 'rgba(99,102,241,0.8)' }}
+                  style={{ color: 'rgba(115,66,226,0.8)' }}
                 >
                   View all <ArrowRight className="w-3 h-3" />
                 </Link>
@@ -430,9 +430,9 @@ export const Dashboard = () => {
               <div className="flex-1 flex flex-col items-center justify-center py-16 px-8 text-center">
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                  style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}
+                  style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.2)' }}
                 >
-                  <Activity className="w-6 h-6" style={{ color: 'rgba(99,102,241,0.6)' }} />
+                  <Activity className="w-6 h-6" style={{ color: 'rgba(115,66,226,0.6)' }} />
                 </div>
                 <p className="text-sm font-semibold text-white mb-1">No runs yet</p>
                 <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.35)' }}>
@@ -441,7 +441,7 @@ export const Dashboard = () => {
                 <button
                   onClick={() => navigate('/app/workflow')}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:scale-105"
-                  style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}
+                  style={{ background: 'rgba(115,66,226,0.15)', border: '1px solid rgba(115,66,226,0.3)' }}
                 >
                   Run First Audit
                 </button>
@@ -467,7 +467,7 @@ export const Dashboard = () => {
                       <Link
                         to="/app/reports"
                         className="flex items-center gap-1 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ color: 'rgba(99,102,241,0.8)' }}
+                        style={{ color: 'rgba(115,66,226,0.8)' }}
                       >
                         View <ArrowRight className="w-3 h-3" />
                       </Link>
@@ -486,11 +486,11 @@ export const Dashboard = () => {
           <div
             className="rounded-2xl p-5 relative overflow-hidden"
             style={{
-              background: 'radial-gradient(ellipse at top right, rgba(99,102,241,0.1), transparent 60%), rgba(255,255,255,0.02)',
-              border: '1px solid rgba(99,102,241,0.15)',
+              background: 'radial-gradient(ellipse at top right, rgba(115,66,226,0.1), transparent 60%), rgba(255,255,255,0.02)',
+              border: '1px solid rgba(115,66,226,0.15)',
             }}
           >
-            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.08), transparent)', transform: 'translate(30%, -30%)' }} />
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(115,66,226,0.08), transparent)', transform: 'translate(30%, -30%)' }} />
             <div className="relative">
               <h2 className="text-sm font-bold text-white mb-4">Quick Actions</h2>
               <div className="space-y-2.5">
@@ -498,9 +498,9 @@ export const Dashboard = () => {
                   id="configure-run-btn"
                   onClick={() => navigate('/app/workflow')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 group hover:scale-[1.01]"
-                  style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
+                  style={{ background: 'rgba(115,66,226,0.1)', border: '1px solid rgba(115,66,226,0.2)' }}
                 >
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(115,66,226,0.15)' }}>
                     <Zap className="w-4 h-4 text-indigo-400" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -536,17 +536,19 @@ export const Dashboard = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-white">Projects</h2>
-              <span
-                className="text-[11px] font-semibold px-2 py-1 rounded-full"
-                style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8' }}
+              <Link
+                to="/app/projects"
+                className="text-[11px] font-semibold px-2 py-1 rounded-full transition-colors hover:text-white"
+                style={{ background: 'rgba(115,66,226,0.1)', color: '#9B72FA' }}
               >
                 {totalProjects}
-              </span>
+              </Link>
             </div>
             <div className="space-y-2">
               {projects.slice(0, 3).map((p) => (
                 <div
                   key={p.id}
+                  onClick={() => navigate(`/app/projects/${p.id}`)}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 group cursor-pointer"
                   style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.03)' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
@@ -554,7 +556,7 @@ export const Dashboard = () => {
                 >
                   <div
                     className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
+                    style={{ background: 'rgba(115,66,226,0.1)', border: '1px solid rgba(115,66,226,0.2)' }}
                   >
                     <Globe className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
@@ -565,9 +567,9 @@ export const Dashboard = () => {
                 </div>
               ))}
               {projects.length > 3 && (
-                <p className="text-center text-[11px] pt-1" style={{ color: 'rgba(99,102,241,0.6)' }}>
+                <Link to="/app/projects" className="block text-center text-[11px] pt-1 transition-colors hover:text-white" style={{ color: 'rgba(115,66,226,0.6)' }}>
                   +{projects.length - 3} more
-                </p>
+                </Link>
               )}
             </div>
           </div>
