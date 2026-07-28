@@ -13,6 +13,7 @@ import { ReplayExperience } from '../components/Landing/ReplayExperience';
 import { AiIntelligence } from '../components/Landing/AiIntelligence';
 import { MetricsSection } from '../components/Landing/MetricsSection';
 import { DeveloperExperience } from '../components/Landing/DeveloperExperience';
+import { EnterpriseSection } from '../components/Landing/EnterpriseSection';
 import { TestimonialsSection } from '../components/Landing/TestimonialsSection';
 import { PricingFAQSection } from '../components/Landing/PricingFAQSection';
 import { FooterCTA } from '../components/Landing/FooterCTA';
@@ -52,6 +53,7 @@ export const Landing = () => {
         <AiIntelligence />
         <MetricsSection />
         <DeveloperExperience />
+        <EnterpriseSection />
         <TestimonialsSection />
         <PricingFAQSection />
       </main>

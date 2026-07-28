@@ -126,8 +126,9 @@ export function ProductDemoSection() {
           {/* Main Body */}
           <div className="flex-1 flex overflow-hidden">
             
-            {/* Left: Thought Stream */}
-            <div className="w-[300px] border-r border-white/10 bg-background-deep/50 flex flex-col p-4">
+            {/* Left: Thought Stream (hidden on narrow viewports — the fixed
+                300px width doesn't leave room for the core mockup below md) */}
+            <div className="hidden md:flex w-[300px] border-r border-white/10 bg-background-deep/50 flex-col p-4">
               <div className="flex items-center gap-2 mb-4">
                 <BrainCircuit className="w-4 h-4 text-accent-secondary" />
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Agent Reasoner</span>
@@ -289,8 +290,9 @@ export function ProductDemoSection() {
               </div>
             </div>
 
-            {/* Right: Findings */}
-            <div className="w-[300px] border-l border-white/10 bg-background-deep/50 p-4 flex flex-col">
+            {/* Right: Findings (hidden below lg — three fixed-width panels
+                don't fit alongside the mockup on tablet/mobile) */}
+            <div className="hidden lg:flex w-[300px] border-l border-white/10 bg-background-deep/50 p-4 flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-white" />

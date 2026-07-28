@@ -13,6 +13,9 @@ export function CustomCursor() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Hide default cursor only when this component is mounted (i.e. on Landing page)
+    document.body.style.cursor = 'none';
+
     const moveCursor = (e: MouseEvent) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
@@ -41,6 +44,7 @@ export function CustomCursor() {
     document.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
+      document.body.style.cursor = 'auto';
       window.removeEventListener('mousemove', moveCursor);
       window.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mouseleave', handleMouseLeave);

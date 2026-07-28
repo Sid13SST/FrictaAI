@@ -69,7 +69,7 @@ export function ReplayExperience() {
               <motion.div 
                 className="w-full h-12 rounded flex items-center justify-center font-bold text-white transition-colors duration-300"
                 animate={{
-                  backgroundColor: progress > 45 && progress < 55 ? "#FF5F56" : "#4f46e5"
+                  backgroundColor: progress > 45 && progress < 55 ? "#FF5F56" : "#5C2FC2"
                 }}
               >
                 Checkout

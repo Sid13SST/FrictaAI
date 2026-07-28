@@ -8,7 +8,7 @@
   --background: 150 25% 3%;
   --foreground: 0 0% 98%;
   --hero-sub: 40 6% 82%;
-  --accent: #6366f1;
+  --accent: #7342E2;
 }
 
 /* ─── Base Layer ───────────────────────────────────────────────────────────── */
@@ -38,20 +38,20 @@
     pointer-events: none;
   }
 
+  html, body {
+    /* Safety net: decorative absolutely-positioned elements (glows, orbit
+       diagrams, fixed-width mockups) should never be able to force a
+       page-wide horizontal scrollbar on narrow viewports. */
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background: #050505;
     color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    cursor: none;
-  }
-
-  /* Exclude cursor:none on touch devices */
-  @media (pointer: coarse) {
-    body {
-      cursor: auto;
-    }
   }
 
   ::selection {
@@ -121,13 +121,13 @@
 .btn-hero-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 24px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 24px rgba(115, 66, 226, 0.08);
 }
 
 /* ─── Primary CTA Button ──────────────────────────────────────────────────── */
 
 .btn-primary-cta {
-  background: #4f46e5;
+  background: #5C2FC2;
   color: #ffffff;
   font-weight: 700;
   text-transform: uppercase;
@@ -136,8 +136,8 @@
 }
 
 .btn-primary-cta:hover {
-  background: #6366f1;
-  box-shadow: 0 0 32px rgba(99, 102, 241, 0.2);
+  background: #7342E2;
+  box-shadow: 0 0 32px rgba(115, 66, 226, 0.2);
   transform: translateY(-1px);
 }
 
@@ -153,21 +153,31 @@
   );
 }
 
-/* ─── Custom Scrollbar Utilities ───────────────────────────────────────────── */
+/* ─── Global Scrollbar Customization ────────────────────────────────────────── */
 
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-.scrollbar-thin::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.16);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Fallback for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 /* ─── Blur Fade Up Animation ─────────────────────────────────────────────── */

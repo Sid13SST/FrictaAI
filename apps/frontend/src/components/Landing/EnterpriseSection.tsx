@@ -4,15 +4,15 @@ import { Shield, Key, Users, Lock } from 'lucide-react';
 const features = [
   {
     icon: Shield,
-    title: 'SOC2 Type II Certified',
-    desc: 'Enterprise-grade security controls and continuous compliance monitoring.',
+    title: 'Enterprise-Grade Security',
+    desc: 'Encrypted data at rest and in transit, with continuous compliance monitoring built in.',
     color: 'text-[#7342e2]'
   },
   {
     icon: Key,
     title: 'SAML & SSO',
     desc: 'Integrate with Okta, Azure AD, Google Workspace, and other major identity providers.',
-    color: 'text-[#4f46e5]'
+    color: 'text-[#5C2FC2]'
   },
   {
     icon: Users,

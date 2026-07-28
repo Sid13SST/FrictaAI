@@ -51,7 +51,7 @@ export function Navbar() {
 
           {/* Actions */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link to="/sign-in" className="text-[13px] font-inter font-medium text-white/70 hover:text-white px-4 py-2 transition-colors duration-200">
+            <Link to="/login" className="text-[13px] font-inter font-medium text-white/70 hover:text-white px-4 py-2 transition-colors duration-200">
               Sign In
             </Link>
             
@@ -96,7 +96,7 @@ export function Navbar() {
               </a>
             ))}
             <div className="mt-8 flex flex-col items-center gap-4">
-              <Link to="/sign-in" onClick={() => setMobileMenuOpen(false)} className="text-lg text-text-secondary">Sign In</Link>
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-lg text-text-secondary">Sign In</Link>
               <Link 
                 to="/app" 
                 onClick={() => setMobileMenuOpen(false)}

@@ -18,7 +18,6 @@ export function ScrambleText({ text, delay = 0, triggered = true, className = ''
   useEffect(() => {
     if (!triggered) return;
 
-    let timeout: ReturnType<typeof setTimeout>;
     let interval: ReturnType<typeof setInterval>;
 
     const startAnimation = () => {
@@ -52,7 +51,7 @@ export function ScrambleText({ text, delay = 0, triggered = true, className = ''
       }, 25);
     };
 
-    timeout = setTimeout(startAnimation, delay);
+    const timeout = setTimeout(startAnimation, delay);
 
     return () => {
       clearTimeout(timeout);
