@@ -20,6 +20,9 @@ import {
   scheduleWorkflow,
 } from '@fricta/agent';
 import { Page } from 'playwright-core';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership, verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const agentRoutes = new Hono();
 
@@ -218,12 +221,19 @@ async function saveAction(
 // ─── POST /workflow/run ───────────────────────────────────────────────────────
 
 agentRoutes.post('/workflow/run', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const body = await c.req.json().catch(() => ({}));
   const { projectId, url, goal, persona, variables } = body;
 
   if (!projectId || !url || !goal) {
     return c.json({ error: 'projectId, url, and goal are required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const resolvedPersona = persona || 'Tech-Savvy User';
   let sessionId = generateId();
@@ -322,6 +332,12 @@ agentRoutes.post('/workflow/run', async (c) => {
 agentRoutes.get('/workflow/:id/status', async (c) => {
   const id = c.req.param('id');
 
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyWorkflowOwnership(user.userId, id);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   // Try DB first (skipped silently if circuit is open)
   if (isDbAvailable()) {
     try {
@@ -368,6 +384,12 @@ agentRoutes.get('/workflow/:id/status', async (c) => {
 agentRoutes.get('/workflow/:id/thoughts', async (c) => {
   const id = c.req.param('id');
 
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyWorkflowOwnership(user.userId, id);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   if (isDbAvailable()) {
     try {
       const thoughts = await prisma.agentThought.findMany({
@@ -389,6 +411,12 @@ agentRoutes.get('/workflow/:id/thoughts', async (c) => {
 agentRoutes.get('/workflow/:id/actions', async (c) => {
   const id = c.req.param('id');
 
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyWorkflowOwnership(user.userId, id);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   if (isDbAvailable()) {
     try {
       const actions = await prisma.agentAction.findMany({
@@ -409,6 +437,13 @@ agentRoutes.get('/workflow/:id/actions', async (c) => {
 
 agentRoutes.get('/workflow/:id/context', async (c) => {
   const id = c.req.param('id');
+
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyWorkflowOwnership(user.userId, id);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   const snapshot = memContextSnapshots.get(id);
 
   if (!snapshot) {

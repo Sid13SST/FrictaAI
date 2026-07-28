@@ -2,11 +2,16 @@ import { resolveUser } from '../middleware';
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const liveIntelligenceRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
 
-
+// Every route below is scoped to a project (directly via projectId, or
+// indirectly via an anomaly/alert row that carries one) — verify ownership
+// before returning or mutating any data.
 
 /**
  * GET /api/live/anomalies
@@ -20,6 +25,10 @@ liveIntelligenceRoutes.get('/anomalies', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const anomalies = await prisma.uXAnomaly.findMany({
     where: {
@@ -45,6 +54,9 @@ liveIntelligenceRoutes.get('/anomalies', async (c) => {
  * Retrieves detail view of a single anomaly.
  */
 liveIntelligenceRoutes.get('/anomalies/:id', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const anomalyId = c.req.param('id');
 
   const anomaly = await prisma.uXAnomaly.findUnique({
@@ -64,6 +76,10 @@ liveIntelligenceRoutes.get('/anomalies/:id', async (c) => {
     return c.json({ error: 'Anomaly not found' }, 404);
   }
 
+  const ownership = await verifyProjectOwnership(user.userId, anomaly.projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   return c.json({ anomaly });
 });
 
@@ -72,11 +88,18 @@ liveIntelligenceRoutes.get('/anomalies/:id', async (c) => {
  * Retrieves captured behavioral patterns.
  */
 liveIntelligenceRoutes.get('/behavior', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
 
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const patterns = await prisma.behavioralPattern.findMany({
     where: { projectId },
@@ -99,12 +122,19 @@ liveIntelligenceRoutes.get('/behavior', async (c) => {
  * Retrieves latest workflow survivability scores.
  */
 liveIntelligenceRoutes.get('/survivability', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
   const limit = parseInt(c.req.query('limit') || '30');
 
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const metrics = await prisma.survivabilityMetric.findMany({
     where: { projectId },
@@ -120,11 +150,18 @@ liveIntelligenceRoutes.get('/survivability', async (c) => {
  * Retrieves production performance baselines.
  */
 liveIntelligenceRoutes.get('/baselines', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
 
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const baselines = await prisma.productionBaseline.findMany({
     where: { projectId },
@@ -139,12 +176,19 @@ liveIntelligenceRoutes.get('/baselines', async (c) => {
  * Retrieves recent intelligence alerts.
  */
 liveIntelligenceRoutes.get('/alerts', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
   const limit = parseInt(c.req.query('limit') || '20');
 
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const alerts = await prisma.intelligenceAlert.findMany({
     where: { projectId },
@@ -160,7 +204,17 @@ liveIntelligenceRoutes.get('/alerts', async (c) => {
  * Marks an alert as read.
  */
 liveIntelligenceRoutes.post('/alerts/:id/read', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const alertId = c.req.param('id');
+
+  const existing = await prisma.intelligenceAlert.findUnique({ where: { id: alertId } });
+  if (!existing) return ApiErrors.notFound(c);
+
+  const ownership = await verifyProjectOwnership(user.userId, existing.projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   try {
     const alert = await prisma.intelligenceAlert.update({
@@ -178,11 +232,18 @@ liveIntelligenceRoutes.post('/alerts/:id/read', async (c) => {
  * Retrieves all correlation findings.
  */
 liveIntelligenceRoutes.get('/correlations', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
 
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const correlations = await prisma.correlatedBehavior.findMany({
     where: {
@@ -202,10 +263,17 @@ liveIntelligenceRoutes.get('/correlations', async (c) => {
  * Manually executes the live detection analysis pipeline on all active sessions of a project.
  */
 liveIntelligenceRoutes.post('/sync', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   try {
     const { LiveAnomalyDetector } = await import('@fricta/live-intelligence');

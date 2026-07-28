@@ -1,8 +1,30 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { HistoricalIntelligencePipeline } from '@fricta/historical-intelligence';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const historicalRoutes = new Hono()
+  /**
+   * Every route below is scoped to a projectId (query param on GETs, path
+   * param on the /analyze POST) — verify ownership before touching any data.
+   */
+  .use('*', async (c, next) => {
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+
+    const projectId = c.req.query('projectId') || c.req.param('projectId');
+    if (!projectId) {
+      return c.json({ error: 'Missing projectId query parameter' }, 400);
+    }
+
+    const ownership = await verifyProjectOwnership(user.userId, projectId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
+    await next();
+  })
   /**
    * GET /api/historical/patterns
    * Returns all recurring UX friction patterns for a project.

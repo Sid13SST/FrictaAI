@@ -6,6 +6,7 @@ import { RealtimeEventBus } from '@fricta/realtime';
 import { PredictiveForecastingEngine } from '@fricta/predictive-engine';
 import { PredictiveIntelligenceEngine } from '@fricta/predictive-intelligence';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 const guard = new RBACAuthorizationGuard(prisma);
 
@@ -19,10 +20,15 @@ const engine = new PredictiveForecastingEngine(prisma);
  * Returns all historical baselines for a project.
  */
 predictiveRoutes.get('/baselines', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const baselines = await prisma.historicalBaseline.findMany({
     where: { projectId },
     orderBy: { createdAt: 'desc' },
@@ -35,10 +41,15 @@ predictiveRoutes.get('/baselines', async (c) => {
  * Returns all workflow forecasts for a project.
  */
 predictiveRoutes.get('/forecasts', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const forecasts = await prisma.workflowForecast.findMany({
     where: { projectId },
     orderBy: { createdAt: 'desc' },
@@ -51,12 +62,17 @@ predictiveRoutes.get('/forecasts', async (c) => {
  * Triggers a new predictive forecasting calculation.
  */
 predictiveRoutes.post('/forecasting', async (c) => {
+  const user = await resolveUser(c);
   const body = await c.req.json().catch(() => ({}));
   const { projectId, workflowPath, baselineName } = body;
 
   if (!projectId || !workflowPath) {
     return c.json({ error: 'projectId and workflowPath are required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   try {
     const result = await engine.execute({
@@ -75,6 +91,7 @@ predictiveRoutes.post('/forecasting', async (c) => {
  * Returns predictive risk signals for a forecast session or the project's latest forecast.
  */
 predictiveRoutes.get('/risk', async (c) => {
+  const user = await resolveUser(c);
   const workflowForecastId = c.req.query('workflowForecastId');
   const projectId = c.req.query('projectId');
 
@@ -83,6 +100,18 @@ predictiveRoutes.get('/risk', async (c) => {
   }
 
   let forecastId = workflowForecastId;
+
+  if (forecastId) {
+    const forecast = await prisma.workflowForecast.findUnique({ where: { id: forecastId }, select: { projectId: true } });
+    if (!forecast) return c.json({ signals: [] });
+    const ownership = await verifyProjectOwnership(user?.id || '', forecast.projectId);
+    if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+    if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  } else if (projectId) {
+    const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+    if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+    if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
 
   if (!forecastId && projectId) {
     const latestForecast = await prisma.workflowForecast.findFirst({
@@ -108,10 +137,15 @@ predictiveRoutes.get('/risk', async (c) => {
  * Returns regression events for a project.
  */
 predictiveRoutes.get('/regressions', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const regressions = await prisma.regressionEvent.findMany({
     where: { projectId },
@@ -133,8 +167,13 @@ predictiveRoutes.get('/survivability', async (c) => {
     return c.json({ error: 'Either workflowForecastId or projectId is required' }, 400);
   }
 
+  const user = await resolveUser(c);
+
   if (projectId) {
-    const user = await resolveUser(c);
+    const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+    if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+    if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
     if (workspaceId) {
       const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
       if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -145,6 +184,12 @@ predictiveRoutes.get('/survivability', async (c) => {
     });
     return c.json({ signals });
   }
+
+  const forecast = await prisma.workflowForecast.findUnique({ where: { id: workflowForecastId }, select: { projectId: true } });
+  if (!forecast) return c.json({ forecasts: [] });
+  const forecastOwnership = await verifyProjectOwnership(user?.id || '', forecast.projectId);
+  if (forecastOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (forecastOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const forecasts = await prisma.survivabilityForecast.findMany({
     where: { workflowForecastId },
@@ -158,10 +203,17 @@ predictiveRoutes.get('/survivability', async (c) => {
  * GET /abandonment
  */
 predictiveRoutes.get('/abandonment', async (c) => {
+  const user = await resolveUser(c);
   const workflowForecastId = c.req.query('workflowForecastId');
   if (!workflowForecastId) {
     return c.json({ error: 'workflowForecastId is required' }, 400);
   }
+
+  const forecast = await prisma.workflowForecast.findUnique({ where: { id: workflowForecastId }, select: { projectId: true } });
+  if (!forecast) return c.json({ predictions: [] });
+  const ownership = await verifyProjectOwnership(user?.id || '', forecast.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const predictions = await prisma.abandonmentPrediction.findMany({
     where: { workflowForecastId },
@@ -175,10 +227,17 @@ predictiveRoutes.get('/abandonment', async (c) => {
  * GET /timelines
  */
 predictiveRoutes.get('/timelines', async (c) => {
+  const user = await resolveUser(c);
   const workflowForecastId = c.req.query('workflowForecastId');
   if (!workflowForecastId) {
     return c.json({ error: 'workflowForecastId is required' }, 400);
   }
+
+  const forecast = await prisma.workflowForecast.findUnique({ where: { id: workflowForecastId }, select: { projectId: true } });
+  if (!forecast) return c.json({ events: [] });
+  const ownership = await verifyProjectOwnership(user?.id || '', forecast.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const events = await prisma.predictiveTimelineEvent.findMany({
     where: { workflowForecastId },
@@ -193,7 +252,14 @@ predictiveRoutes.get('/timelines', async (c) => {
  * Real-time SSE streaming for live predictive updates.
  */
 predictiveRoutes.get('/stream/:workflowForecastId', async (c) => {
+  const user = await resolveUser(c);
   const workflowForecastId = c.req.param('workflowForecastId');
+
+  const forecast = await prisma.workflowForecast.findUnique({ where: { id: workflowForecastId }, select: { projectId: true } });
+  if (!forecast) return c.json({ error: 'Forecast not found' }, 404);
+  const ownership = await verifyProjectOwnership(user?.id || '', forecast.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   c.header('Content-Type', 'text/event-stream');
   c.header('Cache-Control', 'no-cache');
@@ -263,6 +329,10 @@ predictiveRoutes.post('/forecast', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -302,6 +372,10 @@ predictiveRoutes.get('/risks', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -326,6 +400,10 @@ predictiveRoutes.get('/cognitive', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -348,6 +426,10 @@ predictiveRoutes.get('/failures', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
@@ -374,6 +456,10 @@ predictiveRoutes.get('/trends', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -391,8 +477,15 @@ predictiveRoutes.get('/trends', async (c) => {
  * Fetch evidence linkages supporting predictions.
  */
 predictiveRoutes.get('/evidence', async (c) => {
+  const user = await resolveUser(c);
   const predictionId = c.req.query('predictionId');
   if (!predictionId) return c.json({ error: 'predictionId is required' }, 400);
+
+  const prediction = await prisma.uXFailurePrediction.findUnique({ where: { id: predictionId }, select: { projectId: true } });
+  if (!prediction) return c.json({ error: 'Prediction not found' }, 404);
+  const ownership = await verifyProjectOwnership(user?.id || '', prediction.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const evidence = await prisma.forecastEvidence.findMany({
     where: { predictionId }

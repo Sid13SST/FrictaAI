@@ -15,6 +15,7 @@ import {
   WorkspaceAnalyticsManager,
   BillingLimitManager
 } from '@fricta/workspace-core';
+import { verifyProjectOwnership, verifyWorkflowOwnership } from '../guards/ownership';
 
 export const workspaceCoreRoutes = new Hono();
 
@@ -97,6 +98,9 @@ workspaceCoreRoutes.post('/workspaces', async (c) => {
     return c.json({ error: 'organizationId and name are required' }, 400);
   }
 
+  const orgMembership = await prisma.workspaceMember.findFirst({ where: { organizationId, userId: user.id } });
+  if (!orgMembership) return c.json({ error: 'Forbidden: not a member of this organization' }, 403);
+
   // Check billing limit before workspace creation
   const canCreate = await billingManager.canCreateWorkspace(organizationId);
   if (!canCreate) {
@@ -124,8 +128,13 @@ workspaceCoreRoutes.post('/workspaces', async (c) => {
  * Lists all members of a workspace
  */
 workspaceCoreRoutes.get('/workspace/members', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId query parameter is required' }, 400);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const members = await memberManager.getWorkspaceMembers(workspaceId);
   return c.json({ members });
@@ -136,8 +145,13 @@ workspaceCoreRoutes.get('/workspace/members', async (c) => {
  * Lists pending invites
  */
 workspaceCoreRoutes.get('/workspace/invites', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId query parameter is required' }, 400);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const invites = await inviteManager.getWorkspaceInvites(workspaceId);
   return c.json({ invites });
@@ -222,8 +236,13 @@ workspaceCoreRoutes.post('/workspace/invites/decline', async (c) => {
  * Lists projects associated with a workspace
  */
 workspaceCoreRoutes.get('/workspace/projects', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId query parameter is required' }, 400);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const projects = await projectWorkspaceManager.getWorkspaceProjects(workspaceId);
   return c.json({ projects });
@@ -242,6 +261,13 @@ workspaceCoreRoutes.post('/workspace/projects', async (c) => {
     return c.json({ error: 'projectId and workspaceId are required' }, 400);
   }
 
+  const projectOwnership = await verifyProjectOwnership(user.id, projectId);
+  if (projectOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const project = await projectWorkspaceManager.transferProjectToWorkspace(projectId, workspaceId, user.id);
   
   // Broadcast update
@@ -259,8 +285,13 @@ workspaceCoreRoutes.post('/workspace/projects', async (c) => {
  * Gets workspace audit feed
  */
 workspaceCoreRoutes.get('/workspace/activity', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId query parameter is required' }, 400);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const feed = await activityLogManager.getWorkspaceActivities(workspaceId);
   return c.json({ feed });
@@ -271,8 +302,13 @@ workspaceCoreRoutes.get('/workspace/activity', async (c) => {
  * Lists shared investigations in workspace
  */
 workspaceCoreRoutes.get('/workspace/investigations', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId query parameter is required' }, 400);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const investigations = await collaborationManager.getWorkspaceInvestigations(workspaceId);
   return c.json({ investigations });
@@ -290,6 +326,13 @@ workspaceCoreRoutes.post('/workspace/investigations', async (c) => {
   if (!workspaceId || !workflowSessionId || !name) {
     return c.json({ error: 'workspaceId, workflowSessionId, and name are required' }, 400);
   }
+
+  const sessionOwnership = await verifyWorkflowOwnership(user.id, workflowSessionId);
+  if (sessionOwnership === 'NOT_FOUND') return c.json({ error: 'Session not found' }, 404);
+  if (sessionOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
+  const hasSharePerm = await permissionManager.checkPermission(user.id, 'SHARE_INTELLIGENCE', { workspaceId });
+  if (!hasSharePerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const investigation = await collaborationManager.shareInvestigation(
     workspaceId,
@@ -322,14 +365,18 @@ workspaceCoreRoutes.post('/workspace/investigations/:id/comments', async (c) => 
 
   if (!content) return c.json({ error: 'content is required' }, 400);
 
-  const comment = await collaborationManager.addComment(investigationId, user.id, content);
-
-  // Broadcast comment
   const investigation = await prisma.sharedInvestigation.findUnique({
     where: { id: investigationId },
     select: { workspaceId: true },
   });
+  if (!investigation) return c.json({ error: 'Investigation not found' }, 404);
 
+  const hasPerm = await permissionManager.checkPermission(user.id, 'WRITE_ANNOTATION', { workspaceId: investigation.workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
+  const comment = await collaborationManager.addComment(investigationId, user.id, content);
+
+  // Broadcast comment
   if (investigation) {
     RealtimeEventBus.getInstance().publish({
       orchestrationSessionId: investigation.workspaceId,
@@ -346,8 +393,13 @@ workspaceCoreRoutes.post('/workspace/investigations/:id/comments', async (c) => 
  * Gets aggregated team/workspace analytics
  */
 workspaceCoreRoutes.get('/workspace/analytics', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const analytics = await analyticsManager.getWorkspaceAnalytics(workspaceId);
   return c.json({ analytics });
@@ -365,6 +417,9 @@ workspaceCoreRoutes.post('/workspace/presence', async (c) => {
   if (!workspaceId || !activeScreen) {
     return c.json({ error: 'workspaceId and activeScreen are required' }, 400);
   }
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const record = collaborationManager.updatePresence(
     workspaceId,
@@ -391,8 +446,13 @@ workspaceCoreRoutes.post('/workspace/presence', async (c) => {
  * SSE live sync stream
  */
 workspaceCoreRoutes.get('/stream/:workspaceId', async (c) => {
+  const user = await resolveUser(c);
+  if (!user) return c.json({ error: 'User resolve failed' }, 400);
   const workspaceId = c.req.param('workspaceId');
-  
+
+  const hasPerm = await permissionManager.checkPermission(user.id, 'READ_WORKSPACE', { workspaceId });
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   c.header('Content-Type', 'text/event-stream');
   c.header('Cache-Control', 'no-cache');
   c.header('Connection', 'keep-alive');

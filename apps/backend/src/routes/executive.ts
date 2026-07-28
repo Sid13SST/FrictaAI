@@ -11,6 +11,7 @@ import {
   EvidenceResolver
 } from '@fricta/executive-intelligence';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const executiveRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -37,6 +38,11 @@ executiveRoutes.get('/recommendations', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -75,6 +81,10 @@ executiveRoutes.post('/recommendations/:id/decide', async (c) => {
     return c.json({ error: 'projectId and action are required' }, 400);
   }
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
   if (wId) {
     // Requires ANALYTICS WRITE or governance override permission
@@ -103,6 +113,11 @@ executiveRoutes.get('/health', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -132,6 +147,11 @@ executiveRoutes.get('/governance', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -174,6 +194,11 @@ executiveRoutes.get('/risks', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -197,6 +222,11 @@ executiveRoutes.get('/decisions', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -230,6 +260,11 @@ executiveRoutes.get('/evidence/:id', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {

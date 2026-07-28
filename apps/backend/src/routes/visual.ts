@@ -1,14 +1,28 @@
 import { Hono } from 'hono';
 import { PrismaClient } from '@fricta/db';
 import { VisualIntelligenceCoordinator } from '@fricta/visual-intelligence';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const visualRoutes = new Hono();
 const prisma = new PrismaClient();
 const coordinator = new VisualIntelligenceCoordinator(prisma);
 
+async function requireSessionAccess(c: any, sessionId: string) {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const result = await verifyWorkflowOwnership(user.userId, sessionId);
+  if (result === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (result === 'NOT_OWNED') return ApiErrors.forbidden(c);
+  return null;
+}
+
 // Retrieve all visual findings for a session
 visualRoutes.get('/findings/:sessionId', async (c) => {
   const sessionId = c.req.param('sessionId');
+  const accessError = await requireSessionAccess(c, sessionId);
+  if (accessError) return accessError;
   try {
     const findings = await prisma.visualFinding.findMany({
       where: { workflowSessionId: sessionId },
@@ -24,6 +38,8 @@ visualRoutes.get('/findings/:sessionId', async (c) => {
 // Retrieve the visual score for a session
 visualRoutes.get('/scores/:sessionId', async (c) => {
   const sessionId = c.req.param('sessionId');
+  const accessError = await requireSessionAccess(c, sessionId);
+  if (accessError) return accessError;
   try {
     const score = await prisma.visualScore.findFirst({
       where: { workflowSessionId: sessionId },
@@ -39,6 +55,13 @@ visualRoutes.get('/scores/:sessionId', async (c) => {
 // Retrieve visual findings/annotations for a specific screenshot
 visualRoutes.get('/annotations/:screenshotId', async (c) => {
   const screenshotId = c.req.param('screenshotId');
+  const screenshot = await prisma.workflowScreenshot.findUnique({
+    where: { id: screenshotId },
+    select: { workflowSessionId: true }
+  });
+  if (!screenshot) return ApiErrors.notFound(c);
+  const accessError = await requireSessionAccess(c, screenshot.workflowSessionId);
+  if (accessError) return accessError;
   try {
     const findings = await prisma.visualFinding.findMany({
       where: { screenshotId }
@@ -53,6 +76,8 @@ visualRoutes.get('/annotations/:screenshotId', async (c) => {
 // Trigger visual intelligence analysis for a session
 visualRoutes.post('/analyze/:sessionId', async (c) => {
   const sessionId = c.req.param('sessionId');
+  const accessError = await requireSessionAccess(c, sessionId);
+  if (accessError) return accessError;
   const body = await c.req.json().catch(() => ({}));
   const { forceAIVision } = body;
 

@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { startRuntime } from '@fricta/runtime';
 import { logger } from '@fricta/shared';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const runtimeRoutes = new Hono()
   /**
@@ -23,6 +26,11 @@ export const runtimeRoutes = new Hono()
    */
   .get('/telemetry/:sessionId', async (c) => {
     const sessionId = c.req.param('sessionId');
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+    const ownership = await verifyWorkflowOwnership(user.userId, sessionId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
     try {
       const runtime = await startRuntime(prisma);
       const recoveryCount = await runtime.telemetryService.getRecoveryCount(sessionId);

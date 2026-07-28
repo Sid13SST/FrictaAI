@@ -19,10 +19,25 @@ import {
   IntegrationGovernanceLogger
 } from '@fricta/integration-core';
 import { RealtimeEventBus } from '@fricta/realtime';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const integrationRoutes = new Hono();
 
 // ─── Helper: Resolve user ────────────────────────────────────────────────────
+
+// projectId-scoped integration data (Figma/Jira/Linear/GitHub/Notion/
+// Productboard links and evidence attachments) — these DO have a real
+// per-project owner, unlike WorkspaceIntegration itself (see note below).
+async function requireProjectAccess(c: any, projectId: string) {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const result = await verifyProjectOwnership(user.userId, projectId);
+  if (result === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (result === 'NOT_OWNED') return ApiErrors.forbidden(c);
+  return null;
+}
 
 
 function publishIntegrationEvent(eventType: string, payload: any): void {
@@ -130,6 +145,9 @@ integrationRoutes.post('/figma/link', async (c) => {
     return c.json({ error: 'projectId, frameNodeId, replayContext required' }, 400);
   }
 
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
+
   const canPush = await IntegrationPermissionGuard.canPushEvidence(user?.id || '', workspaceId || null);
   if (!canPush) return c.json({ error: 'Forbidden' }, 403);
 
@@ -153,6 +171,9 @@ integrationRoutes.post('/figma/attach', async (c) => {
     return c.json({ error: 'projectId, frameNodeId, finding required' }, 400);
   }
 
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
+
   const attachment = await FigmaConnector.attachFindingToFrame(projectId, connectionId || null, frameNodeId, finding);
 
   await IntegrationGovernanceLogger.log('FIGMA', 'EVIDENCE_ATTACHED', `Finding attached to Figma frame ${frameNodeId}`, workspaceId || null, user?.id, attachment.id);
@@ -169,6 +190,9 @@ integrationRoutes.post('/jira/ticket', async (c) => {
   if (!connectionId || !projectId || !finding || !replayContext || !jiraConfig) {
     return c.json({ error: 'connectionId, projectId, finding, replayContext, jiraConfig required' }, 400);
   }
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const canPush = await IntegrationPermissionGuard.canPushEvidence(user?.id || '', workspaceId || null);
   if (!canPush) return c.json({ error: 'Forbidden' }, 403);
@@ -190,6 +214,9 @@ integrationRoutes.post('/linear/task', async (c) => {
     return c.json({ error: 'connectionId, projectId, finding, replayContext, linearConfig required' }, 400);
   }
 
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
+
   const result = await LinearConnector.createTaskFromFinding(connectionId, projectId, finding, replayContext, linearConfig);
 
   await IntegrationGovernanceLogger.log('LINEAR', 'TICKET_CREATED', `Linear task ${result.taskId} created from UX finding`, workspaceId || null, user?.id, result.taskId);
@@ -206,6 +233,9 @@ integrationRoutes.post('/github/link', async (c) => {
   if (!connectionId || !projectId || !prNumber || !replayContext || !githubConfig) {
     return c.json({ error: 'connectionId, projectId, prNumber, replayContext, githubConfig required' }, 400);
   }
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const link = await GitHubConnector.linkFindingToPR(
     connectionId, projectId, prNumber, prTitle || `PR #${prNumber}`,
@@ -228,6 +258,9 @@ integrationRoutes.post('/notion/page', async (c) => {
     return c.json({ error: 'connectionId, projectId, finding, replayContext required' }, 400);
   }
 
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
+
   const attachment = await NotionConnector.createEvidencePage(
     connectionId, projectId, finding, replayContext, notionConfig || {}
   );
@@ -246,6 +279,9 @@ integrationRoutes.post('/productboard/evidence', async (c) => {
   if (!connectionId || !projectId || !featureId || !finding || !replayContext) {
     return c.json({ error: 'connectionId, projectId, featureId, finding, replayContext required' }, 400);
   }
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const attachment = await ProductboardConnector.routeEvidenceToFeature(
     connectionId, projectId, featureId, featureName || featureId, finding, replayContext
@@ -319,6 +355,8 @@ integrationRoutes.get('/replay-links', async (c) => {
   const provider = c.req.query('provider');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const links = await prisma.replayLink.findMany({
     where: { projectId, ...(provider ? { provider } : {}) },
@@ -334,6 +372,8 @@ integrationRoutes.get('/evidence', async (c) => {
   const provider = c.req.query('provider');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const attachments = await prisma.evidenceAttachment.findMany({
     where: { projectId, ...(provider ? { provider } : {}) },

@@ -1,8 +1,11 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { prisma } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { resolveUser } from '../middleware';
+import { getCurrentUser } from '../middleware/authContext';
+import { ApiErrors } from '../utils/errors';
 import {
   OrganizationManager,
   PermissionManager,
@@ -16,6 +19,32 @@ import {
 } from '@fricta/workspace';
 
 export const workspaceRoutes = new Hono();
+
+// `permissionManager.checkPermission` (below) treats a project with no
+// `workspaceId` ("solo mode") as always-allowed for any action — it was
+// designed to evaluate workspace RBAC, not project ownership. That means it
+// cannot be trusted alone to gate access to a specific project or workspace;
+// every route below pairs it with one of these ownership/membership checks.
+async function requireProjectAccess(c: Context, projectId: string) {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { userId: true, workspaceId: true } });
+  if (!project) return ApiErrors.notFound(c);
+  if (project.userId === user.userId) return null;
+  if (project.workspaceId) {
+    const member = await prisma.workspaceMember.findFirst({ where: { workspaceId: project.workspaceId, userId: user.userId } });
+    if (member) return null;
+  }
+  return ApiErrors.forbidden(c);
+}
+
+async function requireWorkspaceMembership(c: Context, workspaceId: string) {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const member = await prisma.workspaceMember.findFirst({ where: { workspaceId, userId: user.userId } });
+  if (!member) return ApiErrors.forbidden(c);
+  return null;
+}
 
 const orgManager = new OrganizationManager(prisma);
 const permissionManager = new PermissionManager(prisma);
@@ -35,7 +64,10 @@ const governanceManager = new GovernanceManager(prisma);
  */
 workspaceRoutes.get('/stream/:workspaceId', async (c) => {
   const workspaceId = c.req.param('workspaceId');
-  
+
+  const membershipError = await requireWorkspaceMembership(c, workspaceId);
+  if (membershipError) return membershipError;
+
   c.header('Content-Type', 'text/event-stream');
   c.header('Cache-Control', 'no-cache');
   c.header('Connection', 'keep-alive');
@@ -145,6 +177,8 @@ workspaceRoutes.get('/members', async (c) => {
   if (!workspaceId) {
     return c.json({ error: 'workspaceId query parameter is required' }, 400);
   }
+  const membershipError = await requireWorkspaceMembership(c, workspaceId);
+  if (membershipError) return membershipError;
 
   const members = await orgManager.getWorkspaceMembers(workspaceId);
   return c.json({ members });
@@ -200,14 +234,20 @@ workspaceRoutes.post('/members', async (c) => {
  */
 workspaceRoutes.get('/projects', async (c) => {
   const workspaceId = c.req.query('workspaceId');
-  
+
   if (!workspaceId) {
-    // Return standalone projects (where workspaceId is null)
+    // Standalone (solo-mode) projects — scope to the caller's own, never
+    // every solo user's projects platform-wide.
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
     const projects = await prisma.project.findMany({
-      where: { workspaceId: null },
+      where: { workspaceId: null, userId: user.userId },
     });
     return c.json({ projects });
   }
+
+  const membershipError = await requireWorkspaceMembership(c, workspaceId);
+  if (membershipError) return membershipError;
 
   const projects = await prisma.project.findMany({
     where: { workspaceId },
@@ -227,6 +267,13 @@ workspaceRoutes.post('/projects/scope', async (c) => {
   // Verify project existence
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) return c.json({ error: 'Project not found' }, 404);
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
+  if (workspaceId) {
+    const membershipError = await requireWorkspaceMembership(c, workspaceId);
+    if (membershipError) return membershipError;
+  }
 
   const updated = await prisma.project.update({
     where: { id: projectId },
@@ -254,6 +301,8 @@ workspaceRoutes.get('/annotations', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   if (targetType && targetId) {
     const annotations = await annotationManager.getAnnotationsForTarget(targetType, targetId);
@@ -274,6 +323,9 @@ workspaceRoutes.post('/annotations', async (c) => {
   if (!projectId || !targetType || !targetId || !content) {
     return c.json({ error: 'projectId, targetType, targetId, and content are required' }, 400);
   }
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   // Check permission
   const hasPerm = await permissionManager.checkPermission(user.id, 'WRITE_ANNOTATION', { projectId });
@@ -320,6 +372,9 @@ workspaceRoutes.post('/annotations/:id/resolve', async (c) => {
   const annotation = await prisma.annotation.findUnique({ where: { id: annotationId } });
   if (!annotation) return c.json({ error: 'Annotation not found' }, 404);
 
+  const accessError = await requireProjectAccess(c, annotation.projectId);
+  if (accessError) return accessError;
+
   // Check permission
   const hasPerm = await permissionManager.checkPermission(user.id, 'WRITE_ANNOTATION', { projectId: annotation.projectId });
   if (!hasPerm) {
@@ -357,6 +412,9 @@ workspaceRoutes.post('/annotations/:id/comments', async (c) => {
   const annotation = await prisma.annotation.findUnique({ where: { id: annotationId } });
   if (!annotation) return c.json({ error: 'Annotation not found' }, 404);
 
+  const accessError = await requireProjectAccess(c, annotation.projectId);
+  if (accessError) return accessError;
+
   const comment = await commentManager.addComment(annotationId, content, user.id);
   const project = await prisma.project.findUnique({ where: { id: annotation.projectId } });
 
@@ -379,6 +437,8 @@ workspaceRoutes.post('/annotations/:id/comments', async (c) => {
 workspaceRoutes.get('/reviews', async (c) => {
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const queue = await reviewManager.getReviewQueue(projectId);
   return c.json({ queue });
@@ -393,6 +453,9 @@ workspaceRoutes.post('/reviews/assign', async (c) => {
 
   const session = await prisma.workflowSession.findUnique({ where: { id: workflowSessionId } });
   if (!session) return c.json({ error: 'Workflow session not found' }, 404);
+
+  const accessError = await requireProjectAccess(c, session.projectId);
+  if (accessError) return accessError;
 
   const hasPerm = await permissionManager.checkPermission(user.id, 'MANAGE_REVIEWS', { projectId: session.projectId });
   if (!hasPerm) return c.json({ error: 'Forbidden' }, 403);
@@ -427,6 +490,9 @@ workspaceRoutes.post('/reviews/status', async (c) => {
 
   const session = await prisma.workflowSession.findUnique({ where: { id: workflowSessionId } });
   if (!session) return c.json({ error: 'Workflow session not found' }, 404);
+
+  const accessError = await requireProjectAccess(c, session.projectId);
+  if (accessError) return accessError;
 
   const hasPerm = await permissionManager.checkPermission(user.id, 'MANAGE_GOVERNANCE', { projectId: session.projectId });
   if (!hasPerm) return c.json({ error: 'Forbidden: Governance checks require UX_LEAD or higher role' }, 403);
@@ -472,6 +538,13 @@ workspaceRoutes.get('/activity', async (c) => {
   if (!projectId && !workspaceId) {
     return c.json({ error: 'projectId or workspaceId is required' }, 400);
   }
+  if (projectId) {
+    const accessError = await requireProjectAccess(c, projectId);
+    if (accessError) return accessError;
+  } else if (workspaceId) {
+    const membershipError = await requireWorkspaceMembership(c, workspaceId);
+    if (membershipError) return membershipError;
+  }
 
   const feed = await activityManager.getActivityFeed({ projectId, workspaceId });
   return c.json({ feed });
@@ -487,6 +560,9 @@ workspaceRoutes.post('/sharing', async (c) => {
   if (!projectId || !targetType || !targetId) {
     return c.json({ error: 'projectId, targetType, and targetId are required' }, 400);
   }
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const hasPerm = await permissionManager.checkPermission(user.id, 'SHARE_INTELLIGENCE', { projectId });
   if (!hasPerm) return c.json({ error: 'Forbidden' }, 403);
@@ -529,6 +605,8 @@ workspaceRoutes.post('/presence', async (c) => {
   if (!workspaceId || !activeScreen) {
     return c.json({ error: 'workspaceId and activeScreen are required' }, 400);
   }
+  const membershipError = await requireWorkspaceMembership(c, workspaceId);
+  if (membershipError) return membershipError;
 
   const record = presenceManager.updatePresence(user.id, user.name || user.email.split('@')[0], activeScreen);
   const activeUsers = presenceManager.getPresenceForScreen(activeScreen);
@@ -558,6 +636,8 @@ workspaceRoutes.get('/presence', async (c) => {
 workspaceRoutes.get('/threads', async (c) => {
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const threads = await prisma.investigationThread.findMany({
     where: { projectId },

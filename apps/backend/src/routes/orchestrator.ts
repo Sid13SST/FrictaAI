@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { OrchestratorCoordinator } from '@fricta/orchestrator';
 import { startRuntime, RuntimeCoordinator } from '@fricta/runtime';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const orchestratorRoutes = new Hono()
   /**
@@ -10,7 +13,10 @@ export const orchestratorRoutes = new Hono()
    */
   .post('/start/:sessionId', async (c) => {
     const workflowSessionId = c.req.param('sessionId');
-    
+
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+
     // Ensure workflow session exists
     const workflowSession = await prisma.workflowSession.findUnique({
       where: { id: workflowSessionId }
@@ -19,6 +25,9 @@ export const orchestratorRoutes = new Hono()
     if (!workflowSession) {
       return c.json({ error: `Workflow session ${workflowSessionId} not found` }, 404);
     }
+
+    const ownership = await verifyWorkflowOwnership(user.userId, workflowSessionId);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
     // Check if there is an active running session already to avoid duplicate runs
     const existingRunning = await prisma.orchestrationSession.findFirst({
@@ -130,6 +139,12 @@ export const orchestratorRoutes = new Hono()
       return c.json({ error: 'Orchestration session not found' }, 404);
     }
 
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+    const ownership = await verifyWorkflowOwnership(user.userId, session.workflowSessionId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
     return c.json({ session });
   })
 
@@ -152,6 +167,12 @@ export const orchestratorRoutes = new Hono()
     if (!session) {
       return c.json({ error: 'Orchestration session not found' }, 404);
     }
+
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+    const ownership = await verifyWorkflowOwnership(user.userId, session.workflowSessionId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
     const contextEvents = await prisma.sharedContextEvent.findMany({
       where: { orchestrationSessionId: session.id },
@@ -206,6 +227,12 @@ export const orchestratorRoutes = new Hono()
       return c.json({ error: 'Orchestration session not found' }, 404);
     }
 
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+    const ownership = await verifyWorkflowOwnership(user.userId, session.workflowSessionId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
     const agents = await prisma.agentExecution.findMany({
       where: { orchestrationSessionId: session.id },
       orderBy: { createdAt: 'asc' }
@@ -233,6 +260,12 @@ export const orchestratorRoutes = new Hono()
     if (!session) {
       return c.json({ error: 'Orchestration session not found' }, 404);
     }
+
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+    const ownership = await verifyWorkflowOwnership(user.userId, session.workflowSessionId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
     const contextEvents = await prisma.sharedContextEvent.findMany({
       where: { orchestrationSessionId: session.id },

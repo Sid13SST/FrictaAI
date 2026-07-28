@@ -9,8 +9,29 @@ import {
   ReleaseManager,
   EngineeringObservability
 } from '@fricta/integration-core';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
+import type { Context } from 'hono';
 
 export const engineeringRoutes = new Hono();
+
+// All routes in this file are scoped to a project (directly, or via a
+// deploymentRunId that belongs to one) — CI/deployment intelligence is
+// per-project data and must never be readable/writable cross-tenant.
+async function requireProjectAccess(c: Context, projectId: string) {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const result = await verifyProjectOwnership(user.userId, projectId);
+  if (result === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (result === 'NOT_OWNED') return ApiErrors.forbidden(c);
+  return null;
+}
+
+async function resolveProjectFromDeploymentRun(deploymentRunId: string): Promise<string | null> {
+  const run = await prisma.deploymentRun.findUnique({ where: { id: deploymentRunId }, select: { projectId: true } });
+  return run?.projectId ?? null;
+}
 
 /**
  * POST /api/ci/replays
@@ -23,6 +44,9 @@ engineeringRoutes.post('/ci/replays', async (c) => {
   if (!projectId || !workflowPath || !branch || !commitHash) {
     return c.json({ error: 'projectId, workflowPath, branch, and commitHash are required' }, 400);
   }
+
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   // 1. Create or resolve a deployment run
   let run = await prisma.deploymentRun.findFirst({
@@ -119,6 +143,8 @@ engineeringRoutes.get('/ci/regressions', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const regressions = await prisma.regressionAnalysis.findMany({
     where: {
@@ -145,6 +171,11 @@ engineeringRoutes.post('/deployments/previews', async (c) => {
     return c.json({ error: 'deploymentRunId, provider, url, and branch are required' }, 400);
   }
 
+  const previewProjectId = await resolveProjectFromDeploymentRun(deploymentRunId);
+  if (!previewProjectId) return ApiErrors.notFound(c);
+  const previewAccessError = await requireProjectAccess(c, previewProjectId);
+  if (previewAccessError) return previewAccessError;
+
   const preview = await PreviewIntelligence.registerPreview(
     deploymentRunId,
     provider,
@@ -165,6 +196,8 @@ engineeringRoutes.get('/deployments/previews', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const previews = await prisma.previewEnvironment.findMany({
     where: {
@@ -191,6 +224,11 @@ engineeringRoutes.post('/deployments/releases', async (c) => {
     return c.json({ error: 'deploymentRunId, title, and description are required' }, 400);
   }
 
+  const releaseProjectId = await resolveProjectFromDeploymentRun(deploymentRunId);
+  if (!releaseProjectId) return ApiErrors.notFound(c);
+  const releaseAccessError = await requireProjectAccess(c, releaseProjectId);
+  if (releaseAccessError) return releaseAccessError;
+
   const event = await ReleaseManager.logReleaseEvent(deploymentRunId, title, description);
   return c.json({ message: 'Release event logged', event });
 });
@@ -204,6 +242,8 @@ engineeringRoutes.get('/deployments/releases', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const events = await ReleaseManager.getTimelineEvents(projectId);
   return c.json({ events });
@@ -220,6 +260,11 @@ engineeringRoutes.post('/pull-requests/intelligence', async (c) => {
   if (!deploymentRunId || !prNumber || !prTitle || !sourceBranch || !targetBranch) {
     return c.json({ error: 'deploymentRunId, prNumber, prTitle, sourceBranch, and targetBranch are required' }, 400);
   }
+
+  const prProjectId = await resolveProjectFromDeploymentRun(deploymentRunId);
+  if (!prProjectId) return ApiErrors.notFound(c);
+  const prAccessError = await requireProjectAccess(c, prProjectId);
+  if (prAccessError) return prAccessError;
 
   const intelligence = await PullRequestIntelligenceManager.syncPullRequestIntelligence(
     deploymentRunId,
@@ -238,6 +283,8 @@ engineeringRoutes.get('/pull-requests/intelligence', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const intells = await prisma.pullRequestIntelligence.findMany({
     where: {
@@ -261,6 +308,8 @@ engineeringRoutes.get('/engineering/risk', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const signals = await prisma.deploymentRiskSignal.findMany({
     where: {
@@ -284,6 +333,8 @@ engineeringRoutes.get('/engineering/observability', async (c) => {
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+  const accessError = await requireProjectAccess(c, projectId);
+  if (accessError) return accessError;
 
   const summary = await EngineeringObservability.getObservabilitySummary(projectId);
   return c.json({ summary });

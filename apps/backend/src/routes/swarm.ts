@@ -3,9 +3,23 @@ import { streamSSE } from 'hono/streaming';
 import { prisma } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { SwarmOrchestrator, SwarmPersonaManager } from '@fricta/swarm-engine';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const swarmRoutes = new Hono();
 const orchestrator = new SwarmOrchestrator(prisma);
+
+// Swarm sessions carry a projectId but are looked up by swarmSessionId in
+// most routes below — resolve to the owning project and verify.
+async function verifySwarmSessionOwnership(userId: string, swarmSessionId: string): Promise<'OWNED' | 'NOT_OWNED' | 'NOT_FOUND'> {
+  const swarmSession = await prisma.swarmSession.findUnique({
+    where: { id: swarmSessionId },
+    select: { projectId: true }
+  });
+  if (!swarmSession) return 'NOT_FOUND';
+  return verifyProjectOwnership(userId, swarmSession.projectId);
+}
 
 /**
  * GET /personas
@@ -26,10 +40,18 @@ swarmRoutes.get('/personas', (c) => {
  * Returns all swarm sessions for a project.
  */
 swarmRoutes.get('/sessions', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   const sessions = await prisma.swarmSession.findMany({
     where: { projectId },
     orderBy: { createdAt: 'desc' },
@@ -42,12 +64,19 @@ swarmRoutes.get('/sessions', async (c) => {
  * Triggers a swarm execution session concurrently.
  */
 swarmRoutes.post('/executions', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const body = await c.req.json().catch(() => ({}));
   const { projectId, startUrl, goal, personas } = body;
 
   if (!projectId || !startUrl || !goal || !personas || !Array.isArray(personas)) {
     return c.json({ error: 'projectId, startUrl, goal, and personas array are required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   try {
     const result = await orchestrator.execute({
@@ -66,10 +95,17 @@ swarmRoutes.post('/executions', async (c) => {
  * GET /divergence
  */
 swarmRoutes.get('/divergence', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const swarmSessionId = c.req.query('swarmSessionId');
   if (!swarmSessionId) {
     return c.json({ error: 'swarmSessionId query parameter is required' }, 400);
   }
+
+  const ownership = await verifySwarmSessionOwnership(user.userId, swarmSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const events = await prisma.divergenceEvent.findMany({
     where: { swarmSessionId },
@@ -83,10 +119,17 @@ swarmRoutes.get('/divergence', async (c) => {
  * GET /survivability
  */
 swarmRoutes.get('/survivability', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const swarmSessionId = c.req.query('swarmSessionId');
   if (!swarmSessionId) {
     return c.json({ error: 'swarmSessionId query parameter is required' }, 400);
   }
+
+  const ownership = await verifySwarmSessionOwnership(user.userId, swarmSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const metrics = await prisma.workflowSurvivabilityMetric.findFirst({
     where: { swarmSessionId },
@@ -99,10 +142,17 @@ swarmRoutes.get('/survivability', async (c) => {
  * GET /analytics
  */
 swarmRoutes.get('/analytics', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const swarmSessionId = c.req.query('swarmSessionId');
   if (!swarmSessionId) {
     return c.json({ error: 'swarmSessionId query parameter is required' }, 400);
   }
+
+  const ownership = await verifySwarmSessionOwnership(user.userId, swarmSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const comparisons = await prisma.personaComparison.findMany({
     where: { swarmSessionId },
@@ -120,10 +170,17 @@ swarmRoutes.get('/analytics', async (c) => {
  * GET /replay
  */
 swarmRoutes.get('/replay', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const swarmSessionId = c.req.query('swarmSessionId');
   if (!swarmSessionId) {
     return c.json({ error: 'swarmSessionId query parameter is required' }, 400);
   }
+
+  const ownership = await verifySwarmSessionOwnership(user.userId, swarmSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const executions = await prisma.personaExecution.findMany({
     where: { swarmSessionId },
@@ -141,10 +198,17 @@ swarmRoutes.get('/replay', async (c) => {
  * GET /heatmaps
  */
 swarmRoutes.get('/heatmaps', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const swarmSessionId = c.req.query('swarmSessionId');
   if (!swarmSessionId) {
     return c.json({ error: 'swarmSessionId query parameter is required' }, 400);
   }
+
+  const ownership = await verifySwarmSessionOwnership(user.userId, swarmSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const heatmaps = await prisma.populationHeatmap.findMany({
     where: { swarmSessionId },
@@ -159,6 +223,13 @@ swarmRoutes.get('/heatmaps', async (c) => {
  */
 swarmRoutes.get('/stream/:swarmSessionId', async (c) => {
   const swarmSessionId = c.req.param('swarmSessionId');
+
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
+  const ownership = await verifySwarmSessionOwnership(user.userId, swarmSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   c.header('Content-Type', 'text/event-stream');
   c.header('Cache-Control', 'no-cache');

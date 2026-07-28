@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
 import { prisma, OrchestrationSession } from '@fricta/db';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const consoleRoutes = new Hono<{
   Variables: {
@@ -7,11 +10,13 @@ export const consoleRoutes = new Hono<{
   };
 }>()
   /**
-   * Helper to resolve orchestration session and workflow session IDs.
+   * Helper to resolve orchestration session and workflow session IDs, and
+   * verify the requesting user owns the underlying project before any
+   * session data (screenshots, findings, reasoning traces) is returned.
    */
   .use('/:sessionId/*', async (c, next) => {
     const sessionId = c.req.param('sessionId');
-    
+
     // Find orchestration session
     const orchestrationSession = await prisma.orchestrationSession.findFirst({
       where: {
@@ -26,6 +31,13 @@ export const consoleRoutes = new Hono<{
     if (!orchestrationSession) {
       return c.json({ error: 'Orchestration session not found' }, 404);
     }
+
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+
+    const ownership = await verifyWorkflowOwnership(user.userId, orchestrationSession.workflowSessionId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
     c.set('orchSession', orchestrationSession);
     await next();

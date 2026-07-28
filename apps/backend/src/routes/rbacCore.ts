@@ -33,8 +33,12 @@ const guard = new RBACAuthorizationGuard(prisma);
  * Returns all roles in workspace
  */
 rbacCoreRoutes.get('/roles', async (c) => {
+  const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
+
+  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'WORKSPACE', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const roles = await roleManager.getRoles(workspaceId);
   return c.json({ roles });
@@ -127,8 +131,12 @@ rbacCoreRoutes.delete('/roles/:id', async (c) => {
  * Fetches all policies for workspace
  */
 rbacCoreRoutes.get('/policies', async (c) => {
+  const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
+
+  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'WORKSPACE', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const keys = [
     'inviteRestrictions',
@@ -191,8 +199,12 @@ rbacCoreRoutes.post('/policies', async (c) => {
  * Retrieves active shared grants
  */
 rbacCoreRoutes.get('/access', async (c) => {
+  const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
+
+  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'INVESTIGATION', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const grants = await grantManager.getWorkspaceGrants(workspaceId);
   return c.json({ grants });
@@ -287,12 +299,16 @@ rbacCoreRoutes.post('/access/revoke', async (c) => {
  * Retrieves specific investigation access settings
  */
 rbacCoreRoutes.get('/investigations', async (c) => {
+  const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
   const sharedInvestigationId = c.req.query('sharedInvestigationId');
 
   if (!workspaceId || !sharedInvestigationId) {
     return c.json({ error: 'workspaceId and sharedInvestigationId are required' }, 400);
   }
+
+  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'INVESTIGATION', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const accesses = await prisma.investigationAccess.findMany({
     where: { workspaceId, sharedInvestigationId },
@@ -334,8 +350,12 @@ rbacCoreRoutes.post('/investigations', async (c) => {
  * Retrieves all replay visibility configurations
  */
 rbacCoreRoutes.get('/replays', async (c) => {
+  const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
+
+  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'REPLAY', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const scopes = await replayScopeManager.getReplayScopes(workspaceId);
   return c.json({ scopes });
@@ -379,8 +399,12 @@ rbacCoreRoutes.post('/replays', async (c) => {
  * Returns security audit logs timeline
  */
 rbacCoreRoutes.get('/security', async (c) => {
+  const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
   if (!workspaceId) return c.json({ error: 'workspaceId query parameter is required' }, 400);
+
+  const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'TEAM', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const logs = await auditLogger.getSecurityEvents(workspaceId);
   return c.json({ logs });

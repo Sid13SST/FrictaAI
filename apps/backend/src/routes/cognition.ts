@@ -1,7 +1,28 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const cognitionRoutes = new Hono();
+
+// Every route below is scoped by a workflowSessionId query param — verify
+// ownership before any cognitive-signal data is returned.
+cognitionRoutes.use('*', async (c, next) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
+  const sessionId = c.req.query('sessionId');
+  if (!sessionId) {
+    return c.json({ error: 'sessionId is required' }, 400);
+  }
+
+  const ownership = await verifyWorkflowOwnership(user.userId, sessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
+  await next();
+});
 
 /**
  * GET /api/cognition/confidence

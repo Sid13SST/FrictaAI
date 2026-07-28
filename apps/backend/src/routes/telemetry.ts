@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { ApiKeyManager } from '@fricta/developer-platform';
 import { LiveAnomalyDetector } from '@fricta/live-intelligence';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const telemetryRoutes = new Hono();
 
@@ -35,11 +38,23 @@ telemetryRoutes.post('/ingest', async (c) => {
 
   // 1. Authenticate API Key if header is present (standard auth)
   const authHeader = c.req.header('Authorization')?.replace('Bearer ', '');
+  let apiKeyAuthorized = false;
   if (authHeader) {
     const validation = await ApiKeyManager.validateKey(authHeader);
     if (!validation.isValid || validation.projectId !== projectId) {
       return c.json({ error: 'Unauthorized: Invalid API Key' }, 401);
     }
+    apiKeyAuthorized = true;
+  }
+
+  // Without a project-scoped API key, fall back to the caller's own Clerk
+  // session — but that only authorizes ingestion into a project they own.
+  if (!apiKeyAuthorized) {
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+    const ownership = await verifyProjectOwnership(user.userId, projectId);
+    if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+    if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
   }
 
   // Ensure project exists
@@ -109,7 +124,7 @@ telemetryRoutes.post('/ingest', async (c) => {
         });
         break;
 
-      case 'NavigationEvent':
+      case 'NavigationEvent': {
         // Calculate transition duration if possible
         const lastNav = await prisma.navigationEvent.findFirst({
           where: { liveSessionId: liveSession.id },
@@ -129,6 +144,7 @@ telemetryRoutes.post('/ingest', async (c) => {
           }
         });
         break;
+      }
 
       case 'InteractionEvent':
         await prisma.telemetryInteractionEvent.create({
@@ -234,19 +250,31 @@ telemetryRoutes.get('/session/:id', async (c) => {
     return c.json({ error: 'Session not found' }, 404);
   }
 
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyProjectOwnership(user.userId, session.projectId);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   return c.json({ session });
 });
 
 /**
  * GET /api/telemetry/signals
- * Queries all friction signals across active user base.
+ * Queries friction signals for a project's live sessions.
  */
 telemetryRoutes.get('/signals', async (c) => {
   const projectId = c.req.query('projectId');
   const limit = parseInt(c.req.query('limit') || '50');
 
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   const signals = await prisma.sessionSignal.findMany({
-    where: projectId ? { liveSession: { projectId } } : undefined,
+    where: { liveSession: { projectId } },
     include: {
       liveSession: true,
     },
@@ -259,11 +287,21 @@ telemetryRoutes.get('/signals', async (c) => {
 
 /**
  * GET /api/telemetry/events
- * Live query list of recent events.
+ * Live query list of recent events for a project.
  */
 telemetryRoutes.get('/events', async (c) => {
+  const projectId = c.req.query('projectId');
   const limit = parseInt(c.req.query('limit') || '30');
+
+  if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   const events = await prisma.telemetryEvent.findMany({
+    where: { liveSession: { projectId } },
     include: {
       liveSession: true,
     },

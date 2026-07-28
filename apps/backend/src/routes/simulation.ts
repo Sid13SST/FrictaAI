@@ -4,6 +4,9 @@ import { prisma } from '@fricta/db';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { SimulationRunner, PersonaManager } from '@fricta/simulation-engine';
 import { resolveUser } from '../middleware';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyProjectOwnership, verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const simulationRoutes = new Hono();
 const runner = new SimulationRunner(prisma);
@@ -15,10 +18,17 @@ const runner = new SimulationRunner(prisma);
  * ─────────────────────────────────────────────────────────────────────────────
  */
 simulationRoutes.get('/personas', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const profiles = await prisma.simulationProfile.findMany({
     where: { projectId },
@@ -34,12 +44,19 @@ simulationRoutes.get('/personas', async (c) => {
  * ─────────────────────────────────────────────────────────────────────────────
  */
 simulationRoutes.post('/start', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const body = await c.req.json().catch(() => ({}));
   const { projectId, personaType, startUrl, goal } = body;
 
   if (!projectId || !personaType || !startUrl || !goal) {
     return c.json({ error: 'projectId, personaType, startUrl, and goal are required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   try {
     const result = await runner.run({
@@ -60,10 +77,17 @@ simulationRoutes.post('/start', async (c) => {
  * ─────────────────────────────────────────────────────────────────────────────
  */
 simulationRoutes.get('/exploration', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const projectId = c.req.query('projectId');
   if (!projectId) {
     return c.json({ error: 'projectId is required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user.userId, projectId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const paths = await prisma.explorationPath.findMany({
     where: {
@@ -84,10 +108,17 @@ simulationRoutes.get('/exploration', async (c) => {
  * ─────────────────────────────────────────────────────────────────────────────
  */
 simulationRoutes.get('/behavior', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const sessionId = c.req.query('sessionId');
   if (!sessionId) {
     return c.json({ error: 'sessionId is required' }, 400);
   }
+
+  const ownership = await verifyWorkflowOwnership(user.userId, sessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const [decisions, signals, reactions, confidenceEvents] = await Promise.all([
     prisma.behavioralDecision.findMany({ where: { workflowSessionId: sessionId }, orderBy: { stepIndex: 'asc' } }),
@@ -105,10 +136,17 @@ simulationRoutes.get('/behavior', async (c) => {
  * ─────────────────────────────────────────────────────────────────────────────
  */
 simulationRoutes.get('/replay', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
   const sessionId = c.req.query('sessionId');
   if (!sessionId) {
     return c.json({ error: 'sessionId is required' }, 400);
   }
+
+  const ownership = await verifyWorkflowOwnership(user.userId, sessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   const events = await prisma.behavioralReplayEvent.findMany({
     where: { workflowSessionId: sessionId },
@@ -125,7 +163,20 @@ simulationRoutes.get('/replay', async (c) => {
  */
 simulationRoutes.get('/stream/:sessionId', async (c) => {
   const sessionId = c.req.param('sessionId');
-  
+
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
+  const orchestrationSession = await prisma.orchestrationSession.findFirst({
+    where: { OR: [{ id: sessionId }, { workflowSessionId: sessionId }] },
+    orderBy: { createdAt: 'desc' }
+  });
+  if (!orchestrationSession) return ApiErrors.notFound(c);
+
+  const ownership = await verifyWorkflowOwnership(user.userId, orchestrationSession.workflowSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
   c.header('Content-Type', 'text/event-stream');
   c.header('Cache-Control', 'no-cache');
   c.header('Connection', 'keep-alive');

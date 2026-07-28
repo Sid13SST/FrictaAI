@@ -11,9 +11,20 @@ import {
   WorkflowSurvivabilityTracker
 } from '@fricta/cross-session-intelligence';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const intelligenceRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
+
+// Project ownership is the non-bypassable baseline (also covers solo/standalone
+// projects with no workspace); workspace permission (checked inline below where
+// a workspaceId is supplied) is an additional layer on top.
+async function authorizeProject(projectId: string, userId: string): Promise<'OK' | 'NOT_FOUND' | 'FORBIDDEN'> {
+  const ownership = await verifyProjectOwnership(userId, projectId);
+  if (ownership === 'NOT_FOUND') return 'NOT_FOUND';
+  if (ownership !== 'OWNED') return 'FORBIDDEN';
+  return 'OK';
+}
 
 
 
@@ -26,6 +37,10 @@ intelligenceRoutes.post('/synthesis', async (c) => {
   const { projectId, workspaceId } = await c.req.json().catch(() => ({}));
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
@@ -47,6 +62,10 @@ intelligenceRoutes.get('/cross-session', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -64,12 +83,14 @@ intelligenceRoutes.get('/trends', async (c) => {
   const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
 
-  if (workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  // This route has no projectId to scope by, so workspaceId is the only
+  // available boundary — it must be required, not optional.
+  if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
 
-  const trends = await LongitudinalTrendAnalyzer.getHistoricalTrends(workspaceId || null);
+  const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
+  const trends = await LongitudinalTrendAnalyzer.getHistoricalTrends(workspaceId);
   return c.json({ trends });
 });
 
@@ -83,6 +104,10 @@ intelligenceRoutes.get('/regressions', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
@@ -104,6 +129,10 @@ intelligenceRoutes.get('/personas', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -123,6 +152,10 @@ intelligenceRoutes.get('/history', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
@@ -144,6 +177,10 @@ intelligenceRoutes.get('/survivability', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -163,6 +200,10 @@ intelligenceRoutes.get('/memory', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const projectAuth = await authorizeProject(projectId, user?.id || '');
+  if (projectAuth === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (projectAuth === 'FORBIDDEN') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');

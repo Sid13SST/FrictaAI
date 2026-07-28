@@ -10,11 +10,20 @@ import {
   AlertsService
 } from '@fricta/security-core';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyWorkflowOwnership, verifyReportOwnership } from '../guards/ownership';
 
 export const securityRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
 
-
+// These audit/security/alert tables use a nullable workspaceId ("null in
+// Solo Mode" per schema). When no workspaceId is supplied, the underlying
+// service queries `where: { workspaceId: null }`, which spans EVERY solo
+// user on the platform, not just the caller — so the solo-mode branch must
+// always be post-filtered down to the caller's own rows.
+function scopeToCallerInSoloMode<T extends { userId?: string | null }>(rows: T[], callerId: string | undefined): T[] {
+  if (!callerId) return [];
+  return rows.filter((r) => r.userId === callerId);
+}
 
 /**
  * GET /api/security/audit
@@ -30,7 +39,7 @@ securityRoutes.get('/audit', async (c) => {
   }
 
   const logs = await AuditLoggingService.getAuditTimeline(workspaceId);
-  return c.json({ logs });
+  return c.json({ logs: workspaceId ? logs : scopeToCallerInSoloMode(logs, user?.id) });
 });
 
 /**
@@ -47,7 +56,7 @@ securityRoutes.get('/events', async (c) => {
   }
 
   const events = await SecurityMonitorService.getSecurityEvents(workspaceId);
-  return c.json({ events });
+  return c.json({ events: workspaceId ? events : scopeToCallerInSoloMode(events, user?.id) });
 });
 
 /**
@@ -64,7 +73,7 @@ securityRoutes.get('/governance', async (c) => {
   }
 
   const events = await prisma.governancePolicyEvent.findMany({
-    where: workspaceId ? { workspaceId } : { workspaceId: null },
+    where: workspaceId ? { workspaceId } : { workspaceId: null, userId: user?.id || '__none__' },
     include: {
       user: {
         select: {
@@ -91,6 +100,10 @@ securityRoutes.get('/replays', async (c) => {
 
   if (!sessionId) return c.json({ error: 'sessionId is required' }, 400);
 
+  const ownership = await verifyWorkflowOwnership(user?.id || '', sessionId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'REPLAY', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -112,6 +125,13 @@ securityRoutes.get('/traceability', async (c) => {
   if (!resourceType || !resourceId) {
     return c.json({ error: 'resourceType and resourceId are required' }, 400);
   }
+
+  const callerId = (await resolveUser(c))?.id || '';
+  const ownership = resourceType === 'SESSION'
+    ? await verifyWorkflowOwnership(callerId, resourceId)
+    : await verifyReportOwnership(callerId, resourceId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const user = await resolveUser(c);
@@ -142,7 +162,7 @@ securityRoutes.get('/alerts', async (c) => {
   }
 
   const alerts = await AlertsService.getAlerts(workspaceId);
-  return c.json({ alerts });
+  return c.json({ alerts: workspaceId ? alerts : scopeToCallerInSoloMode(alerts, user?.id) });
 });
 
 /**
@@ -154,6 +174,16 @@ securityRoutes.post('/alerts/resolve', async (c) => {
   const { alertId, workspaceId } = await c.req.json().catch(() => ({}));
 
   if (!alertId) return c.json({ error: 'alertId is required' }, 400);
+
+  const alert = await prisma.workspaceSecurityAlert.findUnique({ where: { id: alertId } });
+  if (!alert) return c.json({ error: 'Not found' }, 404);
+
+  if (alert.workspaceId) {
+    const hasPerm = await guard.checkWorkspacePermission(user?.id, alert.workspaceId, 'TEAM', 'WRITE');
+    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  } else if (alert.userId !== user?.id) {
+    return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+  }
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'TEAM', 'WRITE');

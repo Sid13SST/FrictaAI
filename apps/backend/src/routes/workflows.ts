@@ -43,7 +43,7 @@ workflowRoutes.get('/screenshots/raw/*', async (c) => {
   }
 
   // Parse session ID from path to perform ownership check: e.g. sessions/session-xxx/... or just session-xxx/...
-  const sessionMatch = relativePath.match(/(?:sessions\/)?([^\/]+)/);
+  const sessionMatch = relativePath.match(/(?:sessions\/)?([^/]+)/);
   const sessionId = sessionMatch ? sessionMatch[1] : null;
 
   if (sessionId) {

@@ -9,6 +9,7 @@ import {
   ForecastTimelineExplorer
 } from '@fricta/forecasting-intelligence';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const forecastsRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -27,7 +28,12 @@ async function resolveWorkspace(projectId: string | null | undefined): Promise<s
   return null;
 }
 
+// Project ownership is the non-bypassable baseline (also covers solo/standalone
+// projects with no workspace); workspace permission is an additional layer on top.
 async function authorizeRead(c: any, projectId: string, user: any): Promise<boolean> {
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership !== 'OWNED') return false;
+
   const wId = await resolveWorkspace(projectId);
   if (wId) {
     // ANALYTICS role can read forecasts
@@ -37,6 +43,9 @@ async function authorizeRead(c: any, projectId: string, user: any): Promise<bool
 }
 
 async function authorizeWrite(c: any, projectId: string, user: any): Promise<boolean> {
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership !== 'OWNED') return false;
+
   const wId = await resolveWorkspace(projectId);
   if (wId) {
     // STRATEGY actions require ANALYTICS WRITE permission

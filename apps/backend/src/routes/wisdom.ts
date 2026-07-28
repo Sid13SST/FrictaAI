@@ -12,6 +12,7 @@ import {
 } from '@fricta/institutional-intelligence';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
 import { RealtimeEventBus } from '@fricta/realtime';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const wisdomRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -30,7 +31,12 @@ async function resolveWorkspace(projectId: string | null | undefined): Promise<s
   return null;
 }
 
+// Project ownership is the non-bypassable baseline (also covers solo/standalone
+// projects with no workspace); workspace permission is an additional layer on top.
 async function authorizeRead(c: any, projectId: string, user: any): Promise<boolean> {
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership !== 'OWNED') return false;
+
   const wId = await resolveWorkspace(projectId);
   if (wId) {
     // Check Workspace Membership, Project Access, and ANALYTICS Domain Permissions
@@ -43,6 +49,9 @@ async function authorizeRead(c: any, projectId: string, user: any): Promise<bool
 }
 
 async function authorizeWrite(c: any, projectId: string, user: any): Promise<boolean> {
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership !== 'OWNED') return false;
+
   const wId = await resolveWorkspace(projectId);
   if (wId) {
     const isProjectInScope = await guard.checkProjectScope(wId, projectId);

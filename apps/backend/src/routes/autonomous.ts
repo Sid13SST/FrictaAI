@@ -13,6 +13,7 @@ import {
 } from '@fricta/autonomous-optimization';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const autonomousRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -30,6 +31,10 @@ autonomousRoutes.post('/optimization/run', async (c) => {
   if (!projectId || !workflowPath) {
     return c.json({ error: 'projectId and workflowPath are required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
@@ -80,6 +85,10 @@ autonomousRoutes.get('/optimization', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -105,10 +114,20 @@ autonomousRoutes.get('/optimization', async (c) => {
  * Run sandbox simulations dynamically for a proposal.
  */
 autonomousRoutes.post('/simulation', async (c) => {
+  const user = await resolveUser(c);
   const { optimizationRunId, remediationPlan } = await c.req.json().catch(() => ({}));
   if (!optimizationRunId || !remediationPlan) {
     return c.json({ error: 'optimizationRunId and remediationPlan are required' }, 400);
   }
+
+  const optimizationRun = await prisma.autonomousOptimizationRun.findUnique({
+    where: { id: optimizationRunId },
+    select: { projectId: true }
+  });
+  if (!optimizationRun) return c.json({ error: 'Optimization run not found' }, 404);
+  const runOwnership = await verifyProjectOwnership(user?.id || '', optimizationRun.projectId);
+  if (runOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (runOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const simulations = await OptimizationSimulator.runSandboxSimulation(optimizationRunId, remediationPlan);
 
@@ -143,6 +162,15 @@ autonomousRoutes.post('/approval', async (c) => {
   if (!optimizationRunId || !roleScope || !action) {
     return c.json({ error: 'optimizationRunId, roleScope, and action are required' }, 400);
   }
+
+  const approvalRun = await prisma.autonomousOptimizationRun.findUnique({
+    where: { id: optimizationRunId },
+    select: { projectId: true }
+  });
+  if (!approvalRun) return c.json({ error: 'Optimization run not found' }, 404);
+  const approvalOwnership = await verifyProjectOwnership(user?.id || '', approvalRun.projectId);
+  if (approvalOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (approvalOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
@@ -190,6 +218,15 @@ autonomousRoutes.post('/rollback', async (c) => {
     return c.json({ error: 'optimizationRunId and rollbackReason are required' }, 400);
   }
 
+  const rollbackRun = await prisma.autonomousOptimizationRun.findUnique({
+    where: { id: optimizationRunId },
+    select: { projectId: true }
+  });
+  if (!rollbackRun) return c.json({ error: 'Optimization run not found' }, 404);
+  const rollbackOwnership = await verifyProjectOwnership(user?.id || '', rollbackRun.projectId);
+  if (rollbackOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (rollbackOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -233,6 +270,10 @@ autonomousRoutes.get('/adaptation', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -249,14 +290,13 @@ autonomousRoutes.get('/adaptation', async (c) => {
 autonomousRoutes.get('/governance', async (c) => {
   const user = await resolveUser(c);
   const workspaceId = c.req.query('workspaceId');
+  if (!workspaceId) return c.json({ error: 'workspaceId is required' }, 400);
 
-  if (workspaceId) {
-    const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
-    if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
-  }
+  const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
+  if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const events = await prisma.optimizationGovernanceEvent.findMany({
-    where: { workspaceId: workspaceId || null },
+    where: { workspaceId },
     orderBy: { createdAt: 'desc' }
   });
 
@@ -268,8 +308,13 @@ autonomousRoutes.get('/governance', async (c) => {
  * Fetch optimization opportunities for a project.
  */
 autonomousRoutes.get('/opportunities', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const opportunities = await prisma.optimizationOpportunity.findMany({
     where: { projectId },
@@ -284,8 +329,13 @@ autonomousRoutes.get('/opportunities', async (c) => {
  * Fetch initiative recommendations for a project.
  */
 autonomousRoutes.get('/recommendations', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const recommendations = await prisma.initiativeRecommendation.findMany({
     where: { projectId },
@@ -303,8 +353,13 @@ autonomousRoutes.get('/recommendations', async (c) => {
  * Fetch roadmaps for a project.
  */
 autonomousRoutes.get('/roadmaps', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const roadmaps = await prisma.optimizationRoadmap.findMany({
     where: { projectId },
@@ -322,8 +377,13 @@ autonomousRoutes.get('/roadmaps', async (c) => {
  * Fetch optimization forecasts for a project.
  */
 autonomousRoutes.get('/forecasts', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const forecasts = await prisma.optimizationForecast.findMany({
     where: { projectId },
@@ -341,8 +401,13 @@ autonomousRoutes.get('/forecasts', async (c) => {
  * Fetch sequential implementation and decision timeline for a project.
  */
 autonomousRoutes.get('/timeline', async (c) => {
+  const user = await resolveUser(c);
   const projectId = c.req.query('projectId');
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const events = await TimelineManager.getProjectTimeline(projectId);
   return c.json({ timeline: events });
@@ -353,8 +418,13 @@ autonomousRoutes.get('/timeline', async (c) => {
  * Trigger cross-intelligence layer synthesis and populate opportunities & forecasts.
  */
 autonomousRoutes.post('/synthesize', async (c) => {
+  const user = await resolveUser(c);
   const { projectId } = await c.req.json().catch(() => ({}));
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   // 1. Run the synthesis engine
   const result = await SynthesisEngine.synthesize(projectId);
@@ -445,12 +515,22 @@ autonomousRoutes.post('/synthesize', async (c) => {
  * Apply a human-in-the-loop governance decision on a recommendation.
  */
 autonomousRoutes.post('/recommendations/:id/decide', async (c) => {
+  const user = await resolveUser(c);
   const id = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
 
   if (!body.action) {
     return c.json({ error: 'action is required' }, 400);
   }
+
+  const recommendation = await prisma.initiativeRecommendation.findUnique({
+    where: { id },
+    select: { projectId: true }
+  });
+  if (!recommendation) return c.json({ error: 'Recommendation not found' }, 404);
+  const ownership = await verifyProjectOwnership(user?.id || '', recommendation.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const result = await RecommendationManager.decide(id, {
     userId: body.userId || 'demo_user',
@@ -467,11 +547,16 @@ autonomousRoutes.post('/recommendations/:id/decide', async (c) => {
  * Sequence initiatives/recommendations into a quarterly roadmap.
  */
 autonomousRoutes.post('/roadmaps/proposal', async (c) => {
+  const user = await resolveUser(c);
   const { projectId, initiativeIds } = await c.req.json().catch(() => ({}));
 
   if (!projectId || !initiativeIds || !Array.isArray(initiativeIds)) {
     return c.json({ error: 'projectId and initiativeIds array are required' }, 400);
   }
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const roadmaps = await RoadmapManager.buildRoadmapProposal(projectId, initiativeIds);
   return c.json({ roadmaps });

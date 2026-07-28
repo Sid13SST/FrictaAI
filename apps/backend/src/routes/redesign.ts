@@ -4,6 +4,7 @@ import { prisma } from '@fricta/db';
 import { RedesignIntelligenceEngine } from '@fricta/redesign-intelligence';
 import { RealtimeEventBus } from '@fricta/realtime';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const redesignRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -19,6 +20,10 @@ redesignRoutes.post('/generate', async (c) => {
   const { projectId, workspaceId } = await c.req.json().catch(() => ({}));
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'WRITE');
@@ -59,6 +64,10 @@ redesignRoutes.get('/recommendations', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -88,6 +97,10 @@ redesignRoutes.get('/optimization', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -110,6 +123,10 @@ redesignRoutes.get('/cognitive', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
@@ -134,6 +151,10 @@ redesignRoutes.get('/workflows', async (c) => {
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
 
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');
     if (!hasPerm) return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
@@ -151,8 +172,19 @@ redesignRoutes.get('/workflows', async (c) => {
  * Fetch evidence traces for a recommendation.
  */
 redesignRoutes.get('/evidence', async (c) => {
+  const user = await resolveUser(c);
   const recommendationId = c.req.query('recommendationId');
   if (!recommendationId) return c.json({ error: 'recommendationId is required' }, 400);
+
+  const recommendation = await prisma.redesignRecommendation.findUnique({
+    where: { id: recommendationId },
+    select: { projectId: true }
+  });
+  if (!recommendation) return c.json({ error: 'Recommendation not found' }, 404);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', recommendation.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const evidence = await prisma.recommendationEvidence.findMany({
     where: { recommendationId }
@@ -166,8 +198,19 @@ redesignRoutes.get('/evidence', async (c) => {
  * Fetch projected impact forecasts.
  */
 redesignRoutes.get('/impact', async (c) => {
+  const user = await resolveUser(c);
   const recommendationId = c.req.query('recommendationId');
   if (!recommendationId) return c.json({ error: 'recommendationId is required' }, 400);
+
+  const recommendation = await prisma.redesignRecommendation.findUnique({
+    where: { id: recommendationId },
+    select: { projectId: true }
+  });
+  if (!recommendation) return c.json({ error: 'Recommendation not found' }, 404);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', recommendation.projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const forecasts = await prisma.recommendationImpactForecast.findMany({
     where: { recommendationId }
@@ -186,6 +229,10 @@ redesignRoutes.get('/suggestions', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', workspaceId, 'ANALYTICS', 'READ');

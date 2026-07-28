@@ -13,6 +13,7 @@ import {
   OutcomeTimelineLogger
 } from '@fricta/outcome-intelligence';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
+import { verifyProjectOwnership } from '../guards/ownership';
 
 export const outcomesRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -39,6 +40,11 @@ outcomesRoutes.get('/kpis', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -65,6 +71,10 @@ outcomesRoutes.post('/kpis', async (c) => {
   if (!projectId || !name || !description || !kpiType || !metricKey) {
     return c.json({ error: 'projectId, name, description, kpiType, and metricKey are required' }, 400);
   }
+
+  const kpiOwnership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (kpiOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (kpiOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const wId = await resolveWorkspace(projectId, workspaceId);
   if (wId) {
@@ -94,6 +104,11 @@ outcomesRoutes.get('/health', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -122,6 +137,11 @@ outcomesRoutes.get('/initiatives', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -143,6 +163,11 @@ outcomesRoutes.get('/forecasts', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -166,6 +191,12 @@ outcomesRoutes.post('/forecasts', async (c) => {
   if (!kpiId || !projectedValue || !targetQuarter) {
     return c.json({ error: 'kpiId, projectedValue, and targetQuarter are required' }, 400);
   }
+
+  const forecastKpi = await prisma.productKPI.findUnique({ where: { id: kpiId }, select: { projectId: true } });
+  if (!forecastKpi) return c.json({ error: 'KPI not found' }, 404);
+  const forecastOwnership = await verifyProjectOwnership(user?.id || '', forecastKpi.projectId);
+  if (forecastOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (forecastOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const wId = await resolveWorkspace(projectId, workspaceId);
   if (wId) {
@@ -194,6 +225,11 @@ outcomesRoutes.get('/trends', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -220,6 +256,11 @@ outcomesRoutes.get('/baselines', async (c) => {
   const workspaceId = c.req.query('workspaceId');
 
   if (!projectId) return c.json({ error: 'projectId is required' }, 400);
+
+  const ownership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
 
   if (wId) {
@@ -249,6 +290,12 @@ outcomesRoutes.post('/baselines', async (c) => {
     return c.json({ error: 'kpiId, value, windowStart, and windowEnd are required' }, 400);
   }
 
+  const baselineKpi = await prisma.productKPI.findUnique({ where: { id: kpiId }, select: { projectId: true } });
+  if (!baselineKpi) return c.json({ error: 'KPI not found' }, 404);
+  const baselineOwnership = await verifyProjectOwnership(user?.id || '', baselineKpi.projectId);
+  if (baselineOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (baselineOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+
   const wId = await resolveWorkspace(projectId, workspaceId);
   if (wId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id || '', wId, 'ANALYTICS', 'WRITE');
@@ -276,6 +323,10 @@ outcomesRoutes.post('/evaluate', async (c) => {
   if (!projectId || !title || !description) {
     return c.json({ error: 'projectId, title, and description are required' }, 400);
   }
+
+  const evalOwnership = await verifyProjectOwnership(user?.id || '', projectId);
+  if (evalOwnership === 'NOT_FOUND') return c.json({ error: 'Project not found' }, 404);
+  if (evalOwnership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   const wId = await resolveWorkspace(projectId, workspaceId);
   if (wId) {

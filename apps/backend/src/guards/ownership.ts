@@ -139,6 +139,26 @@ export async function verifyInvestigationOwnership(userId: string, threadId: str
 }
 
 /**
+ * Traverses from UXFinding to WorkflowSession to Project to verify ownership.
+ */
+export async function verifyFindingOwnership(userId: string, findingId: string): Promise<OwnershipResult> {
+  if (!userId || !findingId) return 'NOT_FOUND';
+
+  try {
+    const finding = await prisma.uXFinding.findUnique({
+      where: { id: findingId },
+      select: { workflowSessionId: true }
+    });
+
+    if (!finding) return 'NOT_FOUND';
+    return verifyWorkflowOwnership(userId, finding.workflowSessionId);
+  } catch (error) {
+    console.error(`Error checking finding ownership for finding ${findingId}:`, error);
+    return 'NOT_FOUND';
+  }
+}
+
+/**
  * Traverses from OperationalAlert to Project to verify ownership.
  */
 export async function verifyAlertOwnership(userId: string, alertId: string): Promise<OwnershipResult> {
@@ -182,6 +202,11 @@ export async function assertReportOwnership(userId: string, reportId: string): P
 
 export async function assertInvestigationOwnership(userId: string, threadId: string): Promise<boolean> {
   const result = await verifyInvestigationOwnership(userId, threadId);
+  return result === 'OWNED';
+}
+
+export async function assertFindingOwnership(userId: string, findingId: string): Promise<boolean> {
+  const result = await verifyFindingOwnership(userId, findingId);
   return result === 'OWNED';
 }
 
@@ -276,6 +301,27 @@ export const requireWorkflowOwner = (paramName = 'id'): MiddlewareHandler => {
     }
 
     const result = await verifyWorkflowOwnership(user.userId, sessionId);
+    const errorResponse = handleOwnershipResult(c, result);
+    if (errorResponse) return errorResponse;
+
+    await next();
+  };
+};
+
+/**
+ * Guard for endpoints where findingId is passed as a path param.
+ */
+export const requireFindingOwner = (paramName = 'id'): MiddlewareHandler => {
+  return async (c, next) => {
+    const user = getCurrentUser(c);
+    if (!user) return ApiErrors.unauthorized(c);
+
+    const findingId = c.req.param(paramName);
+    if (!findingId) {
+      return c.json({ error: 'Finding ID is required' }, 400);
+    }
+
+    const result = await verifyFindingOwnership(user.userId, findingId);
     const errorResponse = handleOwnershipResult(c, result);
     if (errorResponse) return errorResponse;
 

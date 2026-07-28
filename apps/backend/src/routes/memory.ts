@@ -1,14 +1,46 @@
 import { Hono } from 'hono';
 import { PrismaClient } from '@fricta/db';
-import { 
-  SharedMemoryStorage, 
+import {
+  SharedMemoryStorage,
   SharedMemoryTimelineCompiler,
   SharedMemorySignalAggregator,
   SharedMemoryReasoningEngine
 } from '@fricta/shared-memory';
+import { getCurrentUser } from '../middleware/authContext';
+import { verifyWorkflowOwnership } from '../guards/ownership';
+import { ApiErrors } from '../utils/errors';
 
 export const memoryRoutes = new Hono();
 const prisma = new PrismaClient();
+
+// `:sessionId` here is an orchestrationSessionId (or workflowSessionId — the
+// storage classes accept either). Resolve to the owning workflow session and
+// verify the requester owns it before any shared-memory data is returned.
+memoryRoutes.use('*', async (c, next) => {
+  const sessionId = c.req.param('sessionId');
+  if (!sessionId) return next();
+
+  const user = getCurrentUser(c);
+  if (!user) return ApiErrors.unauthorized(c);
+
+  const orchestrationSession = await prisma.orchestrationSession.findFirst({
+    where: {
+      OR: [
+        { id: sessionId },
+        { workflowSessionId: sessionId }
+      ]
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (!orchestrationSession) return ApiErrors.notFound(c);
+
+  const ownership = await verifyWorkflowOwnership(user.userId, orchestrationSession.workflowSessionId);
+  if (ownership === 'NOT_FOUND') return ApiErrors.notFound(c);
+  if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
+
+  await next();
+});
 
 // GET /api/memory/:sessionId
 memoryRoutes.get('/:sessionId', async (c) => {
