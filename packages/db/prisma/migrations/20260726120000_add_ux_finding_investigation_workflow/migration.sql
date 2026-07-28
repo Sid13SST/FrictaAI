@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "UXFinding" ADD COLUMN     "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0.75;
+ALTER TABLE "UXFinding" ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'OPEN';
+ALTER TABLE "UXFinding" ADD COLUMN     "resolutionNotes" TEXT;
+ALTER TABLE "UXFinding" ADD COLUMN     "resolvedAt" TIMESTAMP(3);
+ALTER TABLE "UXFinding" ADD COLUMN     "resolvedBy" TEXT;

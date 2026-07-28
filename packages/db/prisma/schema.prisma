@@ -405,7 +405,14 @@ model UXFinding {
   description       String
   evidence          String // Evidence details/steps where it occurred
   recommendation    String // Actionable UX improvement
+  confidence        Float    @default(0.75) // Model confidence in this finding, 0.0-1.0
   timestamp         DateTime @default(now())
+
+  // Investigation workflow tracking
+  status          String    @default("OPEN") // "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED"
+  resolutionNotes String? // Investigator notes captured when reviewing/resolving
+  resolvedAt      DateTime?
+  resolvedBy      String? // Clerk userId of the investigator who resolved/dismissed this finding
 
   session WorkflowSession @relation(fields: [workflowSessionId], references: [id], onDelete: Cascade)
 }

@@ -4,7 +4,7 @@ import { apiFetch, API_BASE } from '../../lib/api';
 import {
   Download, Clipboard, Brain, ShieldAlert, Sparkles,
   Code, FileText, Check, RefreshCw, ChevronRight,
-  Activity, TrendingUp, BarChart3
+  Activity, TrendingUp, BarChart3, FileDown, Loader2
 } from 'lucide-react';
 import { CinematicReplayViewer } from '../replay/CinematicReplayViewer';
 import { PersonaComparisonPanel } from '../personas/PersonaComparisonPanel';
@@ -12,6 +12,9 @@ import { GlobalInsightEngine } from '../insights/GlobalInsightEngine';
 import { CorrelatedTimeline } from '../timeline/CorrelatedTimeline';
 import { FrictionProgressionGraph } from '../visuals/FrictionProgressionGraph';
 import { AgentOrchestrationConsole } from '../orchestrator/AgentOrchestrationConsole';
+import { AIPipelineRibbon } from '../shared/AIPipelineRibbon';
+import { UXIntelligenceTab } from '../../components/reports/UXIntelligenceTab';
+import { DesktopOnlyNotice } from '../../components/common/DesktopOnlyNotice';
 
 interface UnifiedReportViewerProps {
   sessionId: string;
@@ -23,7 +26,7 @@ interface UnifiedReportViewerProps {
 
 const ScoreGauge = ({ label, value }: { label: string; value: number }) => {
   const color =
-    value >= 80 ? '#6366f1' :
+    value >= 80 ? '#7342E2' :
     value >= 60 ? '#eab308' :
     value >= 40 ? '#f97316' :
     '#f87171';
@@ -51,7 +54,7 @@ const SeverityBadge = ({ severity }: { severity: string }) => {
     CRITICAL: { color: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.2)' },
     HIGH:     { color: '#fb923c', bg: 'rgba(251,146,60,0.08)',  border: 'rgba(251,146,60,0.2)' },
     MEDIUM:   { color: '#facc15', bg: 'rgba(250,204,21,0.08)', border: 'rgba(250,204,21,0.2)' },
-    LOW:      { color: '#6366f1', bg: 'rgba(99, 102, 241,0.08)', border: 'rgba(99, 102, 241,0.2)' },
+    LOW:      { color: '#7342E2', bg: 'rgba(115, 66, 226,0.08)', border: 'rgba(115, 66, 226,0.2)' },
   };
   const s = config[severity] ?? config['LOW'];
   return (
@@ -70,7 +73,7 @@ const Panel = ({ children, className = '' }: { children: React.ReactNode; classN
   <div className={`bg-[#121214] border border-[#222226] rounded-xl relative overflow-hidden ${className}`}>
     <div
       className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-      style={{ background: 'linear-gradient(to right, transparent, rgba(99, 102, 241,0.25), transparent)' }}
+      style={{ background: 'linear-gradient(to right, transparent, rgba(115, 66, 226,0.25), transparent)' }}
     />
     {children}
   </div>
@@ -79,7 +82,7 @@ const Panel = ({ children, className = '' }: { children: React.ReactNode; classN
 // ─── Main Viewer ──────────────────────────────────────────────────────────────
 
 export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessionId }) => {
-  type TabKey = 'replay' | 'timeline' | 'personas' | 'insights' | 'orchestrator';
+  type TabKey = 'replay' | 'timeline' | 'personas' | 'insights' | 'orchestrator' | 'findings';
   const [activeTab, setActiveTab] = useState<TabKey>('replay');
   const [activeStep, setActiveStep] = useState<number>(0);
   const [copied, setCopied] = useState(false);
@@ -92,6 +95,8 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const [exportData, setExportData] = useState<any>(null);
   const [timelineData, setTimelineData] = useState<any>(null);
   const [recommendationsData, setRecommendationsData] = useState<any>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const fetchReportData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -151,6 +156,26 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    setPdfError(null);
+    try {
+      const res = await apiFetch(`/reports/${sessionId}/export/pdf`);
+      if (!res.ok) throw new Error(`PDF generation failed (${res.status})`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fricta-ux-report-${sessionId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setPdfError(err.message || 'Failed to download PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handleCopyText = () => {
     if (exportData?.textSheet) {
       navigator.clipboard.writeText(exportData.textSheet);
@@ -166,7 +191,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       <div className="min-h-[450px] flex flex-col items-center justify-center gap-4">
         <div
           className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: 'rgba(99, 102, 241,0.4)', borderTopColor: '#6366f1' }}
+          style={{ borderColor: 'rgba(115, 66, 226,0.4)', borderTopColor: '#7342E2' }}
         />
         <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
           Aggregating UX session intelligence telemetry...
@@ -187,7 +212,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         <button
           onClick={() => fetchReportData(true)}
           className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl font-mono mt-2"
-          style={{ background: 'rgba(99, 102, 241,0.1)', border: '1px solid rgba(99, 102, 241,0.25)', color: '#6366f1' }}
+          style={{ background: 'rgba(115, 66, 226,0.1)', border: '1px solid rgba(115, 66, 226,0.25)', color: '#7342E2' }}
         >
           <RefreshCw className="w-3.5 h-3.5" /> Retry
         </button>
@@ -202,6 +227,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
 
   const tabs: { key: TabKey; label: string; icon?: React.ReactNode }[] = [
     { key: 'replay',       label: 'Timeline Replay',       icon: <Activity className="w-3 h-3" /> },
+    { key: 'findings',     label: 'UX Findings',           icon: <ShieldAlert className="w-3 h-3" /> },
     { key: 'timeline',     label: 'Event Stream',          icon: <TrendingUp className="w-3 h-3" /> },
     { key: 'personas',     label: 'Persona Simulations',   icon: <Sparkles className="w-3 h-3" /> },
     { key: 'insights',     label: 'UX Insights',           icon: <BarChart3 className="w-3 h-3" /> },
@@ -209,6 +235,11 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   ];
 
   return (
+    <div className="flex flex-col gap-6">
+      <AIPipelineRibbon
+        active={['intelligence', 'correlation', 'severity', 'recommendations']}
+        persona={reportData.session?.persona}
+      />
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
       {/* ── Left Sidebar ──────────────────────────────────────────────────────── */}
@@ -216,9 +247,9 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
 
         {/* Grade Card */}
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-6 relative overflow-hidden flex flex-col items-center text-center">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366f1]/40 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#7342E2]/40 to-transparent" />
           <span className="text-[10px] text-[#71717a] font-bold uppercase tracking-wider font-mono">Executive UX Grade</span>
-          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#6366f1]/5 to-[#6366f1]/20 border-2 border-[#6366f1]/30 flex items-center justify-center text-3xl font-black text-[#6366f1] mt-4 shadow-[0_0_24px_rgba(99,102,241,0.15)] transition-transform hover:scale-105 duration-300">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#7342E2]/5 to-[#7342E2]/20 border-2 border-[#7342E2]/30 flex items-center justify-center text-3xl font-black text-[#7342E2] mt-4 shadow-[0_0_24px_rgba(115,66,226,0.15)] transition-transform hover:scale-105 duration-300">
             {grade}
           </div>
           <div className="text-xl font-bold text-white mt-4 font-mono">{scores.overallScore}/100</div>
@@ -252,30 +283,43 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             </h4>
             {[
               {
+                key: 'pdf',
+                label: downloadingPdf ? 'Generating PDF...' : 'PDF Report',
+                icon: downloadingPdf
+                  ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#f87171' }} />
+                  : <FileDown className="w-4 h-4" style={{ color: '#f87171' }} />,
+                onClick: handleDownloadPdf,
+                disabled: downloadingPdf,
+              },
+              {
+                key: 'markdown',
                 label: 'Markdown Document',
-                icon: <FileText className="w-4 h-4" style={{ color: '#6366f1' }} />,
+                icon: <FileText className="w-4 h-4" style={{ color: '#7342E2' }} />,
                 onClick: () => downloadFile(exportData.markdown, `fricta-ux-report-${sessionId}.md`, 'text/markdown'),
               },
               {
+                key: 'summary',
                 label: 'PM Summary Sheet',
                 icon: <Clipboard className="w-4 h-4" style={{ color: '#a78bfa' }} />,
                 onClick: handleCopyText,
                 suffix: copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Download className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.3)' }} />,
               },
               {
+                key: 'json',
                 label: 'Developer JSON',
                 icon: <Code className="w-4 h-4" style={{ color: '#60a5fa' }} />,
                 onClick: () => downloadFile(exportData.developerJson, `fricta-ux-dump-${sessionId}.json`, 'application/json'),
               },
             ].map(item => (
               <button
-                key={item.label}
+                key={item.key}
                 onClick={item.onClick}
-                className="w-full py-2.5 px-3.5 rounded-xl flex items-center justify-between text-xs font-medium transition-all"
+                disabled={item.disabled}
+                className="w-full py-2.5 px-3.5 rounded-xl flex items-center justify-between text-xs font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99, 102, 241,0.2)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(115, 66, 226,0.2)';
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
@@ -286,6 +330,9 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 {item.suffix ?? <Download className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.3)' }} />}
               </button>
             ))}
+            {pdfError && (
+              <p className="text-[10px] font-mono text-red-400 -mt-1">{pdfError}</p>
+            )}
           </div>
         </Panel>
       </div>
@@ -302,7 +349,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 onClick={() => setActiveTab(t.key)}
                 className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all relative flex items-center gap-2 ${
                   activeTab === t.key
-                    ? 'border-[#6366f1] text-white'
+                    ? 'border-[#7342E2] text-white'
                     : 'border-transparent text-[#71717a] hover:text-[#a1a1aa]'
                 }`}
               >
@@ -324,7 +371,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             <button
               onClick={handleRunDiagnostics}
               disabled={analyzing}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#3730a3] text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7342E2] to-[#5C2FC2] hover:from-[#5C2FC2] hover:to-[#4C2494] text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {analyzing ? (
                 <>
@@ -344,22 +391,32 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         {/* ── Tab Content ──────────────────────────────────────────────────────── */}
 
         {activeTab === 'replay' && (
-          <div className="flex flex-col gap-6">
-            <CinematicReplayViewer
-              screenshots={screenshots}
-              timeline={timeline}
-              visualFindings={reportData.visualFindings}
-              activeStep={activeStep}
-              setActiveStep={setActiveStep}
+          <>
+            <DesktopOnlyNotice
+              feature="Timeline Replay"
+              description="Frame-by-frame session replay needs a larger screen. Switch to the UX Findings tab for the mobile-friendly view of this report."
             />
-            {timeline.length > 0 && (
-              <FrictionProgressionGraph
+            <div className="hidden lg:flex flex-col gap-6">
+              <CinematicReplayViewer
+                screenshots={screenshots}
                 timeline={timeline}
+                visualFindings={reportData.visualFindings}
                 activeStep={activeStep}
-                onStepSelect={setActiveStep}
+                setActiveStep={setActiveStep}
               />
-            )}
-          </div>
+              {timeline.length > 0 && (
+                <FrictionProgressionGraph
+                  timeline={timeline}
+                  activeStep={activeStep}
+                  onStepSelect={setActiveStep}
+                />
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'findings' && (
+          <UXIntelligenceTab sessionId={sessionId} />
         )}
 
         {activeTab === 'timeline' && timeline.length > 0 && (
@@ -394,7 +451,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                   </h4>
                   <span
                     className="text-[9px] font-mono px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(99, 102, 241,0.08)', color: '#6366f1', border: '1px solid rgba(99, 102, 241,0.2)' }}
+                    style={{ background: 'rgba(115, 66, 226,0.08)', color: '#7342E2', border: '1px solid rgba(115, 66, 226,0.2)' }}
                   >
                     {reportData.uxFindings.length} findings
                   </span>
@@ -417,7 +474,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-2">
-                            <ChevronRight className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: '#6366f1' }} />
+                            <ChevronRight className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: '#7342E2' }} />
                             <span className="text-sm font-bold text-white leading-snug">{finding.title}</span>
                           </div>
                           <SeverityBadge severity={finding.severity} />
@@ -430,7 +487,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                             className="rounded-lg p-3 pl-5 text-[10px] font-mono leading-relaxed"
                             style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
                           >
-                            <span className="font-bold" style={{ color: '#6366f1' }}>→ Recommendation: </span>
+                            <span className="font-bold" style={{ color: '#7342E2' }}>→ Recommendation: </span>
                             <span style={{ color: 'rgba(255,255,255,0.5)' }}>{finding.recommendation}</span>
                           </div>
                         )}
@@ -444,12 +501,21 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         )}
 
         {activeTab === 'orchestrator' && (
-          <AgentOrchestrationConsole
-            sessionId={sessionId}
-            onOrchestrationComplete={() => fetchReportData(false)}
-          />
+          <>
+            <DesktopOnlyNotice
+              feature="Agent Orchestration"
+              description="The multi-agent orchestration console needs a larger screen. Switch to the UX Findings tab for the mobile-friendly view of this report."
+            />
+            <div className="hidden lg:block">
+              <AgentOrchestrationConsole
+                sessionId={sessionId}
+                onOrchestrationComplete={() => fetchReportData(false)}
+              />
+            </div>
+          </>
         )}
       </div>
+    </div>
     </div>
   );
 };

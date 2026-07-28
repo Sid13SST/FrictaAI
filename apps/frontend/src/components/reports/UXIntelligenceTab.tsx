@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch, API_BASE } from '../../lib/api';
-import { 
-  Brain, User, AlertCircle, CheckCircle2, Gauge, 
-  Clock, Shuffle, HelpCircle, TrendingUp, HelpCircle as HelpIcon, ArrowRight
+import {
+  Brain, User, AlertCircle, CheckCircle2, Gauge,
+  Clock, Shuffle, HelpCircle, TrendingUp, HelpCircle as HelpIcon, ArrowRight,
+  XCircle, Eye, RotateCcw, Loader2
 } from 'lucide-react';
+
+type FindingStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
 interface UXFinding {
   id: string;
@@ -15,7 +18,17 @@ interface UXFinding {
   evidence: string;
   recommendation: string;
   timestamp: string;
+  status?: FindingStatus;
+  confidence?: number;
+  resolutionNotes?: string | null;
 }
+
+const STATUS_META: Record<FindingStatus, { label: string; badge: string }> = {
+  OPEN: { label: 'Open', badge: 'bg-slate-500/10 border-slate-500/20 text-slate-300' },
+  UNDER_REVIEW: { label: 'Under Review', badge: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
+  RESOLVED: { label: 'Resolved', badge: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
+  DISMISSED: { label: 'Dismissed', badge: 'bg-zinc-500/10 border-zinc-500/20 text-zinc-500' },
+};
 
 interface CognitiveSignal {
   id: string;
@@ -41,6 +54,27 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
+  const [expandedFindingId, setExpandedFindingId] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const [savingFindingId, setSavingFindingId] = useState<string | null>(null);
+
+  const updateFinding = async (id: string, patch: { status?: FindingStatus; resolutionNotes?: string }) => {
+    setSavingFindingId(id);
+    try {
+      const res = await apiFetch(`/ux/findings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error('Failed to update finding');
+      const data = await res.json();
+      setFindings(prev => prev.map(f => (f.id === id ? { ...f, ...data.finding } : f)));
+    } catch (err) {
+      console.error('Failed to update finding status:', err);
+    } finally {
+      setSavingFindingId(null);
+    }
+  };
 
   // Trigger analysis if findings are empty, or just load them
   const loadUXData = async () => {
@@ -183,7 +217,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
       {/* 1. Persona Profile Toggle Panel */}
       <section className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 backdrop-blur">
         <div className="flex items-center space-x-3 mb-6">
-          <Brain className="w-5 h-5 text-indigo-400" />
+          <Brain className="w-5 h-5 text-[#9b72fa]" />
           <h3 className="text-lg font-medium text-white">Persona Usability Projections</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -193,7 +227,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
             onClick={() => setActivePersona('STANDARD')}
             className={`text-left p-4 rounded-xl border transition-all duration-300 ${
               activePersona === 'STANDARD' 
-                ? 'bg-slate-800 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
+                ? 'bg-slate-800 border-[#7342e2] shadow-[0_0_15px_rgba(115,66,226,0.15)]' 
                 : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'
             }`}
           >
@@ -266,13 +300,13 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
           <div>
             <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center">
-              <Gauge className="w-4 h-4 mr-2 text-indigo-400" /> Simulated UX Scores
+              <Gauge className="w-4 h-4 mr-2 text-[#9b72fa]" /> Simulated UX Scores
             </h4>
             <div className="flex items-center space-x-6 mb-6">
               <div className="relative flex items-center justify-center w-24 h-24 shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-slate-800" strokeWidth="6" fill="transparent" />
-                  <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-indigo-500" strokeWidth="6" fill="transparent"
+                  <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-[#7342e2]" strokeWidth="6" fill="transparent"
                     strokeDasharray={251.2}
                     strokeDashoffset={251.2 - (251.2 * scores.overall) / 100}
                     strokeLinecap="round"
@@ -293,7 +327,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                   <span>{scores.clarity}%</span>
                 </div>
                 <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${scores.clarity}%` }} />
+                  <div className="bg-[#7342e2] h-full rounded-full" style={{ width: `${scores.clarity}%` }} />
                 </div>
               </div>
               <div>
@@ -330,7 +364,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         {/* Cognitive Load Telemetry */}
         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
           <h4 className="text-sm font-semibold text-slate-300 mb-6 flex items-center">
-            <Brain className="w-4 h-4 mr-2 text-indigo-400" /> Cognitive Load Profile
+            <Brain className="w-4 h-4 mr-2 text-[#9b72fa]" /> Cognitive Load Profile
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
@@ -379,7 +413,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
       <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <div className="flex justify-between items-center mb-6">
           <h4 className="text-sm font-semibold text-slate-300 flex items-center">
-            <Clock className="w-4 h-4 mr-2 text-indigo-400" /> Friction Heatmap Timeline
+            <Clock className="w-4 h-4 mr-2 text-[#9b72fa]" /> Friction Heatmap Timeline
           </h4>
           <div className="flex items-center space-x-4 text-[10px] text-slate-500">
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1" /> Low</span>
@@ -408,7 +442,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                 key={step}
                 onClick={() => setSelectedStep(isActive ? null : step)}
                 className={`flex-1 min-w-[70px] py-3 rounded-lg border text-center transition-all duration-300 flex flex-col justify-between items-center cursor-pointer ${color} ${
-                  isActive ? 'ring-2 ring-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)] scale-[1.03] bg-slate-800' : ''
+                  isActive ? 'ring-2 ring-[#7342e2] shadow-[0_0_10px_rgba(115,66,226,0.3)] scale-[1.03] bg-slate-800' : ''
                 }`}
               >
                 <span className="text-[10px] text-slate-500 font-bold mb-1">STEP {step}</span>
@@ -451,7 +485,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         {/* Heuristic Findings column */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
           <h4 className="text-sm font-semibold text-slate-300 mb-6 flex items-center">
-            <AlertCircle className="w-4 h-4 mr-2 text-indigo-400" /> Active Heuristic Findings
+            <AlertCircle className="w-4 h-4 mr-2 text-[#9b72fa]" /> Active Heuristic Findings
           </h4>
 
           {filteredFindings.length === 0 ? (
@@ -466,21 +500,91 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                 if (finding.severity === 'MEDIUM') badgeColor = 'bg-amber-500/10 border-amber-500/20 text-amber-400';
                 if (finding.severity === 'HIGH' || finding.severity === 'CRITICAL') badgeColor = 'bg-red-500/10 border-red-500/20 text-red-400';
 
+                const status = finding.status || 'OPEN';
+                const statusMeta = STATUS_META[status];
+                const isExpanded = expandedFindingId === finding.id;
+                const isSaving = savingFindingId === finding.id;
+
                 return (
                   <div key={finding.id} className="p-4 bg-slate-950/20 border border-slate-850 rounded-xl space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <h5 className="font-semibold text-slate-200 text-sm">{finding.title}</h5>
-                        <div className="text-[10px] text-indigo-400 font-mono mt-0.5">{finding.findingType.replace(/_/g, ' ')}</div>
+                        <div className="text-[10px] text-[#9b72fa] font-mono mt-0.5">{finding.findingType.replace(/_/g, ' ')}</div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}`}>
-                        {finding.severity}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {typeof finding.confidence === 'number' && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-slate-800/60 border-slate-700 text-slate-400">
+                            {Math.round(finding.confidence * 100)}% conf.
+                          </span>
+                        )}
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}`}>
+                          {finding.severity}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-xs text-slate-400">{finding.description}</p>
                     <div className="text-[10px] bg-slate-950/50 p-2 rounded border border-slate-900 font-mono text-slate-500">
                       <span className="font-bold text-slate-400">Evidence:</span> {finding.evidence}
                     </div>
+
+                    {/* Investigation status + resolve controls */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-900">
+                      <button
+                        onClick={() => setExpandedFindingId(isExpanded ? null : finding.id)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border ${statusMeta.badge} flex items-center gap-1.5`}
+                      >
+                        {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                        {statusMeta.label}
+                      </button>
+                      {finding.resolutionNotes && !isExpanded && (
+                        <span className="text-[10px] text-slate-500 truncate max-w-[60%] italic">"{finding.resolutionNotes}"</span>
+                      )}
+                    </div>
+
+                    {isExpanded && (
+                      <div className="space-y-2.5 pt-1">
+                        <textarea
+                          value={notesDraft[finding.id] ?? finding.resolutionNotes ?? ''}
+                          onChange={(e) => setNotesDraft(prev => ({ ...prev, [finding.id]: e.target.value }))}
+                          placeholder="Add investigation notes…"
+                          rows={2}
+                          className="w-full text-xs bg-slate-950/60 border border-slate-800 rounded-lg p-2 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-[#7342e2]/50 resize-none"
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            disabled={isSaving}
+                            onClick={() => updateFinding(finding.id, { status: 'UNDER_REVIEW', resolutionNotes: notesDraft[finding.id] })}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 disabled:opacity-50"
+                          >
+                            Mark Under Review
+                          </button>
+                          <button
+                            disabled={isSaving}
+                            onClick={() => updateFinding(finding.id, { status: 'RESOLVED', resolutionNotes: notesDraft[finding.id] })}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Resolve
+                          </button>
+                          <button
+                            disabled={isSaving}
+                            onClick={() => updateFinding(finding.id, { status: 'DISMISSED', resolutionNotes: notesDraft[finding.id] })}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-500/10 border border-zinc-500/20 text-zinc-400 hover:bg-zinc-500/20 disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <XCircle className="w-3 h-3" /> Dismiss
+                          </button>
+                          {status !== 'OPEN' && (
+                            <button
+                              disabled={isSaving}
+                              onClick={() => updateFinding(finding.id, { status: 'OPEN', resolutionNotes: notesDraft[finding.id] })}
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <RotateCcw className="w-3 h-3" /> Reopen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -491,7 +595,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         {/* Pattern Library Recommendations column */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
           <h4 className="text-sm font-semibold text-slate-300 mb-6 flex items-center">
-            <CheckCircle2 className="w-4 h-4 mr-2 text-indigo-400" /> UX Recommendations Timeline
+            <CheckCircle2 className="w-4 h-4 mr-2 text-[#9b72fa]" /> UX Recommendations Timeline
           </h4>
 
           {recommendations.length === 0 ? (
@@ -503,21 +607,21 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
               {recommendations.slice(0, 3).map((rec, i) => (
                 <div key={i} className="p-4 border border-indigo-950/40 bg-indigo-950/5 rounded-xl space-y-3">
                   <h5 className="font-bold text-slate-200 text-sm flex items-center">
-                    <ArrowRight className="w-4 h-4 mr-2 text-indigo-400" /> {rec.title}
+                    <ArrowRight className="w-4 h-4 mr-2 text-[#9b72fa]" /> {rec.title}
                   </h5>
                   <div className="text-xs text-slate-400 italic">"{rec.description}"</div>
                   
                   <div className="p-3 bg-slate-950/40 rounded border border-slate-900">
-                    <div className="text-[10px] font-bold text-indigo-400 mb-1">WHY IT MATTERS</div>
+                    <div className="text-[10px] font-bold text-[#9b72fa] mb-1">WHY IT MATTERS</div>
                     <div className="text-xs text-slate-400">{rec.whyItMatters}</div>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-indigo-400">REMEDY STEPS (UX PATTERN LIBRARY)</div>
+                    <div className="text-[10px] font-bold text-[#9b72fa]">REMEDY STEPS (UX PATTERN LIBRARY)</div>
                     <div className="space-y-1.5">
                       {rec.remedySteps.map((step, idx) => (
                         <div key={idx} className="flex items-start space-x-2 text-xs">
-                          <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-indigo-500 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-[#7342e2] shrink-0" />
                           <span className="text-slate-400">{step}</span>
                         </div>
                       ))}

@@ -169,7 +169,20 @@ export class UXIntelligenceCoordinator {
 
     console.log(`[UXIntelligenceCoordinator] Saved ${compiledReport.findings.length} findings and ${compiledReport.cognitiveSignals.length} cognitive signals for session: ${sessionId}`);
 
-    return compiledReport;
+    // createMany() does not return the generated rows, so re-fetch the persisted
+    // records (with their real DB ids + default status/confidence) before handing
+    // them back to the frontend — the resolve/status workflow PATCHes by id, and
+    // the pre-insertion objects above never had one.
+    const [persistedFindings, persistedSignals] = await Promise.all([
+      this.prisma.uXFinding.findMany({ where: { workflowSessionId: sessionId }, orderBy: { timestamp: 'asc' } }),
+      this.prisma.cognitiveSignal.findMany({ where: { workflowSessionId: sessionId }, orderBy: { timestamp: 'asc' } })
+    ]);
+
+    return {
+      ...compiledReport,
+      findings: persistedFindings as any,
+      cognitiveSignals: persistedSignals as any
+    };
   }
 
   /**

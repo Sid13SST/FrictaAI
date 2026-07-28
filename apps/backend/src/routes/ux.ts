@@ -1,10 +1,15 @@
 import { Hono } from 'hono';
 import { PrismaClient } from '@fricta/db';
 import { UXIntelligenceCoordinator, RecommendationEngine } from '@fricta/ux-intelligence';
+import { requireFindingOwner } from '../guards/ownership';
+import { getCurrentUser } from '../middleware/authContext';
 
 export const uxRoutes = new Hono();
 const prisma = new PrismaClient();
 const coordinator = new UXIntelligenceCoordinator(prisma);
+
+const FINDING_STATUSES = ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED'] as const;
+type FindingStatus = (typeof FINDING_STATUSES)[number];
 
 // Retrieve all UX findings for a session
 uxRoutes.get('/findings/:sessionId', async (c) => {
@@ -17,6 +22,41 @@ uxRoutes.get('/findings/:sessionId', async (c) => {
     return c.json({ findings });
   } catch (error: any) {
     console.error(`[Backend] Failed to fetch UX findings for session ${sessionId}:`, error.message);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Update a finding's investigation status, with optional resolution notes.
+// Ownership is verified by traversing UXFinding -> WorkflowSession -> Project.
+uxRoutes.patch('/findings/:id', requireFindingOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const user = getCurrentUser(c);
+
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const { status, resolutionNotes } = body as { status?: string; resolutionNotes?: string };
+
+    if (status !== undefined && !FINDING_STATUSES.includes(status as FindingStatus)) {
+      return c.json({ error: `status must be one of: ${FINDING_STATUSES.join(', ')}` }, 400);
+    }
+    if (status === undefined && resolutionNotes === undefined) {
+      return c.json({ error: 'Provide at least one of: status, resolutionNotes' }, 400);
+    }
+
+    const isTerminal = status === 'RESOLVED' || status === 'DISMISSED';
+
+    const finding = await prisma.uXFinding.update({
+      where: { id },
+      data: {
+        ...(status !== undefined ? { status } : {}),
+        ...(resolutionNotes !== undefined ? { resolutionNotes } : {}),
+        ...(isTerminal ? { resolvedAt: new Date(), resolvedBy: user?.userId ?? null } : {}),
+      },
+    });
+
+    return c.json({ finding });
+  } catch (error: any) {
+    console.error(`[Backend] Failed to update finding ${id}:`, error.message);
     return c.json({ error: error.message }, 500);
   }
 });
