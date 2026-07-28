@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { buildUXReport, SessionData, ActionData, InteractionData, ThoughtData } from '@fricta/ux-engine';
-import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, UnifiedUXReportPayload, WorkflowSessionDetails } from '@fricta/report-engine';
+import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, PDFRenderer, UnifiedUXReportPayload, WorkflowSessionDetails } from '@fricta/report-engine';
+import { chromium } from 'playwright';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 import {
   ExecutiveReportingCompiler,
   SummarySynthesisEngine,
@@ -12,7 +15,8 @@ import {
   ExportProcessingService,
   SharedReportManager,
   ReportDistributionDispatcher,
-  WorkspaceAnalyticsEngine
+  WorkspaceAnalyticsEngine,
+  type ExportStorage
 } from '@fricta/enterprise-reporting';
 import { getCurrentUser } from '../middleware/authContext';
 import {
@@ -21,6 +25,30 @@ import {
   assertReportOwnership,
   requireWorkflowOwner
 } from '../guards/ownership';
+
+// ─── Export file storage (real files on disk, servable via /exports/:id/download) ──
+const EXPORTS_DIR = path.resolve(__dirname, '../../../../storage/exports');
+
+class DiskExportStorage implements ExportStorage {
+  async save(fileName: string, data: Buffer): Promise<string> {
+    await fs.mkdir(EXPORTS_DIR, { recursive: true });
+    await fs.writeFile(path.join(EXPORTS_DIR, fileName), data);
+    return `exports/${fileName}`;
+  }
+}
+
+async function renderHtmlToPdf(html: string): Promise<Buffer> {
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle' });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20px', bottom: '20px' } });
+    return Buffer.from(pdfBuffer);
+  } finally {
+    if (browser) await browser.close();
+  }
+}
 
 export const reportRoutes = new Hono();
 
@@ -116,14 +144,14 @@ export async function generateReportForSession(sessionId: string) {
     if (existingReport) {
       await tx.uXReport.update({
         where: { id: existingReport.id },
-        data: { summary: reportData.summary, score: Math.round(reportData.scores.overallScore * 100) }
+        data: { summary: reportData.summary, score: Math.round(reportData.scores.overallScore) }
       });
     } else {
       await tx.uXReport.create({
         data: {
           sessionId,
           summary: reportData.summary,
-          score: Math.round(reportData.scores.overallScore * 100)
+          score: Math.round(reportData.scores.overallScore)
         }
       });
     }
@@ -354,6 +382,36 @@ reportRoutes.get('/:id/export', requireWorkflowOwner('id'), async (c) => {
   });
 });
 
+// ─── GET /:id/export/pdf - Render report as a downloadable PDF (Session ownership required) ─────
+reportRoutes.get('/:id/export/pdf', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+  const html = PDFRenderer.renderHTML(payload, executiveSummary);
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle' });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20px', bottom: '20px' } });
+    return new Response(new Uint8Array(pdfBuffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="fricta-ux-report-${id}.pdf"`,
+      },
+    });
+  } catch (error: any) {
+    console.error(`[Backend] Failed to render PDF for report ${id}:`, error.message);
+    return c.json({ error: 'Failed to generate PDF export' }, 500);
+  } finally {
+    if (browser) await browser.close();
+  }
+});
+
 // ─── GET /:id/personas - Fetch personas list (Session ownership required) ─────
 reportRoutes.get('/:id/personas', requireWorkflowOwner('id'), async (c) => {
   const id = c.req.param('id');
@@ -440,7 +498,10 @@ async function resolveUser(c: any): Promise<any> {
 const compiler = new ExecutiveReportingCompiler(prisma as any);
 const summaryEngine = new SummarySynthesisEngine(prisma as any);
 const evidenceManager = new EvidenceLinkManager(prisma as any);
-const exportService = new ExportProcessingService(prisma as any);
+const exportService = new ExportProcessingService(prisma as any, {
+  renderPdf: renderHtmlToPdf,
+  storage: new DiskExportStorage(),
+});
 const shareManager = new SharedReportManager(prisma as any);
 const distributionDispatcher = new ReportDistributionDispatcher(prisma as any);
 const analyticsEngine = new WorkspaceAnalyticsEngine(prisma as any);
@@ -600,6 +661,40 @@ reportRoutes.post('/exports', async (c) => {
     return c.json({ export: exportRecord });
   } catch (err: any) {
     return c.json({ error: err.message }, 400);
+  }
+});
+
+/**
+ * GET /api/reports/exports/:exportId/download
+ * Streams a completed export file from disk (ownership verified via the
+ * export's parent report).
+ */
+reportRoutes.get('/exports/:exportId/download', async (c) => {
+  const user = getCurrentUser(c);
+  if (!user) return c.json({ error: 'Authentication required' }, 401);
+
+  const exportId = c.req.param('exportId');
+  const exportRecord = await prisma.reportExport.findUnique({ where: { id: exportId } });
+  if (!exportRecord) return c.json({ error: 'Export not found' }, 404);
+
+  const result = await verifyReportOwnership(user.userId, exportRecord.reportId);
+  if (result === 'NOT_FOUND') return c.json({ error: 'Report not found' }, 404);
+  if (result === 'NOT_OWNED') return c.json({ error: 'Access denied' }, 403);
+
+  if (exportRecord.status !== 'COMPLETED' || !exportRecord.filePath) {
+    return c.json({ error: `Export is ${exportRecord.status.toLowerCase()}, not ready for download` }, 409);
+  }
+
+  try {
+    const absolutePath = path.resolve(EXPORTS_DIR, path.basename(exportRecord.filePath));
+    const fileBytes = await fs.readFile(absolutePath);
+    const contentType = exportRecord.format === 'PDF' ? 'application/pdf' : 'application/octet-stream';
+    return c.body(new Uint8Array(fileBytes), 200, {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="fricta-export-${exportId}.${exportRecord.format.toLowerCase()}"`,
+    });
+  } catch (err: any) {
+    return c.json({ error: `Export file not found on disk: ${err.message}` }, 404);
   }
 });
 
