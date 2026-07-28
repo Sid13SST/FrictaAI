@@ -1,0 +1,85 @@
+version: '3.8'
+
+# Full production stack: Postgres, Redis, backend API, and the frontend
+# (served by nginx, which also proxies /api to the backend container).
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml --env-file .env up --build -d
+#
+# Required env vars (see .env.example): DATABASE_URL, CLERK_SECRET_KEY,
+# CLERK_PUBLISHABLE_KEY, VITE_CLERK_PUBLISHABLE_KEY, and any provider keys
+# consumed by apps/backend.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fricta-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fricta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-fricta}
+    volumes:
+      - fricta_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-fricta}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: fricta-redis
+    restart: unless-stopped
+    volumes:
+      - fricta_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: fricta-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?TOKEN_ENCRYPTION_KEY is required in production}
+    env_file:
+      - .env
+    ports:
+      - '3001:3001'
+    volumes:
+      - fricta_storage:/app/storage
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_API_BASE: /api
+    container_name: fricta-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - '80:80'
+
+volumes:
+  fricta_pgdata:
+  fricta_redisdata:
+  fricta_storage:
