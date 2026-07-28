@@ -10,7 +10,7 @@ import {
   AlertsService
 } from '@fricta/security-core';
 import { RBACAuthorizationGuard } from '@fricta/rbac-core';
-import { verifyWorkflowOwnership, verifyReportOwnership } from '../guards/ownership';
+import { verifyWorkflowOwnership, verifyReportOwnership, verifyInvestigationOwnership } from '../guards/ownership';
 
 export const securityRoutes = new Hono();
 const guard = new RBACAuthorizationGuard(prisma);
@@ -222,6 +222,20 @@ securityRoutes.post('/compliance/retention', async (c) => {
   if (!resourceType || !resourceId || !retentionDays) {
     return c.json({ error: 'resourceType, resourceId, and retentionDays are required' }, 400);
   }
+  if (!['REPLAY', 'REPORT', 'INVESTIGATION'].includes(resourceType)) {
+    return c.json({ error: "resourceType must be one of: REPLAY, REPORT, INVESTIGATION" }, 400);
+  }
+
+  // resourceId is caller-supplied — verify the caller actually owns the
+  // resource before letting them configure its retention policy, the same
+  // way /traceability above does for its resourceId.
+  const ownership = resourceType === 'REPLAY'
+    ? await verifyWorkflowOwnership(user?.id || '', resourceId)
+    : resourceType === 'REPORT'
+      ? await verifyReportOwnership(user?.id || '', resourceId)
+      : await verifyInvestigationOwnership(user?.id || '', resourceId);
+  if (ownership === 'NOT_FOUND') return c.json({ error: 'Resource not found' }, 404);
+  if (ownership === 'NOT_OWNED') return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
 
   if (workspaceId) {
     const hasPerm = await guard.checkWorkspacePermission(user?.id, workspaceId, 'TEAM', 'WRITE');
