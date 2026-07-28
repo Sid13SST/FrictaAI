@@ -29,13 +29,13 @@
 export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 // ─── Clerk Token Accessor ─────────────────────────────────────────────────────
-// We use Clerk's global __clerk__ instance to get the session token.
+// We use Clerk's global `window.Clerk` instance to get the session token.
 // This avoids requiring React hooks and works in any async context.
 
 async function getClerkToken(): Promise<string | null> {
   try {
-    // Access the global Clerk instance injected by ClerkProvider
-    const clerk = (window as any).__clerk__;
+    // Access the global Clerk instance injected by @clerk/clerk-react
+    const clerk = (window as any).Clerk;
     if (!clerk?.session) return null;
     // getToken() returns a fresh JWT string
     const token = await clerk.session.getToken();

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Brain, Terminal, Layers, ShieldAlert, Cpu, Sparkles, Database, Eye, Activity } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { DesktopOnlyNotice } from '../components/common/DesktopOnlyNotice';
 
 import { OrchestrationOverview } from '../features/orchestration/OrchestrationOverview';
 import { MultiAgentTimeline } from '../features/timeline/MultiAgentTimeline';
 import { AgentIntelligenceDetails } from '../features/agents/AgentIntelligenceDetails';
 import { FindingCorrelationInspector } from '../features/correlations/FindingCorrelationInspector';
+import { FindingsInvestigationPanel, UXFinding } from '../features/findings/FindingsInvestigationPanel';
 import { CollaborativeInsightCenter } from '../features/insights/CollaborativeInsightCenter';
 import { SharedMemoryStream } from '../features/shared-memory/SharedMemoryStream';
 import { SynchronizedReplayPlayer } from '../features/replay-sync/SynchronizedReplayPlayer';
@@ -14,6 +16,7 @@ import { RuntimeObservabilityPanel } from '../features/orchestrator/RuntimeObser
 
 export const InvestigationConsole: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [activeId, setActiveId] = useState<string | null>(id || null);
 
   // Layout Tab selection
   type ActiveViewTab = 'overview' | 'timeline' | 'evidence' | 'agents' | 'insights' | 'memory' | 'runtime';
@@ -46,6 +49,21 @@ export const InvestigationConsole: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      let targetId = id || null;
+      if (!targetId) {
+        const reportsRes = await apiFetch('/reports');
+        if (!reportsRes.ok) throw new Error('Failed to load recent sessions.');
+        const data = await reportsRes.json();
+        const reportsList = data.reports || [];
+        if (reportsList.length === 0) {
+          throw new Error('No investigation sessions found. Please run an audit first.');
+        }
+        targetId = reportsList[0].sessionId;
+        setActiveId(targetId);
+      }
+
+      if (!targetId) return;
+
       const base = '/console';
       const [
         overviewRes,
@@ -56,13 +74,13 @@ export const InvestigationConsole: React.FC = () => {
         memoryRes,
         replayRes
       ] = await Promise.all([
-        apiFetch(`${base}/${id}/overview`),
-        apiFetch(`${base}/${id}/timeline`),
-        apiFetch(`${base}/${id}/evidence`),
-        apiFetch(`${base}/${id}/insights`),
-        apiFetch(`${base}/${id}/agents`),
-        apiFetch(`${base}/${id}/memory`),
-        apiFetch(`${base}/${id}/replay-sync`),
+        apiFetch(`${base}/${targetId}/overview`),
+        apiFetch(`${base}/${targetId}/timeline`),
+        apiFetch(`${base}/${targetId}/evidence`),
+        apiFetch(`${base}/${targetId}/insights`),
+        apiFetch(`${base}/${targetId}/agents`),
+        apiFetch(`${base}/${targetId}/memory`),
+        apiFetch(`${base}/${targetId}/replay-sync`),
       ]);
 
       if (!overviewRes.ok) throw new Error('Investigation session details not found');
@@ -93,7 +111,13 @@ export const InvestigationConsole: React.FC = () => {
   };
 
   useEffect(() => {
-    if (id) fetchConsoleData();
+    // Keep activeId (used to key the SSE effect below) in sync whenever the
+    // route already carries an explicit id — otherwise navigating directly
+    // from one console session to another leaves activeId (and its SSE
+    // streams) pointed at the previous session, since it's only otherwise
+    // set by the "no id in URL" auto-pick branch inside fetchConsoleData.
+    if (id) setActiveId(id);
+    fetchConsoleData();
   }, [id]);
 
   const handleResetLiveStep = () => {
@@ -110,7 +134,11 @@ export const InvestigationConsole: React.FC = () => {
   }, [activeStep, replayData]);
 
   useEffect(() => {
-    if (!id || loading) return;
+    // Skip opening any SSE streams when there's no successfully-loaded session:
+    // the console failed-to-load branch (below) never renders the UI that
+    // consumes this data, so connecting here would only leak EventSource
+    // connections against a session that isn't actually being viewed.
+    if (!activeId || loading || error || !overviewData) return;
 
     const streamNames = ['orchestration', 'timeline', 'agents', 'memory', 'replay', 'insights'] as const;
     const sources: { [key: string]: EventSource } = {};
@@ -205,7 +233,7 @@ export const InvestigationConsole: React.FC = () => {
     const initSSE = async () => {
       let token = '';
       try {
-        const clerk = (window as any).__clerk__;
+        const clerk = (window as any).Clerk;
         if (clerk?.session) {
           token = await clerk.session.getToken() || '';
         }
@@ -217,7 +245,7 @@ export const InvestigationConsole: React.FC = () => {
 
       streamNames.forEach(streamName => {
         const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-        const url = `/api/realtime/${streamName}/${id}${tokenParam}`;
+        const url = `/api/realtime/${streamName}/${activeId}${tokenParam}`;
         const source = new EventSource(url);
         sources[streamName] = source;
 
@@ -372,7 +400,7 @@ export const InvestigationConsole: React.FC = () => {
           ...prev,
           agents: (prev.agents || []).map((a: any) => {
             if (a.id !== data.taskId && a.agentType !== data.agentType) return a;
-            const findingExists = (a.findings || []).some((f: any) => f.id === data.finding.id);
+            const findingExists = (a.findings || []).some((f: any) => f.id === data.finding?.id);
             if (findingExists) return { ...a, id: data.taskId };
             return {
               ...a,
@@ -385,7 +413,7 @@ export const InvestigationConsole: React.FC = () => {
 
       setOverviewData((prev: any) => {
         if (!prev) return prev;
-        const sev = (data.finding.severity || 'LOW').toUpperCase();
+        const sev = (data.finding?.severity || 'LOW').toUpperCase();
         return {
           ...prev,
           severity: {
@@ -395,27 +423,12 @@ export const InvestigationConsole: React.FC = () => {
         };
       });
 
-      setEvidenceData((prev: any) => {
-        if (!prev) return prev;
-        const exists = (prev.uxFindings || []).some((f: any) => f.id === data.finding.id);
-        if (exists) return prev;
-        return {
-          ...prev,
-          uxFindings: [
-            ...(prev.uxFindings || []),
-            {
-              id: data.finding.id,
-              workflowSessionId: id,
-              findingType: data.finding.findingType,
-              severity: data.finding.severity,
-              title: data.finding.title,
-              description: data.finding.description,
-              evidence: data.finding.evidence,
-              timestamp: new Date().toISOString()
-            }
-          ]
-        };
-      });
+      // Note: live agent findings (from the orchestration/specialist-agent stream) are
+      // AgentFinding records, not UXFinding records — they have no backing row in the
+      // UXFinding table, so they must not be merged into evidenceData.uxFindings (that
+      // array feeds the resolve/status/notes workflow, which only works against real
+      // UXFinding ids). They're already reflected in agentsData and the severity counts
+      // above; the full list is visible via the Specialist Agents tab.
     });
 
     sources.agents.addEventListener('agent.failed', (e: any) => {
@@ -504,7 +517,7 @@ export const InvestigationConsole: React.FC = () => {
           ...prev,
           insights: [...list, {
             id: data.insightId,
-            orchestrationSessionId: id,
+            orchestrationSessionId: activeId,
             title: data.title,
             summary: data.summary,
             supportingEvidence: data.supportingEvidence,
@@ -551,17 +564,18 @@ export const InvestigationConsole: React.FC = () => {
   initSSE();
 
   return () => {
+      active = false;
       streamNames.forEach(streamName => {
         if (sources[streamName]) {
           sources[streamName].close();
         }
       });
     };
-  }, [id, loading]);
+  }, [activeId, loading]);
 
   if (loading) {
     return (
-      <div className="h-screen w-screen bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-zinc-400 font-mono">
+      <div className="h-full w-full bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-zinc-400 font-mono">
         <div className="w-10 h-10 border-2 border-t-transparent animate-spin rounded-full" style={{ borderColor: 'rgba(115, 66, 226, 0.2)', borderTopColor: '#7342e2' }} />
         <span className="text-[10px] tracking-[0.2em] text-[#7342e2] font-black uppercase animate-pulse">Aggregating investigation telemetry...</span>
       </div>
@@ -570,7 +584,7 @@ export const InvestigationConsole: React.FC = () => {
 
   if (error || !overviewData) {
     return (
-      <div className="h-screen w-screen bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-center p-8">
+      <div className="h-full w-full bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-center p-8">
         <ShieldAlert className="w-12 h-12 text-red-400 animate-bounce" />
         <h3 className="text-base font-bold text-white font-mono">Operational Console Failed</h3>
         <p className="text-xs text-zinc-500 max-w-sm font-sans">{error || 'Session intelligence data could not be retrieved.'}</p>
@@ -591,12 +605,17 @@ export const InvestigationConsole: React.FC = () => {
     { key: 'agents', label: 'Specialist Agents', icon: Cpu },
     { key: 'insights', label: 'Insight Center', icon: Sparkles },
     { key: 'memory', label: 'Shared Memory Stream', icon: Database },
-    { key: 'runtime', label: 'Runtime Observability', icon: Activity },
+    { key: 'runtime', label: 'Session Recovery State', icon: Activity },
   ] as const;
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#070b0a] text-zinc-100 flex flex-col font-sans select-none">
-      
+    <>
+      <DesktopOnlyNotice
+        feature="Investigation Console"
+        description="This deep-dive view uses a multi-column layout built for larger screens. Open it on a laptop or desktop to explore evidence, agents, and timelines."
+      />
+      <div className="hidden lg:flex h-full w-full overflow-hidden bg-[#070b0a] text-zinc-100 flex-col font-sans select-none">
+
       {/* ── Minimalist Nav Header ────────────────────────────────────────── */}
       <header className="h-12 border-b border-[#222226] bg-[#09090b]/80 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
@@ -680,15 +699,9 @@ export const InvestigationConsole: React.FC = () => {
                 />
               )}
               {activeTab === 'evidence' && evidenceData && (
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-10">
                   {replayData && replayData.frames && replayData.frames.length > 0 && (
-                    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-                      <div className="flex items-center justify-between border-b border-[#222226] pb-3">
-                        <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">Active Step Screenshot Details</h4>
-                        <span className="text-[9.5px] font-mono text-zinc-500">
-                          STEP {activeStep + 1} / {replayData.frames.length}
-                        </span>
-                      </div>
+                    <div className="w-full min-h-[600px] h-[75vh] flex flex-col">
                       <SynchronizedReplayPlayer
                         frames={replayData.frames}
                         activeStep={activeStep}
@@ -701,10 +714,23 @@ export const InvestigationConsole: React.FC = () => {
                     </div>
                   )}
 
-                  <FindingCorrelationInspector 
-                    screenshots={evidenceData.screenshots || []} 
-                    visualFindings={evidenceData.visualFindings || []} 
-                    cognitiveSignals={evidenceData.cognitiveSignals || []} 
+                  <FindingsInvestigationPanel
+                    findings={evidenceData.uxFindings || []}
+                    onFindingUpdated={(updated: UXFinding) => {
+                      setEvidenceData((prev: any) => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          uxFindings: (prev.uxFindings || []).map((f: any) => (f.id === updated.id ? updated : f)),
+                        };
+                      });
+                    }}
+                  />
+
+                  <FindingCorrelationInspector
+                    screenshots={evidenceData.screenshots || []}
+                    visualFindings={evidenceData.visualFindings || []}
+                    cognitiveSignals={evidenceData.cognitiveSignals || []}
                     correlations={evidenceData.correlations || []}
                     onSelectStep={(step) => {
                       setActiveStep(step);
@@ -730,7 +756,13 @@ export const InvestigationConsole: React.FC = () => {
                 />
               )}
               {activeTab === 'runtime' && id && (
-                <RuntimeObservabilityPanel sessionId={id} />
+                <div className="flex flex-col gap-4">
+                  <p className="text-[11px] font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    Recovery checkpoints and lock state for this session only. For system-wide worker/queue health,
+                    see <Link to="/app/runtime" className="text-[#9b72fa] hover:underline">Runtime Observability</Link> in the sidebar.
+                  </p>
+                  <RuntimeObservabilityPanel sessionId={id} />
+                </div>
               )}
             </main>
 
@@ -817,6 +849,7 @@ export const InvestigationConsole: React.FC = () => {
 
       </div>
 
-    </div>
+      </div>
+    </>
   );
 };
