@@ -15,3 +15,6 @@ coverage/
 # Prisma generated client (auto-generated at build time, platform-specific binaries)
 packages/db/src/generated/
 
+# Codex CLI local config (unrelated to the project)
+.codex/
+
