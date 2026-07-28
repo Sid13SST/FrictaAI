@@ -15,7 +15,8 @@ import {
 import { apiFetch } from '../../lib/api';
 
 interface RuntimeObservabilityPanelProps {
-  sessionId: string;
+  /** Optional — when omitted, shows system-wide telemetry only (no per-session recovery/checkpoint data). */
+  sessionId?: string;
 }
 
 export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps> = ({ sessionId }) => {
@@ -29,11 +30,9 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      console.log(`[RuntimeObservabilityPanel] Fetching telemetry...`);
-      
       const [telemetryRes, sessionRes] = await Promise.all([
         apiFetch(`/runtime/telemetry`, { signal: controller.signal }),
-        apiFetch(`/runtime/telemetry/${sessionId}`, { signal: controller.signal })
+        sessionId ? apiFetch(`/runtime/telemetry/${sessionId}`, { signal: controller.signal }) : Promise.resolve(null),
       ]);
       clearTimeout(timeoutId);
 
@@ -46,7 +45,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
         throw new Error(errMsg);
       }
 
-      if (!sessionRes.ok) {
+      if (sessionRes && !sessionRes.ok) {
         let errMsg = `Session metrics request failed (${sessionRes.status})`;
         try {
           const json = await sessionRes.clone().json();
@@ -56,20 +55,17 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
       }
 
       const telemetryData = await telemetryRes.json();
-      const sessionData = await sessionRes.json();
-
-      console.log('[RuntimeObservabilityPanel] Data received:', { telemetryData, sessionData });
+      const sessionData = sessionRes ? await sessionRes.json() : null;
 
       if (telemetryData.success) {
         setTelemetry(telemetryData.telemetry);
       }
-      if (sessionData.success) {
+      if (sessionData?.success) {
         setSessionRuntime(sessionData);
       }
       setError(null);
     } catch (err: any) {
       clearTimeout(timeoutId);
-      console.error('[RuntimeObservabilityPanel] Error during fetch:', err);
       if (err.name === 'AbortError') {
         setError('Telemetry request timed out after 5 seconds');
       } else {
@@ -264,31 +260,37 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
             <span className="text-[9.5px] text-zinc-500">MUTUAL EXCLUSION</span>
           </div>
 
-          <div className="bg-[#0d0d0f] border border-[#222226] p-4 rounded-lg flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-[#222226]/50 pb-2">
-              <span className="font-bold text-white">RECOVERY CHECKPOINT STATE</span>
-              <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-bold">
-                {safeCheckpoint.lastMilestone || 'INITIAL'}
-              </span>
-            </div>
-            
-            <div className="flex flex-col gap-2 text-[10px]">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Completed Tasks:</span>
-                <span className="text-emerald-400 font-bold">{safeCheckpoint.completedTaskIds?.length || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Failed Tasks:</span>
-                <span className="text-red-400 font-bold">{safeCheckpoint.failedTaskIds?.length || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Session Lock status:</span>
-                <span className="text-white flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3 text-emerald-400" /> Locked (Active Run)
+          {sessionId ? (
+            <div className="bg-[#0d0d0f] border border-[#222226] p-4 rounded-lg flex flex-col gap-3">
+              <div className="flex items-center justify-between border-b border-[#222226]/50 pb-2">
+                <span className="font-bold text-white">RECOVERY CHECKPOINT STATE</span>
+                <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[8px] font-bold">
+                  {safeCheckpoint.lastMilestone || 'INITIAL'}
                 </span>
               </div>
+
+              <div className="flex flex-col gap-2 text-[10px]">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Completed Tasks:</span>
+                  <span className="text-emerald-400 font-bold">{safeCheckpoint.completedTaskIds?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Failed Tasks:</span>
+                  <span className="text-red-400 font-bold">{safeCheckpoint.failedTaskIds?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Session Lock status:</span>
+                  <span className="text-white flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-emerald-400" /> Locked (Active Run)
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-[#0d0d0f] border border-[#222226] p-6 rounded-lg text-center text-zinc-600 italic text-[10px]">
+              Open a specific audit session from Investigation Console to view its recovery checkpoint and lock state.
+            </div>
+          )}
         </div>
 
       </div>
