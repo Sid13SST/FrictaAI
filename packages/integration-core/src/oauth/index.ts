@@ -1,12 +1,14 @@
 import { prisma } from '@fricta/db';
 import { IntegrationProvider, WorkspaceIntegrationSummary } from '../types';
+import { encryptToken, decryptToken } from './crypto';
 
 /**
  * OAuthManager — enterprise-grade token lifecycle management.
  *
  * Stores one WorkspaceIntegration record per (workspaceId, provider) pair.
  * Solo mode: workspaceId may be null; isolation is maintained at the record level.
- * Tokens are stored as-is here; in production wrap with KMS/Vault encryption.
+ * accessToken/refreshToken are AES-256-GCM encrypted before hitting the DB
+ * (see ./crypto.ts) and decrypted transparently by getToken().
  */
 export class OAuthManager {
   /**
@@ -29,13 +31,16 @@ export class OAuthManager {
       include: { connections: true }
     });
 
+    const encryptedAccessToken = encryptToken(accessToken);
+    const encryptedRefreshToken = refreshToken !== undefined ? encryptToken(refreshToken) : undefined;
+
     let record;
     if (existing) {
       record = await prisma.workspaceIntegration.update({
         where: { id: existing.id },
         data: {
-          accessToken,
-          refreshToken: refreshToken ?? existing.refreshToken,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken ?? existing.refreshToken,
           tokenExpiresAt: tokenExpiresAt ?? existing.tokenExpiresAt,
           providerUserId: providerUserId ?? existing.providerUserId,
           providerOrgId: providerOrgId ?? existing.providerOrgId,
@@ -51,8 +56,8 @@ export class OAuthManager {
         data: {
           workspaceId: workspaceId ?? null,
           provider,
-          accessToken,
-          refreshToken,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
           tokenExpiresAt,
           providerUserId,
           providerOrgId,
@@ -82,8 +87,8 @@ export class OAuthManager {
     if (!record || !record.accessToken) return null;
 
     return {
-      accessToken: record.accessToken,
-      refreshToken: record.refreshToken ?? undefined,
+      accessToken: decryptToken(record.accessToken),
+      refreshToken: record.refreshToken ? decryptToken(record.refreshToken) : undefined,
       expiresAt: record.tokenExpiresAt ?? undefined
     };
   }
