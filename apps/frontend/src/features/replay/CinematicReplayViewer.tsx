@@ -67,6 +67,14 @@ export const CinematicReplayViewer: React.FC<CinematicReplayViewerProps> = ({
   // Keyboard controls listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping = target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      );
+      if (isTyping) return;
+
       if (e.key === 'ArrowRight') {
         e.preventDefault();
         setIsPlaying(false);
