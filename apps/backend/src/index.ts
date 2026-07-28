@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { logger } from 'hono/logger';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -20,7 +21,6 @@ import { clerkMiddleware, requireAuth, customLogger } from './middleware';
 
 
 // ─── Route Imports ────────────────────────────────────────────────────────────
-import { authRoutes } from './routes/auth';
 import { projectRoutes } from './routes/projects';
 import { workflowRoutes } from './routes/workflows';
 import { reportRoutes, generateReportForSession } from './routes/reports';
@@ -99,7 +99,28 @@ const app = new Hono();
 
 // ─── Global Middlewares ───────────────────────────────────────────────────────
 app.use('*', customLogger());
-app.use('*', cors());
+
+app.use('*', secureHeaders({
+  contentSecurityPolicy: {
+    defaultSrc: ["'none'"],
+    frameAncestors: ["'none'"],
+  },
+  crossOriginResourcePolicy: 'same-site',
+  xFrameOptions: 'DENY',
+}));
+
+// CORS is scoped to known frontend origins. FRONTEND_URL supports a
+// comma-separated list for previews/staging; falls back to local dev.
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
+  allowHeaders: ['Content-Type', 'Authorization'],
+}));
 
 
 // SSE query token rewrite middleware: intercepts ?token=... query parameter
@@ -122,9 +143,6 @@ app.use('*', clerkMiddleware());
 // Health checks — infrastructure monitoring, no user data
 app.route('/api/health', healthRoutes);
 app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
-
-// Auth endpoints — login/register (placeholder, logically public)
-app.route('/api/auth', authRoutes);
 
 // Public API — uses its own API key authentication via ApiKeyManager
 app.route('/api/public', publicRoutes);
@@ -238,8 +256,7 @@ app.route('/', protectedEngineering);
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 console.log(`Server is running on port ${port}`);
 
-// Start BullMQ Worker (Disabled for local dev without Redis)
-/*
+// Start BullMQ Worker — processes queued workflow jobs (requires Redis).
 const worker = startWorker();
 worker.on('completed', async (job: any) => {
   const sessionId = job.data?.sessionId;
@@ -270,7 +287,6 @@ worker.on('failed', async (job: any, err: any) => {
 startRuntime(prisma).catch((err: any) => {
   console.error('Failed to start distributed runtime:', err);
 });
-*/
 
 const server = serve({
   fetch: app.fetch,
