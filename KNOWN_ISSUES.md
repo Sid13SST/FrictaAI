@@ -53,13 +53,9 @@ Tracked items that are known, deliberately deferred, and not blocking V1 launch.
 
 ## 7. `WorkspaceIntegration` has no owning-user column
 
-**Status:** Real gap, needs a schema migration — not a route-level fix. Flagged during the full IDOR/BOLA remediation pass, not yet closed.
-
-- The `WorkspaceIntegration` model (third-party OAuth connections — Figma/Jira/Linear/GitHub/Notion/ProductBoard) only has a nullable `workspaceId`, no `userId`/`projectId`. `IntegrationPermissionGuard`'s `canReadIntegrations`/`canManageIntegrations`/`canPushEvidence` all special-case `if (!workspaceId) return true`, so in solo mode (no workspace) these routes (`/connections`, `/oauth/connect`, `/oauth/revoke`, `/events`, `/governance`, `/sync/jobs`) are genuinely unscopable between different solo users — any authenticated solo-mode user could read/manage another solo-mode user's connected integrations.
-- **Fix:** add a `userId` column to `WorkspaceIntegration`, backfill from whatever created the connection, then gate solo-mode access on it the same way `security.ts`/`workspace.ts` now do for their nullable-`workspaceId` tables. Do not ship this integration surface broadly to solo-mode users before this lands.
+**Status:** ✅ Fixed. Added a `userId` column (migration `20260729130000_add_workspace_integration_owner`) that's set on every new solo-mode connection. `OAuthManager` (upsert/get/revoke/markExpired/list), `IntegrationPermissionGuard.requireConnected`, `IntegrationGovernanceLogger.getAuditLog`, and `IntegrationTimeline.getUnifiedTimeline` all now scope solo-mode (`workspaceId` null) lookups to the caller's own `userId` instead of matching any row with a null `workspaceId`. `/sync/jobs` also gained an ownership check on the caller-supplied `integrationId` (previously none at all), and `/events` now verifies project ownership when a `projectId` is passed.
+- **Note:** no backfill was possible — pre-existing solo-mode rows never recorded who created them, so historical connections have `userId = NULL` and will no longer be returned to *any* solo user post-fix (fails closed, not open). Anyone who connected an integration before this fix will need to reconnect it.
 
 ## 8. `security.ts` `/compliance/retention` — no ownership check on `resourceId`
 
-**Status:** Real gap, low severity, not yet fixed.
-
-- Found during the same remediation pass as #7 above; ran out of scope to fix in that pass. The route accepts an arbitrary `resourceId` with no verification the caller owns the resource it points at. Needs the same treatment as the rest of `security.ts` (scope to caller in solo mode / workspace-permission check when a workspace is present) before this endpoint is exposed to real users.
+**Status:** ✅ Fixed. The route now verifies the caller owns the target resource (`verifyWorkflowOwnership`/`verifyReportOwnership`/`verifyInvestigationOwnership` depending on `resourceType`) before applying a retention policy, the same pattern `/traceability` already used just above it in the same file.
