@@ -58,9 +58,16 @@ Simulates workflows under multiple cohort configurations:
 
 ### 📝 Export Engine
 Generates premium deliverables on-demand:
-1. **Markdown Executive Report**: Formal, readable audit summary.
-2. **PM Summary Sheet**: Direct copy-paste format summarizing key severity metrics.
-3. **Developer Debug JSON**: Raw session metadata, coordinates, and timings.
+1. **PDF Report**: Real, headless-browser-rendered PDF (Playwright) — no placeholder layout.
+2. **Markdown Executive Report**: Formal, readable audit summary.
+3. **PM Summary Sheet**: Direct copy-paste format summarizing key severity metrics.
+4. **Developer Debug JSON**: Raw session metadata, coordinates, and timings.
+
+### 🗂️ Project Management
+Full CRUD for the websites you audit — create, edit, delete, and drill into a project's audit history from `/app/projects`. Launching an audit from a project detail page pre-fills the target URL.
+
+### ✅ Investigation Workflow
+Every finding (from either the single-agent audit or the multi-agent orchestration run) can be marked **Under Review**, **Resolved**, or **Dismissed** with investigator notes — persisted and reflected consistently across the Investigation Console and the report's UX Findings tab.
 
 ---
 
@@ -93,7 +100,18 @@ Fricta relies on an evidence-centric database architecture. Below are the key ta
 * `GET /api/reports/:sessionId`: Compiles full unified scorecards and metrics.
 * `GET /api/reports/:sessionId/executive`: Pulls grade summaries (`A` to `F`) and risk factors.
 * `GET /api/reports/:sessionId/export`: Generates markdown, developer JSON, and PM summary sheet formats.
+* `GET /api/reports/:sessionId/export/pdf`: Renders and streams a real PDF (Playwright).
 * `POST /api/reports/:sessionId/generate`: Regenerates scoring and summary structures.
+
+### Projects
+* `GET /api/projects`: Lists the authenticated user's projects.
+* `POST /api/projects`: Creates a project (`projectName`, `websiteUrl`).
+* `GET|PUT|DELETE /api/projects/:id`: Fetch, update, or delete a single project (ownership-enforced).
+
+### UX Findings & Investigation Workflow
+* `POST /api/ux/analyze/:sessionId`: Runs heuristic analysis and persists real, resolvable `UXFinding` records.
+* `GET /api/ux/findings/:sessionId`: Lists findings for a session.
+* `PATCH /api/ux/findings/:id`: Updates a finding's `status` (`OPEN`/`UNDER_REVIEW`/`RESOLVED`/`DISMISSED`) and `resolutionNotes`.
 
 ---
 
@@ -113,7 +131,7 @@ npm install
 
 ### Database Setup
 
-1. Copy `.env.example` to `.env` and configure your `DATABASE_URL`.
+1. Copy `.env.example` to `.env` and configure your `DATABASE_URL`. If you'll be connecting any OAuth integrations, also set `TOKEN_ENCRYPTION_KEY` (generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`) — required in production, optional (with a dev-only fallback) locally.
 2. Generate the Prisma client and push migrations:
 ```bash
 npx prisma generate
@@ -139,6 +157,18 @@ Run unit tests inside the report engine package to verify scoring structures:
 ```bash
 npx tsx packages/report-engine/src/test-report.ts
 ```
+
+---
+
+## 🚀 Production Deployment
+
+The full stack (Postgres, Redis, backend, and nginx-served frontend) is defined in `docker-compose.prod.yml`. `docker-compose.yml` is for **local dev infra only** (Postgres + Redis, used alongside `npm run dev`) — don't confuse the two.
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env up --build -d
+```
+
+Required env vars (see `.env.example`): `DATABASE_URL`, `POSTGRES_PASSWORD`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, `TOKEN_ENCRYPTION_KEY`. The backend image is built on Microsoft's Playwright base image since it launches headless Chromium for PDF export and browser automation.
 
 ---
 
