@@ -88,36 +88,36 @@ export const ProjectDetail = () => {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div className="flex items-start gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex items-start gap-4 min-w-0">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(115,66,226,0.1)', border: '1px solid rgba(115,66,226,0.25)' }}>
             <Globe className="w-5 h-5" style={{ color: '#9B72FA' }} />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">{project.projectName}</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white break-words">{project.projectName}</h1>
             <a
               href={project.websiteUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-flex items-center gap-1.5 text-sm transition-colors hover:text-white"
+              className="mt-1 inline-flex items-center gap-1.5 text-sm transition-colors hover:text-white max-w-full"
               style={{ color: 'rgba(255,255,255,0.4)' }}
             >
-              {project.websiteUrl} <ExternalLink className="w-3 h-3" />
+              <span className="truncate">{project.websiteUrl}</span> <ExternalLink className="w-3 h-3 flex-shrink-0" />
             </a>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => navigate(`/app/workflow?projectId=${project.id}`)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105"
             style={{ background: 'linear-gradient(135deg, #7342E2, #8b5cf6)', boxShadow: '0 0 24px rgba(115,66,226,0.25)' }}
           >
             <Plus className="w-3.5 h-3.5" /> New Audit
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-rose-400 transition-colors"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-rose-400 transition-colors flex-shrink-0"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
             title="Delete project"
           >
@@ -127,7 +127,7 @@ export const ProjectDetail = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Total Audits', value: total, icon: <Activity className="w-4 h-4" />, color: '#9B72FA' },
           { label: 'Completed', value: completed, icon: <CheckCircle2 className="w-4 h-4" />, color: '#10b981' },
@@ -177,20 +177,20 @@ export const ProjectDetail = () => {
                 <div
                   key={w.id}
                   onClick={() => navigate(target)}
-                  className="flex items-center gap-4 px-5 py-3.5 cursor-pointer transition-colors duration-200 group"
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-5 py-3.5 cursor-pointer transition-colors duration-200 group"
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.01)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{w.goal || 'UX Audit'}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
                       {w.persona ? `${w.persona} · ` : ''}
                       {new Date(w.startedAt || w.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <StatusBadge status={w.status} />
-                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#9B72FA' }} />
+                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" style={{ color: '#9B72FA' }} />
                   </div>
                 </div>
               );

@@ -106,15 +106,15 @@ export const FindingsInvestigationPanel: React.FC<FindingsInvestigationPanelProp
   };
 
   return (
-    <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-      <div className="flex items-center justify-between border-b border-[#222226] pb-3">
+    <div className="bg-[#121214] border border-[#222226] rounded-xl p-3.5 sm:p-5 flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#222226] pb-3">
         <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">UX Findings</h4>
         <span className="text-[9.5px] font-mono text-zinc-500">{filtered.length} / {findings.length} SHOWN</span>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[180px]">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="relative w-full sm:flex-1 sm:min-w-[180px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
           <input
             value={search}
@@ -123,35 +123,37 @@ export const FindingsInvestigationPanel: React.FC<FindingsInvestigationPanelProp
             className="w-full bg-[#0d0d0f] border border-[#222226] rounded-lg pl-8 pr-3 py-1.5 text-[11px] font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#7342e2]/40"
           />
         </div>
-        <select
-          value={severityFilter}
-          onChange={(e) => setSeverityFilter(e.target.value)}
-          className="bg-[#0d0d0f] border border-[#222226] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-[#7342e2]/40"
-        >
-          <option value="ALL">All Severities</option>
-          {Object.keys(SEVERITY_STYLES).map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-[#0d0d0f] border border-[#222226] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-[#7342e2]/40"
-        >
-          <option value="ALL">All Statuses</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s.replace('_', ' ')}</option>
-          ))}
-        </select>
-        <select
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
-          className="bg-[#0d0d0f] border border-[#222226] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-[#7342e2]/40"
-        >
-          <option value="severity">Sort: Severity</option>
-          <option value="confidence">Sort: Confidence</option>
-          <option value="timestamp">Sort: Newest</option>
-        </select>
+        <div className="grid grid-cols-3 sm:flex gap-2">
+          <select
+            value={severityFilter}
+            onChange={(e) => setSeverityFilter(e.target.value)}
+            className="w-full bg-[#0d0d0f] border border-[#222226] rounded-lg px-2 sm:px-2.5 py-1.5 text-[10.5px] sm:text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-[#7342e2]/40"
+          >
+            <option value="ALL">All Severities</option>
+            {Object.keys(SEVERITY_STYLES).map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full bg-[#0d0d0f] border border-[#222226] rounded-lg px-2 sm:px-2.5 py-1.5 text-[10.5px] sm:text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-[#7342e2]/40"
+          >
+            <option value="ALL">All Statuses</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s.replace('_', ' ')}</option>
+            ))}
+          </select>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+            className="w-full bg-[#0d0d0f] border border-[#222226] rounded-lg px-2 sm:px-2.5 py-1.5 text-[10.5px] sm:text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-[#7342e2]/40"
+          >
+            <option value="severity">Sort: Severity</option>
+            <option value="confidence">Sort: Confidence</option>
+            <option value="timestamp">Sort: Newest</option>
+          </select>
+        </div>
       </div>
 
       {/* List */}
@@ -168,7 +170,7 @@ export const FindingsInvestigationPanel: React.FC<FindingsInvestigationPanelProp
               <div key={f.id} className="bg-[#0d0d0f]/60 border border-[#222226] rounded-lg overflow-hidden">
                 <button
                   onClick={() => setExpandedId(isOpen ? null : f.id)}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#0d0d0f]/90 transition-colors"
+                  className="w-full flex flex-wrap items-center gap-x-3 gap-y-1.5 p-3 text-left hover:bg-[#0d0d0f]/90 transition-colors"
                 >
                   <span className={`shrink-0 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase ${SEVERITY_STYLES[f.severity] || SEVERITY_STYLES.LOW}`}>
                     {f.severity}
@@ -176,9 +178,11 @@ export const FindingsInvestigationPanel: React.FC<FindingsInvestigationPanelProp
                   <span className={`shrink-0 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase ${STATUS_STYLES[status] || STATUS_STYLES.OPEN}`}>
                     {status.replace('_', ' ')}
                   </span>
-                  <span className="flex-1 min-w-0 text-xs text-white font-bold font-mono truncate">{f.title}</span>
-                  <span className="shrink-0 text-[9.5px] font-mono text-zinc-500">
-                    {Math.round((f.confidence ?? 0) * 100)}% confidence
+                  <span className="flex-1 min-w-[120px] text-xs text-white font-bold font-mono truncate order-last basis-full sm:basis-auto sm:order-none">
+                    {f.title}
+                  </span>
+                  <span className="shrink-0 text-[9.5px] font-mono text-zinc-500 ml-auto sm:ml-0">
+                    {Math.round((f.confidence ?? 0) * 100)}%
                   </span>
                   {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-zinc-500 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
                 </button>
