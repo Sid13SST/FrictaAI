@@ -101,7 +101,7 @@ export class PredictiveForecastingEngine {
     let successRate = 0.72; // slight drop from baseline of 0.85
     let averageSteps = 4.6;
     let averageFriction = 0.44;
-    let cognitiveLoadAverage = 0.48;
+    const cognitiveLoadAverage = 0.48;
 
     if (recentExecs.length > 0) {
       const successes = recentExecs.filter(e => e.status === 'COMPLETED').length;

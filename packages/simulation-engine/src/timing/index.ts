@@ -27,11 +27,12 @@ export class TimingEngine {
       case 'BACKTRACK':
         baseDelay = 1500 * (2 - traits.explorationPatience);
         break;
-      case 'INPUT':
+      case 'INPUT': {
         // input speed scales inversely with formConfidence
         const textCount = options?.textLength || 10;
         baseDelay = textCount * (100 + (1 - traits.formConfidence) * 300);
         break;
+      }
       case 'PAUSE':
         baseDelay = 2000 * (traits.readingDepth + 0.5);
         break;

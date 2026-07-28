@@ -31,7 +31,7 @@ export class HistoricalBaselineManager {
     let averageFriction = 0.32;
     let successRate = 0.85;
     let cognitiveLoadAverage = 0.38;
-    let sampleSize = Math.max(3, paths.length);
+    const sampleSize = Math.max(3, paths.length);
 
     if (paths.length > 0) {
       const successes = paths.filter(p => p.isSuccess).length;

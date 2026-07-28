@@ -21,35 +21,40 @@ export class RecommendationEngine {
 
       // Link findings to patterns
       switch (finding.findingType) {
-        case 'ONBOARDING_FRICTION':
+        case 'ONBOARDING_FRICTION': {
           const onboardingPattern = UXPatternEngine.getPattern('guided-onboarding-tips');
           whyItMatters = 'First-time users will abandon the product if they cannot complete their initial task quickly due to cognitive friction and missing help markers.';
           remedySteps = onboardingPattern?.guidelines || [];
           break;
+        }
 
-        case 'FORM_FRICTION':
+        case 'FORM_FRICTION': {
           const disclosurePattern = UXPatternEngine.getPattern('progressive-disclosure-wizard');
           whyItMatters = 'Intimidating, long form layouts increase submission errors, form abandonment rates, and input delays.';
           remedySteps = disclosurePattern?.guidelines || [];
           break;
+        }
 
-        case 'CTA_AMBIGUITY':
+        case 'CTA_AMBIGUITY': {
           const ctaPattern = UXPatternEngine.getPattern('cta-hierarchy-rule');
           whyItMatters = 'When a user is presented with multiple primary colored choices, they suffer from choice paralysis, delaying the workflow.';
           remedySteps = ctaPattern?.guidelines || [];
           break;
+        }
 
-        case 'IA_CONFUSION':
+        case 'IA_CONFUSION': {
           const navPattern = UXPatternEngine.getPattern('navigation-clarity-links');
           whyItMatters = 'Back-and-forth cycling indicates user models are misaligned with routing hierarchy, causing massive frustration.';
           remedySteps = navPattern?.guidelines || [];
           break;
+        }
 
-        case 'COMPLEXITY':
+        case 'COMPLEXITY': {
           const densityPattern = UXPatternEngine.getPattern('cognitive-load-reduction');
           whyItMatters = 'Unnecessary step counts and navigation clutter lead to decision fatigue, slow task completions, and poor UX scores.';
           remedySteps = densityPattern?.guidelines || [];
           break;
+        }
 
         default:
           whyItMatters = 'Usability friction directly harms customer conversion and increases support request volumes.';
