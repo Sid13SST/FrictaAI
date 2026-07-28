@@ -7,16 +7,17 @@ import {
   Copy, Check, Play, Layers, FileText
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import { AIPipelineRibbon, AICapabilityId } from '../features/shared/AIPipelineRibbon';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TERMINAL_STATES = new Set(['COMPLETED', 'FAILED', 'TIMEOUT', 'LOOP_DETECTED', 'CANCELLED']);
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; Icon: React.ElementType }> = {
-  idle:          { label: 'Queued',       color: '#818cf8', bg: 'rgba(99,102,241,0.08)',   border: 'rgba(99,102,241,0.2)',   Icon: Clock },
-  PENDING:       { label: 'Pending',      color: '#818cf8', bg: 'rgba(99,102,241,0.08)',   border: 'rgba(99,102,241,0.2)',   Icon: Clock },
-  QUEUED:        { label: 'Queued',       color: '#818cf8', bg: 'rgba(99,102,241,0.08)',   border: 'rgba(99,102,241,0.2)',   Icon: Clock },
-  RUNNING:       { label: 'Running',      color: '#818cf8', bg: 'rgba(99,102,241,0.08)',   border: 'rgba(99,102,241,0.2)',   Icon: Activity },
+  idle:          { label: 'Queued',       color: '#9B72FA', bg: 'rgba(115,66,226,0.08)',   border: 'rgba(115,66,226,0.2)',   Icon: Clock },
+  PENDING:       { label: 'Pending',      color: '#9B72FA', bg: 'rgba(115,66,226,0.08)',   border: 'rgba(115,66,226,0.2)',   Icon: Clock },
+  QUEUED:        { label: 'Queued',       color: '#9B72FA', bg: 'rgba(115,66,226,0.08)',   border: 'rgba(115,66,226,0.2)',   Icon: Clock },
+  RUNNING:       { label: 'Running',      color: '#9B72FA', bg: 'rgba(115,66,226,0.08)',   border: 'rgba(115,66,226,0.2)',   Icon: Activity },
   COMPLETED:     { label: 'Completed',    color: '#34d399', bg: 'rgba(16,185,129,0.08)',   border: 'rgba(16,185,129,0.25)',  Icon: CheckCircle },
   FAILED:        { label: 'Failed',       color: '#f87171', bg: 'rgba(239,68,68,0.08)',    border: 'rgba(239,68,68,0.2)',    Icon: XCircle },
   TIMEOUT:       { label: 'Timed Out',    color: '#fb923c', bg: 'rgba(249,115,22,0.08)',   border: 'rgba(249,115,22,0.2)',   Icon: AlertTriangle },
@@ -125,7 +126,7 @@ const RouteError = ({ code, message }: { code: number; message: string }) => {
         <Link
           to={content.link}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105"
-          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}
+          style={{ background: 'linear-gradient(135deg,#7342E2,#8b5cf6)' }}
         >
           <Plus className="w-4 h-4" /> {content.cta}
         </Link>
@@ -187,13 +188,13 @@ const ThoughtBubble = ({ thought }: { thought: Thought }) => {
     <div className="flex gap-3 items-start animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div
         className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
-        style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)' }}
+        style={{ background: 'rgba(115,66,226,0.1)', border: '1px solid rgba(115,66,226,0.25)' }}
       >
-        <Brain className="w-3.5 h-3.5" style={{ color: '#818cf8' }} />
+        <Brain className="w-3.5 h-3.5" style={{ color: '#9B72FA' }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider font-mono" style={{ color: '#818cf8' }}>
+          <span className="text-[10px] font-bold uppercase tracking-wider font-mono" style={{ color: '#9B72FA' }}>
             Step {thought.stepNumber}
           </span>
           <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
@@ -361,6 +362,17 @@ export const WorkflowMonitor = () => {
   // Derive metadata
   const projectName = session?.project?.projectName || locationState.projectName || 'Fricta Project';
   const targetUrl = session?.project?.websiteUrl || locationState.targetUrl || 'Target site';
+
+  // Which AI pipeline stages are live right now, given real session/tab state.
+  const aiActiveStages: AICapabilityId[] = (() => {
+    const stages: AICapabilityId[] = ['persona'];
+    if (!isTerminal) {
+      stages.push(activeTab === 'actions' ? 'navigation' : 'reasoning', 'intelligence');
+    } else {
+      stages.push('correlation', 'severity', 'recommendations');
+    }
+    return stages;
+  })();
 
   // Stop polling when terminal state reached
   useEffect(() => {
@@ -587,16 +599,18 @@ export const WorkflowMonitor = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
 
+      <AIPipelineRibbon active={aiActiveStages} persona={session?.persona} />
+
       {/* ── Active Running Banner ─────────────────────────────────────────── */}
       {!isTerminal && (
         <div
           className="rounded-3xl p-6 relative overflow-hidden border"
           style={{
-            background: 'radial-gradient(ellipse at top left, rgba(99,102,241,0.08), transparent 60%), rgba(9,9,11,0.8)',
-            borderColor: 'rgba(99,102,241,0.2)',
+            background: 'radial-gradient(ellipse at top left, rgba(115,66,226,0.08), transparent 60%), rgba(9,9,11,0.8)',
+            borderColor: 'rgba(115,66,226,0.2)',
           }}
         >
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#6366f1]/40 to-transparent pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7342E2]/40 to-transparent pointer-events-none" />
           <div className="flex flex-wrap items-start gap-4">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-indigo-500/10 border border-indigo-500/25">
               <Activity className="w-6 h-6 animate-pulse text-indigo-400" />
@@ -816,7 +830,7 @@ export const WorkflowMonitor = () => {
           <button
             onClick={() => navigate('/app/workflow')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
-            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8' }}
+            style={{ background: 'rgba(115,66,226,0.1)', border: '1px solid rgba(115,66,226,0.25)', color: '#9B72FA' }}
           >
             <Plus className="w-4 h-4" /> Launch Another Audit
           </button>
@@ -828,7 +842,7 @@ export const WorkflowMonitor = () => {
         className="rounded-2xl overflow-hidden"
         style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}
       >
-        <div className="h-px bg-gradient-to-r from-transparent via-[#6366f1]/22 to-transparent pointer-events-none" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#7342E2]/22 to-transparent pointer-events-none" />
 
         {/* Tab bar */}
         <div
@@ -842,20 +856,20 @@ export const WorkflowMonitor = () => {
                 onClick={() => setActiveTab(tab)}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all"
                 style={{
-                  background: activeTab === tab ? 'rgba(99,102,241,0.12)' : 'transparent',
-                  border: activeTab === tab ? '1px solid rgba(99,102,241,0.25)' : '1px solid transparent',
-                  color: activeTab === tab ? '#818cf8' : 'rgba(255,255,255,0.4)',
+                  background: activeTab === tab ? 'rgba(115,66,226,0.12)' : 'transparent',
+                  border: activeTab === tab ? '1px solid rgba(115,66,226,0.25)' : '1px solid transparent',
+                  color: activeTab === tab ? '#9B72FA' : 'rgba(255,255,255,0.4)',
                 }}
               >
                 {tab === 'thoughts' ? <Brain className="w-3.5 h-3.5" /> : <List className="w-3.5 h-3.5" />}
                 {tab === 'thoughts' ? 'Thought Stream' : 'Timeline'}
                 {tab === 'thoughts' && thoughts.length > 0 && (
-                  <span className="rounded-full px-1.5 text-[10px]" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                  <span className="rounded-full px-1.5 text-[10px]" style={{ background: 'rgba(115,66,226,0.15)', color: '#9B72FA' }}>
                     {thoughts.length}
                   </span>
                 )}
                 {tab === 'actions' && timelineMilestones.length > 0 && (
-                  <span className="rounded-full px-1.5 text-[10px]" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                  <span className="rounded-full px-1.5 text-[10px]" style={{ background: 'rgba(115,66,226,0.15)', color: '#9B72FA' }}>
                     {timelineMilestones.length}
                   </span>
                 )}
@@ -883,7 +897,7 @@ export const WorkflowMonitor = () => {
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
               <div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}
+                style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.18)' }}
               >
                 <Zap className="w-7 h-7 animate-pulse text-indigo-400" />
               </div>
