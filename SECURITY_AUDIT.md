@@ -21,7 +21,7 @@ Scope: authentication/authorization, secret handling, input validation, and depe
 | Blank-screen navigation bug | ✅ Fixed (unrelated to auth, noted for completeness) | Root-caused to leaked `EventSource` connections in Investigation Console exhausting the browser's per-origin HTTP connection cap, hanging the *next* navigation's request indefinitely. Fixed the dead unmount guard and added a top-level `ErrorBoundary` (previously the app had none) as a defensive backstop against any future uncaught render error. |
 | Dead auth stub | ✅ Removed | The old `/api/auth` routes (`{token:'placeholder_token'}`) have been deleted along with their mount. |
 | Session cookie fallback | ⚠️ Note | The frontend's `apiFetch()` was fixed this session to read the correct Clerk global (`window.Clerk`, not `window.__clerk__`) and now actually attaches the documented `Authorization: Bearer` header. Auth was never broken in practice — Clerk's session cookie covered it regardless — but the explicit header now works as intended too. |
-| Known remaining gaps | ⚠️ See KNOWN_ISSUES.md | `WorkspaceIntegration` (OAuth connections) has no owning-user column, making it structurally unscopable in solo mode without a schema migration — see KNOWN_ISSUES.md #7. `security.ts`'s `/compliance/retention` still lacks an ownership check on an arbitrary `resourceId` — see KNOWN_ISSUES.md #8. |
+| Known remaining gaps | ✅ Fixed | `WorkspaceIntegration` now has an owning-user column and is scoped per-caller in solo mode (KNOWN_ISSUES.md #7). `security.ts`'s `/compliance/retention` now checks ownership on the caller-supplied `resourceId` (KNOWN_ISSUES.md #8). |
 
 ---
 
@@ -79,8 +79,8 @@ Run `npm audit` for the live count; as of this audit it reports 19 findings, of 
 - [x] No raw SQL, no `eval()`.
 - [x] `.env` confirmed not committed to git.
 - [ ] `react-router` upgraded to a non-vulnerable version — deferred to V1.1 (see KNOWN_ISSUES.md).
-- [ ] `WorkspaceIntegration` owning-user column (schema migration) — see KNOWN_ISSUES.md #7.
-- [ ] `security.ts` `/compliance/retention` ownership check — see KNOWN_ISSUES.md #8.
+- [x] `WorkspaceIntegration` owning-user column (schema migration) — fixed, see KNOWN_ISSUES.md #7.
+- [x] `security.ts` `/compliance/retention` ownership check — fixed, see KNOWN_ISSUES.md #8.
 
 ---
 
