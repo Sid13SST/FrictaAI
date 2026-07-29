@@ -67,6 +67,7 @@ import { startWorker, connection } from '@fricta/agent';
 import { startRuntime } from '@fricta/runtime';
 import { prisma } from '@fricta/db';
 import { addAlert } from './utils/alerting';
+import { errorCounter } from './utils/metrics';
 
 // Global error handlers for Uncaught Exceptions and Unhandled Rejections
 process.on('uncaughtException', (err) => {
@@ -96,6 +97,30 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Trigger reload for EADDRINUSE resolution
 const app = new Hono();
+
+// Route handlers that throw without their own try/catch would otherwise skip
+// customLogger's post-request logging entirely (the exception unwinds past it
+// on its way to Hono's default error response) and leak an unstructured error
+// to the client. This is the safety net: every unhandled route-level
+// exception gets a structured log line, an error-counter increment, and a
+// generic response with no stack trace exposed.
+app.onError((err, c) => {
+  const requestId = c.res.headers.get('x-request-id') || 'unknown';
+  console.error(JSON.stringify({
+    level: 'ERROR',
+    timestamp: new Date().toISOString(),
+    requestId,
+    method: c.req.method,
+    path: c.req.path,
+    message: 'Unhandled route exception',
+    error: err.message,
+    stack: err.stack,
+    classification: 'UNHANDLED_ROUTE_ERROR',
+  }));
+  errorCounter.labels('UNHANDLED_ROUTE_ERROR', c.req.path).inc();
+  addAlert('Unhandled Route Exception', 'HIGH', `${c.req.method} ${c.req.path}: ${err.message}`);
+  return c.json({ error: 'Internal Server Error' }, 500);
+});
 
 // ─── Global Middlewares ───────────────────────────────────────────────────────
 app.use('*', customLogger());
