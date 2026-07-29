@@ -151,8 +151,17 @@ describe('UX Findings and Intelligence Unit Tests', () => {
       mockPrisma.personaProfile.count.mockResolvedValue(1); // skip seeding
       mockPrisma.uXFinding.deleteMany.mockResolvedValue({ count: 1 });
       mockPrisma.cognitiveSignal.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrisma.uXFinding.createMany.mockResolvedValue({ count: 1 });
-      mockPrisma.cognitiveSignal.createMany.mockResolvedValue({ count: 1 });
+      mockPrisma.uXFinding.createMany.mockImplementation(async (args: any) => ({ count: args.data.length }));
+      mockPrisma.cognitiveSignal.createMany.mockImplementation(async (args: any) => ({ count: args.data.length }));
+      // The coordinator re-fetches after createMany (createMany doesn't return rows) —
+      // echo back what was actually persisted rather than a stale/unrelated fixture,
+      // since clearAllMocks() doesn't reset mockResolvedValue()s set by earlier tests.
+      mockPrisma.uXFinding.findMany.mockImplementation(async () =>
+        (mockPrisma.uXFinding.createMany.mock.calls[0]?.[0]?.data || []).map((f: any, i: number) => ({ id: `finding_${i}`, ...f }))
+      );
+      mockPrisma.cognitiveSignal.findMany.mockImplementation(async () =>
+        (mockPrisma.cognitiveSignal.createMany.mock.calls[0]?.[0]?.data || []).map((s: any, i: number) => ({ id: `signal_${i}`, ...s }))
+      );
       mockPrisma.workflowSession.update.mockResolvedValue(mockWorkflow);
 
       const res = await app.request('/analyze/workflow_123', {

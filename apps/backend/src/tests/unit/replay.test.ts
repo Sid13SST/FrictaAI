@@ -28,6 +28,10 @@ describe('Replay Service Unit Tests', () => {
 
   describe('GET /replay - Fetch Replay Events', () => {
     it('should retrieve replay events if sessionId is provided and exists', async () => {
+      // /replay verifies workflow ownership before querying — stub the session
+      // lookup it traverses through (projectId 'default-mem-project-id' is the
+      // guard's built-in demo-project bypass, so any authenticated user owns it).
+      mockPrisma.workflowSession.findUnique.mockResolvedValue({ projectId: 'default-mem-project-id' });
       mockPrisma.behavioralReplayEvent.findMany.mockResolvedValue([mockReplay]);
 
       const res = await app.request('/replay?sessionId=workflow_123');
@@ -43,6 +47,7 @@ describe('Replay Service Unit Tests', () => {
     });
 
     it('should return empty list if session has no replay events stored', async () => {
+      mockPrisma.workflowSession.findUnique.mockResolvedValue({ projectId: 'default-mem-project-id' });
       mockPrisma.behavioralReplayEvent.findMany.mockResolvedValue([]);
 
       const res = await app.request('/replay?sessionId=workflow_456');

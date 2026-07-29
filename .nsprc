@@ -1,0 +1,27 @@
+{
+  "GHSA-wrjc-x8rr-h8h6": {
+    "active": true,
+    "notes": "react-router open redirect via backslash in <Link>/useNavigate. Accepted risk for V1 — no untrusted input reaches Link/navigate in this app. See KNOWN_ISSUES.md #1.",
+    "expiry": "2026-11-30"
+  },
+  "GHSA-337j-9hxr-rhxg": {
+    "active": true,
+    "notes": "react-router SSR hydration constructor injection. Does not apply — this app is a client-rendered SPA, no SSR. See KNOWN_ISSUES.md #1.",
+    "expiry": "2026-11-30"
+  },
+  "GHSA-jjmj-jmhj-qwj2": {
+    "active": true,
+    "notes": "react-router-dom open redirect leading to XSS. Same root cause/mitigation as GHSA-wrjc-x8rr-h8h6. See KNOWN_ISSUES.md #1.",
+    "expiry": "2026-11-30"
+  },
+  "GHSA-frvp-7c67-39w9": {
+    "active": true,
+    "notes": "@hono/node-server path traversal in serve-static (Windows). Not exploitable — this backend never uses the serveStatic middleware. See KNOWN_ISSUES.md #2.",
+    "expiry": "2026-11-30"
+  },
+  "GHSA-mh99-v99m-4gvg": {
+    "active": true,
+    "notes": "brace-expansion DoS, pulled in transitively via the ESLint/TypeScript-ESLint dev-tooling chain. Build-time only, never shipped. See KNOWN_ISSUES.md #3.",
+    "expiry": "2026-11-30"
+  }
+}

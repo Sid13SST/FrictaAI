@@ -20,7 +20,8 @@ import {
   requireProjectOwnerQuery,
   requireProjectOwnerBody,
   requireWorkflowOwner,
-  requireReportOwner
+  requireReportOwner,
+  requireFindingOwner
 } from '../../guards/ownership';
 import { mockProject, mockWorkflow } from '../mocks/fixtures';
 
@@ -34,6 +35,7 @@ function createTestApp() {
   app.post('/project-body', requireProjectOwnerBody('projectId'), (c) => c.json({ success: true }));
   app.get('/workflow/:id', requireWorkflowOwner('id'), (c) => c.json({ success: true }));
   app.get('/report/:id', requireReportOwner('id'), (c) => c.json({ success: true }));
+  app.get('/finding/:id', requireFindingOwner('id'), (c) => c.json({ success: true }));
 
   return app;
 }
@@ -123,6 +125,12 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
       mockAuth.userId = 'user_123';
     });
 
+    it('should reject with 401 if user is unauthenticated', async () => {
+      mockAuth.userId = null;
+      const res = await app.request('/project-query?projectId=project_123');
+      expect(res.status).toBe(401);
+    });
+
     it('should reject with 400 if query parameter is missing', async () => {
       const res = await app.request('/project-query');
       expect(res.status).toBe(400);
@@ -154,6 +162,16 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
   describe('requireProjectOwnerBody Guard (JSON Body)', () => {
     beforeEach(() => {
       mockAuth.userId = 'user_123';
+    });
+
+    it('should reject with 401 if user is unauthenticated', async () => {
+      mockAuth.userId = null;
+      const res = await app.request('/project-body', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: 'project_123' }),
+      });
+      expect(res.status).toBe(401);
     });
 
     it('should reject with 400 if body field is missing', async () => {
@@ -279,6 +297,61 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
     });
   });
 
+  describe('requireFindingOwner Guard (Traversal to WorkflowSession to Project)', () => {
+    beforeEach(() => {
+      mockAuth.userId = 'user_123';
+    });
+
+    it('should reject with 401 if user is unauthenticated', async () => {
+      mockAuth.userId = null;
+      const res = await app.request('/finding/finding_123');
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 404 if finding does not exist', async () => {
+      mockPrisma.uXFinding.findUnique.mockResolvedValue(null);
+
+      const res = await app.request('/finding/finding_non_existent');
+      expect(res.status).toBe(404);
+    });
+
+    it('should check project ownership and reject 403 if project is owned by another user', async () => {
+      mockPrisma.uXFinding.findUnique.mockResolvedValue({
+        id: 'finding_123',
+        workflowSessionId: 'workflow_123',
+      });
+      mockPrisma.workflowSession.findUnique.mockResolvedValue({
+        id: 'workflow_123',
+        projectId: 'project_123',
+      });
+      mockPrisma.project.findUnique.mockResolvedValue({
+        id: 'project_123',
+        userId: 'user_different',
+      });
+
+      const res = await app.request('/finding/finding_123');
+      expect(res.status).toBe(403);
+    });
+
+    it('should check project ownership and allow 200 if project is owned by user', async () => {
+      mockPrisma.uXFinding.findUnique.mockResolvedValue({
+        id: 'finding_123',
+        workflowSessionId: 'workflow_123',
+      });
+      mockPrisma.workflowSession.findUnique.mockResolvedValue({
+        id: 'workflow_123',
+        projectId: 'project_123',
+      });
+      mockPrisma.project.findUnique.mockResolvedValue({
+        id: 'project_123',
+        userId: 'user_123',
+      });
+
+      const res = await app.request('/finding/finding_123');
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe('Assertion wrappers and helper boundary conditions', () => {
     it('should return correct results for assertions', async () => {
       const {
@@ -287,7 +360,9 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
         assertReplayOwnership,
         assertReportOwnership,
         assertInvestigationOwnership,
+        assertFindingOwnership,
         verifyAlertOwnership,
+        verifyFindingOwnership,
       } = await import('../../guards/ownership');
 
       mockPrisma.project.findUnique.mockResolvedValue({ id: 'p1', userId: 'user_123' });
@@ -295,6 +370,7 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
       mockPrisma.executiveReport.findUnique.mockResolvedValue({ id: 'r1', projectId: 'p1' });
       mockPrisma.investigationThread.findUnique.mockResolvedValue({ id: 'i1', projectId: 'p1' });
       mockPrisma.operationalAlert.findUnique.mockResolvedValue({ id: 'a1', projectId: 'p1' });
+      mockPrisma.uXFinding.findUnique.mockResolvedValue({ id: 'f1', workflowSessionId: 's1' });
 
       expect(await assertProjectOwnership('user_123', 'p1')).toBe(true);
       expect(await assertWorkflowOwnership('user_123', 's1')).toBe(true);
@@ -302,6 +378,8 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
       expect(await assertReportOwnership('user_123', 'r1')).toBe(true);
       expect(await assertInvestigationOwnership('user_123', 'i1')).toBe(true);
       expect(await verifyAlertOwnership('user_123', 'a1')).toBe('OWNED');
+      expect(await assertFindingOwnership('user_123', 'f1')).toBe(true);
+      expect(await verifyFindingOwnership('user_123', 'f1')).toBe('OWNED');
 
       // Database query rejections
       mockPrisma.project.findUnique.mockRejectedValue(new Error('DB Error'));
@@ -318,6 +396,33 @@ describe('Authentication & Ownership Guard Unit Tests', () => {
 
       mockPrisma.operationalAlert.findUnique.mockRejectedValue(new Error('DB Error'));
       expect(await verifyAlertOwnership('user_123', 'a1')).toBe('NOT_FOUND');
+
+      mockPrisma.uXFinding.findUnique.mockRejectedValue(new Error('DB Error'));
+      expect(await assertFindingOwnership('user_123', 'f1')).toBe(false);
+    });
+
+    it('should return NOT_FOUND from every verify* function when userId or resourceId is missing', async () => {
+      const {
+        verifyProjectOwnership,
+        verifyWorkflowOwnership,
+        verifyReportOwnership,
+        verifyInvestigationOwnership,
+        verifyFindingOwnership,
+        verifyAlertOwnership,
+      } = await import('../../guards/ownership');
+
+      expect(await verifyProjectOwnership('', 'p1')).toBe('NOT_FOUND');
+      expect(await verifyProjectOwnership('user_123', '')).toBe('NOT_FOUND');
+      expect(await verifyWorkflowOwnership('', 's1')).toBe('NOT_FOUND');
+      expect(await verifyWorkflowOwnership('user_123', '')).toBe('NOT_FOUND');
+      expect(await verifyReportOwnership('', 'r1')).toBe('NOT_FOUND');
+      expect(await verifyReportOwnership('user_123', '')).toBe('NOT_FOUND');
+      expect(await verifyInvestigationOwnership('', 'i1')).toBe('NOT_FOUND');
+      expect(await verifyInvestigationOwnership('user_123', '')).toBe('NOT_FOUND');
+      expect(await verifyFindingOwnership('', 'f1')).toBe('NOT_FOUND');
+      expect(await verifyFindingOwnership('user_123', '')).toBe('NOT_FOUND');
+      expect(await verifyAlertOwnership('', 'a1')).toBe('NOT_FOUND');
+      expect(await verifyAlertOwnership('user_123', '')).toBe('NOT_FOUND');
     });
 
     it('should handle undefined parameter names in guards gracefully', async () => {

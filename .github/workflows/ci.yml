@@ -81,7 +81,7 @@ jobs:
         run: npm run test:integration --workspace=@fricta/backend
 
       - name: Security and Vulnerability Audit
-        run: npm audit --audit-level=high
+        run: npm run audit
 
       - name: Build Validation - Backend App
         run: npx turbo run build --filter="@fricta/backend"

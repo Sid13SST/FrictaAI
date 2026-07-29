@@ -34,6 +34,7 @@ export const mockPrisma = {
   },
   uXFinding: {
     create: vi.fn(),
+    findUnique: vi.fn(),
     findMany: vi.fn(),
     deleteMany: vi.fn(),
     createMany: vi.fn(),

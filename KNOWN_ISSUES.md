@@ -8,9 +8,10 @@ Tracked items that are known, deliberately deferred, and not blocking V1 launch.
 
 **Status:** Accepted risk for V1. Scheduled for V1.1.
 
-- **What:** `react-router`/`react-router-dom` 6.x carries two published advisories:
+- **What:** `react-router`/`react-router-dom` 6.x carries three published advisories:
   - Open redirect via backslash in `<Link>` / `useNavigate` (GHSA-wrjc-x8rr-h8h6)
   - Arbitrary constructor injection via `deserializeErrors()` during SSR hydration (GHSA-337j-9hxr-rhxg)
+  - Open redirect leading to XSS, `react-router-dom`'s own advisory for the same class of issue (GHSA-jjmj-jmhj-qwj2)
 - **Fix requires:** upgrading to v7.18+, a major version bump with breaking API changes across every route in the app.
 - **Why deferred:**
   - The SSR hydration CVE does not apply — this app is a client-rendered SPA, no server-side rendering with React Router occurs.
@@ -59,3 +60,7 @@ Tracked items that are known, deliberately deferred, and not blocking V1 launch.
 ## 8. `security.ts` `/compliance/retention` — no ownership check on `resourceId`
 
 **Status:** ✅ Fixed. The route now verifies the caller owns the target resource (`verifyWorkflowOwnership`/`verifyReportOwnership`/`verifyInvestigationOwnership` depending on `resourceType`) before applying a retention policy, the same pattern `/traceability` already used just above it in the same file.
+
+## 9. CI's `npm audit` gate was failing on every push
+
+**Status:** ✅ Fixed. `npm audit --audit-level=high` hard-failed on every push because it had no way to encode the accepted-risk decisions in #1–#3 above. CI now runs `npm run audit` (`better-npm-audit`, see root `.nsprc`), which excepts exactly the five advisories covered by #1–#3 by GHSA ID, each with a note and a 2026-11-30 expiry to force re-evaluation, and still hard-fails on anything not on that list. Re-run `npm run audit` after any dependency bump to confirm nothing new snuck in.
