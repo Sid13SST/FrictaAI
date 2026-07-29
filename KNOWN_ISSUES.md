@@ -46,11 +46,7 @@ Tracked items that are known, deliberately deferred, and not blocking V1 launch.
 
 ## 6. Mobile / responsive support
 
-**Status:** In progress — see the V1 responsive requirements below, being implemented directly rather than deferred.
-
-- Must be fully responsive: Landing, Login/Register, Dashboard, Projects, Reports list, Findings, Help Center, Navigation.
-- Tablet-friendly (not full phone parity): Workflow Monitor, Runtime Observability.
-- Desktop-only, with an explicit "optimized for desktop" message on small screens: Session Replay, Evidence Explorer, Live Timeline, the large Report Viewer (replay/orchestration tabs).
+**Status:** ✅ Fixed. Landing, Login/Register, Dashboard, Projects, Reports list, Findings, Help Center, and Navigation are fully responsive; Workflow Monitor and Runtime Observability are tablet-friendly; Session Replay, Evidence Explorer, Live Timeline, and the large Report Viewer (replay/orchestration tabs) show an explicit "optimized for desktop" message below the `lg` breakpoint via `DesktopOnlyNotice`. Verified with `tsc --noEmit` and a production build; not visually verified in a logged-in browser session (these routes sit behind Clerk auth with real project/session data).
 
 ## 7. `WorkspaceIntegration` has no owning-user column
 
@@ -64,3 +60,11 @@ Tracked items that are known, deliberately deferred, and not blocking V1 launch.
 ## 9. CI's `npm audit` gate was failing on every push
 
 **Status:** ✅ Fixed. `npm audit --audit-level=high` hard-failed on every push because it had no way to encode the accepted-risk decisions in #1–#3 above. CI now runs `npm run audit` (`better-npm-audit`, see root `.nsprc`), which excepts exactly the five advisories covered by #1–#3 by GHSA ID, each with a note and a 2026-11-30 expiry to force re-evaluation, and still hard-fails on anything not on that list. Re-run `npm run audit` after any dependency bump to confirm nothing new snuck in.
+
+## 10. No automated test coverage for most backend routes; zero frontend tests
+
+**Status:** Accepted gap for V1, not required by `Fricta_V1_Launch.md` — deferred to V1.1.
+
+- **What:** 26 of 42 backend route files (`security`, `workspace`, `telemetry`, `orchestrator`, `agents`, `personas`, `rbacCore`, and the rest of the files touched by the IDOR ownership-check sweep — see §2 of `SECURITY_AUDIT.md`) have zero automated tests, unit or integration. The ownership guards were applied and spot-checked by code review, but no test asserts that any of these specific routes actually reject a cross-tenant request. Separately, `apps/frontend` has no automated tests at all (`.test.tsx`/`.test.ts`) — verification there is limited to `tsc --noEmit` and a production build.
+- **Why deferred:** `Fricta_V1_Launch.md` §20 (Security) requires ownership validation to exist, and §22 (Developer Experience) requires typecheck/lint/build to pass — both are satisfied. Neither section, nor any other part of that spec, requires automated test coverage as a launch gate.
+- **Re-evaluate before/soon after V1.1:** write unit tests for the 26 untested route files (prioritize `security.ts`, `workspace.ts`, `rbacCore.ts` — the ones handling cross-tenant-sensitive data) confirming the ownership guards actually 403/404 on a mismatched caller, and stand up basic frontend component tests for the highest-traffic pages.
