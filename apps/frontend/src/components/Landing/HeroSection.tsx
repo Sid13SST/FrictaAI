@@ -174,7 +174,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative w-full h-[100dvh] pt-32 pb-20 flex items-center overflow-hidden bg-transparent">
+    <section className="relative w-full min-h-[100dvh] h-auto pt-32 pb-20 flex items-center bg-transparent">
       
       <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         

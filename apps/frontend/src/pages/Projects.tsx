@@ -297,7 +297,7 @@ export const Projects = () => {
                 >
                   <Globe className="w-4.5 h-4.5" style={{ color: '#9B72FA' }} />
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => { e.stopPropagation(); setEditTarget(p); }}
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"

@@ -215,7 +215,7 @@ function KnownIssues() {
       </p>
       {[
         ['Lint backlog', 'Enabling proper TypeScript linting surfaced a large backlog of style-level warnings (mostly `console` usage and `any` types) across older packages. These are non-blocking warnings, not build errors, and are being cleared incrementally.'],
-        ['Mobile & small-screen layouts', 'The dashboard is optimized for desktop use. Narrow viewports and touch devices aren\'t fully supported yet.'],
+        ['Mobile & small-screen layouts', 'Dashboard, Projects, Reports, Findings, Help Center, and navigation are fully responsive, and Workflow Monitor / Runtime Observability are tablet-friendly. Power-user views built around dense multi-column layouts and precise pointer interaction — Session Replay, Evidence Explorer, and the Investigation Console — show a "switch to a larger screen" message on phones and small tablets instead of a cramped experience.'],
         ['Dependency security advisories', 'A couple of dependencies (react-router, hono/node-server) have open CVEs with fixes only in major-version upgrades; we\'re validating the upgrade path before rolling it out.'],
       ].map(([t, d]) => (
         <div key={t} className="rounded-xl p-5 flex items-start gap-3" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.15)' }}>

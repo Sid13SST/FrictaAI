@@ -420,12 +420,20 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         )}
 
         {activeTab === 'timeline' && timeline.length > 0 && (
-          <CorrelatedTimeline
-            timeline={timeline}
-            screenshots={screenshots}
-            activeStep={activeStep}
-            onStepSelect={setActiveStep}
-          />
+          <>
+            <DesktopOnlyNotice
+              feature="Event Stream"
+              description="The correlated event timeline needs a larger screen. Switch to the UX Findings tab for the mobile-friendly view of this report."
+            />
+            <div className="hidden lg:block">
+              <CorrelatedTimeline
+                timeline={timeline}
+                screenshots={screenshots}
+                activeStep={activeStep}
+                onStepSelect={setActiveStep}
+              />
+            </div>
+          </>
         )}
 
         {activeTab === 'personas' && (
