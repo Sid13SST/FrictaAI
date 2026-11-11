@@ -7,7 +7,9 @@ export interface WorkflowSession {
   projectId: string;
   goal: string | null;
   persona: string | null;
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | (string & {});
+  /** Usually PENDING | RUNNING | COMPLETED | FAILED; the runtime can also emit
+   *  QUEUED, TIMEOUT, LOOP_DETECTED and CANCELLED, so this stays a plain string. */
+  status: string;
   startedAt: string;
   endedAt: string | null;
   createdAt: string;
