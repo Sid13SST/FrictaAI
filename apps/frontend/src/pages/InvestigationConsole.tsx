@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Brain, Terminal, Layers, ShieldAlert, Cpu, Sparkles, Database, Eye, Activity } from 'lucide-react';
-import { apiFetch } from '../lib/api';
+import { ArrowLeft, Brain, Terminal, Layers, Cpu, Sparkles, Database, Eye, Activity, Inbox } from 'lucide-react';
+import { apiFetch, apiJson, ensureOk } from '../lib/api';
+import { toApiError } from '../lib/errors';
+import { EmptyState } from '../components/common/EmptyState';
+import { ErrorState } from '../components/common/ErrorState';
+import { Skeleton, SkeletonGroup } from '../components/common/Skeleton';
 import { DesktopOnlyNotice } from '../components/common/DesktopOnlyNotice';
 
 import { OrchestrationOverview } from '../features/orchestration/OrchestrationOverview';
@@ -33,7 +37,10 @@ export const InvestigationConsole: React.FC = () => {
 
   // Raw API Datasets
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  // True when the account simply has no audits to investigate yet — an empty
+  // state with a CTA, not an error.
+  const [noSessions, setNoSessions] = useState(false);
 
   const [overviewData, setOverviewData] = useState<any>(null);
   const [timelineData, setTimelineData] = useState<any>(null);
@@ -48,15 +55,15 @@ export const InvestigationConsole: React.FC = () => {
   const fetchConsoleData = async () => {
     setLoading(true);
     setError(null);
+    setNoSessions(false);
     try {
       let targetId = id || null;
       if (!targetId) {
-        const reportsRes = await apiFetch('/reports');
-        if (!reportsRes.ok) throw new Error('Failed to load recent sessions.');
-        const data = await reportsRes.json();
+        const data = await apiJson<{ reports?: Array<{ sessionId: string }> }>('/reports');
         const reportsList = data.reports || [];
         if (reportsList.length === 0) {
-          throw new Error('No investigation sessions found. Please run an audit first.');
+          setNoSessions(true);
+          return;
         }
         targetId = reportsList[0].sessionId;
         setActiveId(targetId);
@@ -83,7 +90,7 @@ export const InvestigationConsole: React.FC = () => {
         apiFetch(`${base}/${targetId}/replay-sync`),
       ]);
 
-      if (!overviewRes.ok) throw new Error('Investigation session details not found');
+      await ensureOk(overviewRes);
       
       const [overview, timeline, evidence, insights, agents, memory, replay] = await Promise.all([
         overviewRes.json(),
@@ -102,9 +109,8 @@ export const InvestigationConsole: React.FC = () => {
       setAgentsData(agents);
       setMemoryData(memory);
       setReplayData(replay);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to aggregate multi-agent console telemetry');
+    } catch (err) {
+      setError(toApiError(err));
     } finally {
       setLoading(false);
     }
@@ -575,21 +581,74 @@ export const InvestigationConsole: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-full w-full bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-zinc-400 font-mono">
-        <div className="w-10 h-10 border-2 border-t-transparent animate-spin rounded-full" style={{ borderColor: 'rgba(115, 66, 226, 0.2)', borderTopColor: '#7342e2' }} />
-        <span className="text-[10px] tracking-[0.2em] text-[#7342e2] font-black uppercase animate-pulse">Aggregating investigation telemetry...</span>
+      <SkeletonGroup label="Loading the investigation console" className="h-full w-full bg-[#070b0a] flex flex-col overflow-hidden">
+        <div className="h-12 border-b border-[#222226] px-4 sm:px-6 flex items-center gap-3 flex-shrink-0">
+          <Skeleton className="h-6 w-6 rounded-lg" />
+          <Skeleton className="h-3 w-44 rounded-full" />
+        </div>
+        <div className="flex-1 flex min-h-0">
+          <div className="hidden lg:flex w-60 border-r border-[#222226] p-4 flex-col gap-2.5 flex-shrink-0">
+            {[...Array(7)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-lg" />)}
+          </div>
+          <div className="flex-1 p-4 sm:p-6 flex flex-col gap-5 min-w-0">
+            <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7342e2] animate-pulse" />
+              Gathering agents, timeline, and evidence for this audit…
+            </div>
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+            </div>
+            <Skeleton className="h-56 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
+        </div>
+      </SkeletonGroup>
+    );
+  }
+
+  if (noSessions) {
+    return (
+      <div className="h-full w-full bg-[#070b0a] flex items-center justify-center p-4 sm:p-8 overflow-auto">
+        <EmptyState
+          className="w-full max-w-xl"
+          icon={<Inbox className="w-6 h-6" />}
+          title="Nothing to investigate yet"
+          description="The console opens the evidence, agent reasoning, and findings behind an audit. Run your first audit and its investigation will show up here."
+          action={{ label: 'Run your first audit', to: '/app/workflow' }}
+          secondaryAction={{ label: 'View reports', to: '/app/reports' }}
+        />
+      </div>
+    );
+  }
+
+  // The console API 404s when UX diagnostics (the multi-agent pass) has never
+  // been run for this audit. That's a "not yet", not a failure.
+  if (error && toApiError(error).kind === 'NOT_FOUND') {
+    return (
+      <div className="h-full w-full bg-[#070b0a] flex items-center justify-center p-4 sm:p-8 overflow-auto">
+        <EmptyState
+          className="w-full max-w-xl"
+          icon={<Inbox className="w-6 h-6" />}
+          title="No investigation data for this audit yet"
+          description="The console is filled in by UX diagnostics. Open the audit's report and choose “Run UX Diagnostics”, or check that the link points to one of your audits."
+          action={activeId ? { label: 'Open the report', to: `/app/reports/${activeId}` } : { label: 'View reports', to: '/app/reports' }}
+          secondaryAction={{ label: 'Run a new audit', to: '/app/workflow' }}
+        />
       </div>
     );
   }
 
   if (error || !overviewData) {
     return (
-      <div className="h-full w-full bg-[#070b0a] flex flex-col items-center justify-center gap-4 text-center p-8">
-        <ShieldAlert className="w-12 h-12 text-red-400 animate-bounce" />
-        <h3 className="text-base font-bold text-white font-mono">Operational Console Failed</h3>
-        <p className="text-xs text-zinc-500 max-w-sm font-sans">{error || 'Session intelligence data could not be retrieved.'}</p>
-        <Link to="/app/reports" className="text-xs font-mono text-[#7342e2] border border-[#7342e2]/20 bg-[#7342e2]/5 px-4 py-2 rounded-xl mt-4">
-          Return to Reports
+      <div className="h-full w-full bg-[#070b0a] flex flex-col items-center justify-center gap-4 p-4 sm:p-8 overflow-auto">
+        <ErrorState
+          className="w-full"
+          error={error ?? new Error('missing overview')}
+          action="load this investigation"
+          onRetry={fetchConsoleData}
+        />
+        <Link to="/app/reports" className="text-xs font-semibold text-[#9b72fa] hover:text-white transition-colors">
+          ← Back to reports
         </Link>
       </div>
     );
@@ -633,7 +692,7 @@ export const InvestigationConsole: React.FC = () => {
             <span className="text-xs font-black tracking-tight text-white font-mono uppercase">Investigation Console</span>
           </div>
           <span className="text-[10px] bg-[#121214] px-2 py-0.5 rounded border border-[#222226] font-mono text-zinc-500 truncate max-w-[200px]">
-            ID: {id}
+            ID: {activeId}
           </span>
         </div>
 
@@ -755,13 +814,13 @@ export const InvestigationConsole: React.FC = () => {
                   memoryEvents={memoryData.events || []} 
                 />
               )}
-              {activeTab === 'runtime' && id && (
+              {activeTab === 'runtime' && activeId && (
                 <div className="flex flex-col gap-4">
                   <p className="text-[11px] font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
                     Recovery checkpoints and lock state for this session only. For system-wide worker/queue health,
                     see <Link to="/app/runtime" className="text-[#9b72fa] hover:underline">Runtime Observability</Link> in the sidebar.
                   </p>
-                  <RuntimeObservabilityPanel sessionId={id} />
+                  <RuntimeObservabilityPanel sessionId={activeId} />
                 </div>
               )}
             </main>

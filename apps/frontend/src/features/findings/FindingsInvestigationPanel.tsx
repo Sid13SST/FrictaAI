@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Search, ChevronDown, ChevronUp, Loader2, Check } from 'lucide-react';
-import { apiFetch } from '../../lib/api';
+import { Search, ChevronDown, ChevronUp, Loader2, Check, ShieldCheck } from 'lucide-react';
+import { apiJson } from '../../lib/api';
+import { errorMessage } from '../../lib/errors';
+import { toast } from '../../lib/toast';
+import { EmptyState } from '../../components/common/EmptyState';
 
 export interface UXFinding {
   id: string;
@@ -85,21 +88,17 @@ export const FindingsInvestigationPanel: React.FC<FindingsInvestigationPanelProp
     setSavingId(finding.id);
     setSaveError((prev) => ({ ...prev, [finding.id]: '' }));
     try {
-      const res = await apiFetch(`/ux/findings/${finding.id}`, {
+      const data = await apiJson<{ finding: UXFinding }>(`/ux/findings/${finding.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, resolutionNotes: notes }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to update finding (${res.status})`);
-      }
-      const data = await res.json();
       onFindingUpdated(data.finding);
       setSavedId(finding.id);
+      toast.success('Finding updated');
       setTimeout(() => setSavedId((cur) => (cur === finding.id ? null : cur)), 2000);
-    } catch (err: any) {
-      setSaveError((prev) => ({ ...prev, [finding.id]: err.message || 'Update failed' }));
+    } catch (err) {
+      setSaveError((prev) => ({ ...prev, [finding.id]: errorMessage(err, 'update this finding') }));
     } finally {
       setSavingId(null);
     }
@@ -157,10 +156,24 @@ export const FindingsInvestigationPanel: React.FC<FindingsInvestigationPanelProp
       </div>
 
       {/* List */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-8 text-zinc-600 font-mono text-[11px] italic">
-          No findings match the current filters.
-        </div>
+      {findings.length === 0 ? (
+        <EmptyState
+          variant="inline"
+          icon={<ShieldCheck className="w-6 h-6" />}
+          title="No UX findings for this audit"
+          description="The agent didn't flag any usability issues on this run. Try a different goal or persona to probe another part of the experience."
+          action={{ label: 'Run another audit', to: '/app/workflow' }}
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          variant="compact"
+          icon={<Search className="w-5 h-5" />}
+          title="No findings match the current filters"
+          secondaryAction={{
+            label: 'Clear filters',
+            onClick: () => { setSearch(''); setSeverityFilter('ALL'); setStatusFilter('ALL'); },
+          }}
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map((f) => {
