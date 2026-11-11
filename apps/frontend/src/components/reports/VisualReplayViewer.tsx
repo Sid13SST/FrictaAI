@@ -5,7 +5,9 @@ import {
   Activity, ShieldAlert, CheckCircle, TrendingUp, Settings, Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, ensureOk, API_BASE } from '../../lib/api';
+import { errorMessage } from '../../lib/errors';
+import { toast } from '../../lib/toast';
 
 interface VisualReplayViewerProps {
   sessionId: string;
@@ -41,8 +43,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
       setLoading(true);
       
       // 1. Fetch main replay data
-      const replayRes = await apiFetch(`/workflows/${sessionId}/visual-replay`);
-      if (!replayRes.ok) throw new Error('Failed to load visual replay data');
+      const replayRes = await ensureOk(await apiFetch(`/workflows/${sessionId}/visual-replay`));
       const replayData = await replayRes.json();
       
       if (!replayData.screenshots || replayData.screenshots.length === 0) {
@@ -65,8 +66,8 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
         setVisualScores(scoresData.score || null);
       }
 
-    } catch (err: any) {
-      setError(err.message || 'Error fetching visual timeline');
+    } catch (err) {
+      setError(errorMessage(err, 'load the visual replay'));
     } finally {
       setLoading(false);
     }
@@ -154,7 +155,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
         body: JSON.stringify({ forceAIVision: useAIVision })
       });
 
-      if (!res.ok) throw new Error('Visual intelligence scan failed');
+      await ensureOk(res);
       
       // Refresh findings and scores after completion
       const findingsRes = await apiFetch(`/visual/findings/${sessionId}`);
@@ -170,9 +171,8 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
       }
 
       setActiveTab('findings');
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || 'Failed to complete visual scan.');
+    } catch (err) {
+      toast.error(err, 'complete the visual scan');
     } finally {
       setScanning(false);
     }

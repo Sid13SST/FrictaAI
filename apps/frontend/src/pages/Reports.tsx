@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FileText, Activity, ArrowRight, Brain, Clock,
+  FileText, ArrowRight, Brain, Clock,
   TrendingUp, AlertTriangle, CheckCircle2, Search,
   RefreshCw, Layers
 } from 'lucide-react';
 
-import { apiFetch } from '../lib/api';
+import { useReports, type ReportSummary } from '../hooks/api/useReports';
+import { EmptyState } from '../components/common/EmptyState';
+import { ErrorState } from '../components/common/ErrorState';
+import { Skeleton, SkeletonGroup } from '../components/common/Skeleton';
 
 // ─── Score Ring ───────────────────────────────────────────────────────────────
 
@@ -71,29 +74,22 @@ const gradeFromScore = (score: number) => {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export const Reports = () => {
-  const [reports, setReports]   = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const { data, isLoading: loading, isError, error, refetch, isFetching } = useReports();
+  const reports: ReportSummary[] = data ?? [];
   const [search, setSearch]     = useState('');
   const [sortBy, setSortBy]     = useState<'newest' | 'score_high' | 'score_low'>('newest');
   const [filterGrade, setFilterGrade] = useState<'ALL' | 'A' | 'B' | 'C' | 'D' | 'F'>('ALL');
 
-  const fetchReports = () => {
-    setLoading(true);
-    apiFetch('/reports')
-      .then(r => r.json())
-      .then(d => { setReports(d.reports || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
+  const fetchReports = () => { void refetch(); };
 
-  useEffect(() => { fetchReports(); }, []);
-
-  const gradeOf = (r: any) => gradeFromScore(r.score ?? 0);
+  const gradeOf = (r: ReportSummary) => gradeFromScore(r.score ?? 0);
 
   const filtered = reports
     .filter(r => {
       if (search && !r.sessionId?.toLowerCase().includes(search.toLowerCase()) &&
           !r.summary?.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterGrade !== 'ALL' && gradeOf(r) !== filterGrade) return false;
+      // The "A" pill covers both A and A+.
+      if (filterGrade !== 'ALL' && gradeOf(r).charAt(0) !== filterGrade) return false;
       return true;
     })
     .sort((a, b) => {
@@ -137,10 +133,11 @@ export const Reports = () => {
 
         <button
           onClick={fetchReports}
-          className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl font-mono uppercase tracking-wider transition-all flex-shrink-0"
+          disabled={isFetching}
+          className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl font-mono uppercase tracking-wider transition-all flex-shrink-0 self-start md:self-auto disabled:opacity-60"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} /> {isFetching ? 'Refreshing' : 'Refresh'}
         </button>
       </div>
 
@@ -150,7 +147,7 @@ export const Reports = () => {
           {[
             { label: 'Total Reports', value: String(reports.length), icon: Layers,       color: '#7342E2',  glow: 'rgba(115, 66, 226,0.15)'  },
             { label: 'Avg UX Score',  value: `${avgScore}/100`,      icon: TrendingUp,   color: '#7342E2',  glow: 'rgba(115, 66, 226,0.12)'  },
-            { label: 'Excellent (A+)',value: String(excellent),       icon: CheckCircle2, color: '#34d399',  glow: 'rgba(52,211,153,0.12)'  },
+            { label: 'Excellent (A)', value: String(excellent),       icon: CheckCircle2, color: '#34d399',  glow: 'rgba(52,211,153,0.12)'  },
             { label: 'Critical Issues',value: String(critical),       icon: AlertTriangle,color: '#fb923c',  glow: 'rgba(251,146,60,0.12)'  },
           ].map((stat, i) => (
             <div
@@ -181,7 +178,7 @@ export const Reports = () => {
       {reports.length > 0 && (
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           {/* Search */}
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.3)' }} />
             <input
               type="text"
@@ -196,7 +193,7 @@ export const Reports = () => {
           </div>
 
           {/* Grade filter pills */}
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex gap-1 p-1 rounded-xl self-start sm:self-auto" style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}>
             {(['ALL', 'A', 'B', 'C', 'D', 'F'] as const).map(g => (
               <button
                 key={g}
@@ -229,54 +226,66 @@ export const Reports = () => {
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <Activity className="w-6 h-6 animate-spin" style={{ color: '#7342E2' }} />
-          <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            Loading intelligence reports...
-          </span>
-        </div>
+        <SkeletonGroup label="Loading your reports" className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl p-6 flex flex-col gap-5"
+              style={{ background: 'rgba(9,9,11,0.85)', border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <div className="flex items-start gap-4">
+                <Skeleton className="w-[68px] h-[68px] rounded-full flex-shrink-0" />
+                <div className="flex-1 min-w-0 pt-1">
+                  <Skeleton className="h-3 w-28 rounded-full" />
+                  <Skeleton className="h-3.5 w-40 max-w-full rounded-full mt-3" />
+                  <Skeleton className="h-2.5 w-32 rounded-full mt-2.5" />
+                </div>
+              </div>
+              <Skeleton className="h-1.5 w-full rounded-full" />
+              <div>
+                <Skeleton className="h-2.5 w-full rounded-full" />
+                <Skeleton className="h-2.5 w-4/5 rounded-full mt-2" />
+              </div>
+              <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <Skeleton className="h-2.5 w-28 rounded-full" />
+                <Skeleton className="h-7 w-28 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </SkeletonGroup>
+
+      ) : isError && reports.length === 0 ? (
+        <ErrorState
+          error={error}
+          action="load your reports"
+          onRetry={fetchReports}
+          retrying={isFetching}
+        />
 
       ) : reports.length === 0 ? (
-        <div
-          className="rounded-2xl p-16 flex flex-col items-center justify-center text-center relative overflow-hidden"
-          style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <div
-            className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: 'linear-gradient(to right, transparent, rgba(115, 66, 226,0.2), transparent)' }}
-          />
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: 'rgba(115, 66, 226,0.08)', border: '1px solid rgba(115, 66, 226,0.18)' }}
-          >
-            <Brain className="w-8 h-8" style={{ color: '#7342E2' }} />
-          </div>
-          <h3 className="text-white font-bold text-lg">No Reports Yet</h3>
-          <p className="text-sm mt-2 max-w-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            Run a workflow audit to generate your first intelligence report. Results appear here automatically.
-          </p>
-          <Link
-            to="/app/workflow"
-            className="mt-6 flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded-xl font-mono uppercase tracking-wider"
-            style={{ background: '#7342E2', color: '#070b0a' }}
-          >
-            Run First Audit <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Brain className="w-6 h-6" />}
+          title="No reports yet"
+          description="Every completed audit produces a report with a UX score, prioritized findings, and evidence. Run an audit and it will appear here automatically."
+          action={{ label: 'Run your first audit', to: '/app/workflow' }}
+          secondaryAction={{ label: 'How reports work', to: '/app/help' }}
+        />
 
       ) : filtered.length === 0 ? (
-        <div
-          className="rounded-2xl p-12 text-center"
-          style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>No reports match your current filters.</p>
-        </div>
+        <EmptyState
+          variant="inline"
+          icon={<Search className="w-6 h-6" />}
+          title="No reports match your filters"
+          description="Try a different search term or grade."
+          secondaryAction={{ label: 'Clear filters', onClick: () => { setSearch(''); setFilterGrade('ALL'); } }}
+        />
 
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {filtered.map((report) => {
             const grade = gradeOf(report);
-            const sev = report.score >= 80 ? 'LOW' : report.score >= 60 ? 'MEDIUM' : report.score >= 40 ? 'HIGH' : 'CRITICAL';
+            const score = report.score ?? 0;
+            const sev = score >= 80 ? 'LOW' : score >= 60 ? 'MEDIUM' : score >= 40 ? 'HIGH' : 'CRITICAL';
             const sevStyle = severityStyle(sev);
             const date = new Date(report.createdAt);
             const timeAgo = (() => {
@@ -291,7 +300,7 @@ export const Reports = () => {
             return (
               <div
                 key={report.id}
-                className="group rounded-2xl p-6 flex flex-col gap-5 relative overflow-hidden transition-all duration-300"
+                className="group rounded-2xl p-4 sm:p-6 flex flex-col gap-5 relative overflow-hidden transition-all duration-300 min-w-0"
                 style={{
                   background: 'rgba(9,9,11,0.85)',
                   border: '1px solid rgba(255,255,255,0.07)',
@@ -376,7 +385,7 @@ export const Reports = () => {
 
                 {/* Footer CTA */}
                 <div
-                  className="flex items-center justify-between pt-3"
+                  className="flex flex-wrap items-center justify-between gap-3 pt-3"
                   style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                 >
                   <div className="flex items-center gap-1.5">

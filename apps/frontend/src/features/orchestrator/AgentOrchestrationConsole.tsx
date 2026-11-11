@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, ensureOk as ensureResponseOk, API_BASE } from '../../lib/api';
+import { errorMessage } from '../../lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, 
@@ -278,7 +279,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
           setLoading(false);
           return;
         }
-        throw new Error('Failed to fetch orchestration session');
+        await ensureResponseOk(sessionRes);
       }
       
       const { session } = await sessionRes.json();
@@ -349,9 +350,8 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       }
       
       setError(null);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Error loading orchestration telemetry');
+    } catch (err) {
+      setError(errorMessage(err, 'load the agent orchestration data'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -367,14 +367,11 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
         headers: { 'Content-Type': 'application/json' }
       });
       
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || 'Failed to trigger orchestrator');
-      }
+      await ensureResponseOk(res);
 
       await fetchSessionData(false);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'start the agent orchestration'));
     } finally {
       setStarting(false);
     }

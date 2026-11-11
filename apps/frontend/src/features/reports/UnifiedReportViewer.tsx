@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, apiJson, ensureOk } from '../../lib/api';
+import { toApiError } from '../../lib/errors';
+import { toast } from '../../lib/toast';
+import { ErrorState } from '../../components/common/ErrorState';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Skeleton, SkeletonGroup } from '../../components/common/Skeleton';
 import {
   Download, Clipboard, Brain, ShieldAlert, Sparkles,
   Code, FileText, Check, RefreshCw, ChevronRight,
@@ -87,7 +92,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const [activeStep, setActiveStep] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
   const [reportData, setReportData] = useState<any>(null);
@@ -102,7 +107,6 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     if (showLoading) setLoading(true);
     setError(null);
     try {
-      const backendBase = API_BASE.replace('/api', '');
       const [repRes, execRes, expRes, timeRes, recRes] = await Promise.all([
         apiFetch(`/reports/${sessionId}`),
         apiFetch(`/reports/${sessionId}/executive`),
@@ -110,7 +114,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         apiFetch(`/reports/${sessionId}/timeline`),
         apiFetch(`/ux/recommendations/${sessionId}`),
       ]);
-      if (!repRes.ok) throw new Error('Report dataset not found');
+      await ensureOk(repRes);
       const [rep, exec, exp, time, rec] = await Promise.all([
         repRes.json(), execRes.json(), expRes.json(), timeRes.json(), recRes.json(),
       ]);
@@ -119,8 +123,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       setExportData(exp);
       setTimelineData(time);
       setRecommendationsData(rec);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch workflow report analytics.');
+    } catch (err) {
+      // A background refresh failing shouldn't blank a report that's already on screen.
+      if (showLoading) setError(toApiError(err));
+      else toast.error(err, 'refresh this report');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -131,24 +137,26 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const handleRunDiagnostics = async () => {
     setAnalyzing(true);
     try {
-      const res = await apiFetch(`/orchestrator/start/${sessionId}`, {
+      await apiJson(`/orchestrator/start/${sessionId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to start orchestration');
-      }
       setActiveTab('orchestrator');
+      toast.info('UX diagnostics started', 'Specialist agents are analyzing this session. Results stream into the Agent Orchestration tab.');
       await fetchReportData(false);
-    } catch (err: any) {
-      console.error(err);
-      alert('Failed to trigger UX diagnostics: ' + err.message);
+    } catch (err) {
+      toast.error(err, 'start UX diagnostics');
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const downloadFile = (content: string, filename: string, contentType: string) => {
+  const downloadFile = (content: string | undefined, filename: string, contentType: string) => {
+    // The export bundle is fetched alongside the report; if that one request
+    // failed there is nothing to download yet.
+    if (typeof content !== 'string' || content.length === 0) {
+      toast.error(new Error('export unavailable'), 'prepare that export');
+      return;
+    }
     const blob = new Blob([content], { type: contentType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -160,8 +168,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     setDownloadingPdf(true);
     setPdfError(null);
     try {
-      const res = await apiFetch(`/reports/${sessionId}/export/pdf`);
-      if (!res.ok) throw new Error(`PDF generation failed (${res.status})`);
+      const res = await ensureOk(await apiFetch(`/reports/${sessionId}/export/pdf`));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -169,8 +176,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       a.download = `fricta-ux-report-${sessionId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setPdfError(err.message || 'Failed to download PDF');
+      toast.success('PDF downloaded');
+    } catch (err) {
+      setPdfError("The PDF couldn't be generated. Try again in a moment.");
+      toast.error(err, 'generate the PDF');
     } finally {
       setDownloadingPdf(false);
     }
@@ -188,35 +197,34 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-[450px] flex flex-col items-center justify-center gap-4">
-        <div
-          className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: 'rgba(115, 66, 226,0.4)', borderTopColor: '#7342E2' }}
-        />
-        <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
-          Aggregating UX session intelligence telemetry...
-        </span>
-      </div>
+      <SkeletonGroup label="Loading report" className="flex flex-col gap-6">
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="xl:col-span-1 flex flex-col gap-5">
+            <Skeleton className="h-56 rounded-xl" />
+            <Skeleton className="h-44 rounded-xl" />
+            <Skeleton className="h-52 rounded-xl" />
+          </div>
+          <div className="xl:col-span-3 flex flex-col gap-6">
+            <div className="flex flex-wrap gap-2">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-28 rounded-lg" />)}
+            </div>
+            <Skeleton className="h-[420px] rounded-xl" />
+          </div>
+        </div>
+      </SkeletonGroup>
     );
   }
 
   // ── Error ────────────────────────────────────────────────────────────────────
   if (error || !reportData) {
     return (
-      <div className="min-h-[450px] flex flex-col items-center justify-center gap-4 text-center">
-        <ShieldAlert className="w-12 h-12 text-rose-400 animate-bounce" />
-        <h3 className="text-base font-bold text-white">Analysis Generation Failed</h3>
-        <p className="text-xs max-w-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-          {error || 'Session report details are missing.'}
-        </p>
-        <button
-          onClick={() => fetchReportData(true)}
-          className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl font-mono mt-2"
-          style={{ background: 'rgba(115, 66, 226,0.1)', border: '1px solid rgba(115, 66, 226,0.25)', color: '#7342E2' }}
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Retry
-        </button>
-      </div>
+      <ErrorState
+        className="min-h-[450px]"
+        error={error ?? new Error('missing report')}
+        action="load this report"
+        onRetry={() => fetchReportData(true)}
+      />
     );
   }
 
@@ -295,7 +303,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 key: 'markdown',
                 label: 'Markdown Document',
                 icon: <FileText className="w-4 h-4" style={{ color: '#7342E2' }} />,
-                onClick: () => downloadFile(exportData.markdown, `fricta-ux-report-${sessionId}.md`, 'text/markdown'),
+                onClick: () => downloadFile(exportData?.markdown, `fricta-ux-report-${sessionId}.md`, 'text/markdown'),
               },
               {
                 key: 'summary',
@@ -308,7 +316,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 key: 'json',
                 label: 'Developer JSON',
                 icon: <Code className="w-4 h-4" style={{ color: '#60a5fa' }} />,
-                onClick: () => downloadFile(exportData.developerJson, `fricta-ux-dump-${sessionId}.json`, 'application/json'),
+                onClick: () => downloadFile(exportData?.developerJson, `fricta-ux-dump-${sessionId}.json`, 'application/json'),
               },
             ].map(item => (
               <button
@@ -417,6 +425,16 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
 
         {activeTab === 'findings' && (
           <UXIntelligenceTab sessionId={sessionId} />
+        )}
+
+        {activeTab === 'timeline' && timeline.length === 0 && (
+          <EmptyState
+            variant="inline"
+            icon={<TrendingUp className="w-6 h-6" />}
+            title="No events recorded for this audit"
+            description="The event stream fills in as the agent navigates. This audit ended before any steps were captured."
+            action={{ label: 'Run another audit', to: '/app/workflow' }}
+          />
         )}
 
         {activeTab === 'timeline' && timeline.length > 0 && (

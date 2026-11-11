@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, apiJson, ensureOk, API_BASE } from '../../lib/api';
+import { errorMessage } from '../../lib/errors';
+import { toast } from '../../lib/toast';
 import {
   Brain, User, AlertCircle, CheckCircle2, Gauge,
   Clock, Shuffle, HelpCircle, TrendingUp, HelpCircle as HelpIcon, ArrowRight,
@@ -61,16 +63,15 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
   const updateFinding = async (id: string, patch: { status?: FindingStatus; resolutionNotes?: string }) => {
     setSavingFindingId(id);
     try {
-      const res = await apiFetch(`/ux/findings/${id}`, {
+      const data = await apiJson<{ finding: Record<string, unknown> }>(`/ux/findings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       });
-      if (!res.ok) throw new Error('Failed to update finding');
-      const data = await res.json();
       setFindings(prev => prev.map(f => (f.id === id ? { ...f, ...data.finding } : f)));
+      toast.success('Finding updated');
     } catch (err) {
-      console.error('Failed to update finding status:', err);
+      toast.error(err, 'update this finding');
     } finally {
       setSavingFindingId(null);
     }
@@ -83,26 +84,22 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
       setError(null);
 
       // Trigger analysis first to make sure findings are compiled
-      const analyzeRes = await apiFetch(`/ux/analyze/${sessionId}`, {
+      const analyzeRes = await ensureOk(await apiFetch(`/ux/analyze/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
-      });
+      }));
       const analyzeData = await analyzeRes.json();
-
-      if (analyzeData.error) {
-        throw new Error(analyzeData.error);
-      }
 
       setFindings(analyzeData.findings || []);
       setCognitiveSignals(analyzeData.cognitiveSignals || []);
 
-      // Fetch recommendations
+      // Recommendations are a nice-to-have on this tab; don't fail the whole
+      // view if only they are unavailable.
       const recRes = await apiFetch(`/ux/recommendations/${sessionId}`);
-      const recData = await recRes.json();
+      const recData = recRes.ok ? await recRes.json() : {};
       setRecommendations(recData.recommendations || []);
-    } catch (err: any) {
-      console.error('Failed to load UX data:', err);
-      setError(err.message || 'Failed to retrieve UX heuristics data.');
+    } catch (err) {
+      setError(errorMessage(err, 'load the UX findings'));
     } finally {
       setLoading(false);
     }
