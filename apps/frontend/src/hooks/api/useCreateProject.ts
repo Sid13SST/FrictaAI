@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api';
+import { apiJson } from '../../lib/api';
 
 export interface CreateProjectInput {
   projectName: string;
@@ -18,21 +18,18 @@ export function useCreateProject() {
 
   return useMutation<CreatedProject, Error, CreateProjectInput>({
     mutationFn: async (input) => {
-      const res = await apiFetch('/projects', {
+      const data = await apiJson<{ project: CreatedProject }>('/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as Record<string, string>;
-        throw new Error(err.error ?? `Request failed (${res.status})`);
-      }
-      const data = await res.json();
-      return data.project as CreatedProject;
+      return data.project;
     },
     onSuccess: () => {
       // Refresh projects list after creation
       queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
+    // Rendered inline by the form that triggered it.
+    meta: { silentError: true },
   });
 }

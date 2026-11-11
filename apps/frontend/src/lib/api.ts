@@ -24,6 +24,8 @@
  * <ClerkProvider>. The Clerk session is accessed via window.__clerk__.
  */
 
+import { errorFromResponse, toApiError } from './errors';
+
 // ─── API Base URL ─────────────────────────────────────────────────────────────
 // Centralized base URL — all pages should import this instead of hardcoding.
 export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
@@ -74,6 +76,39 @@ export async function apiFetch(
     ...init,
     headers,
   });
+}
+
+/**
+ * apiFetch + error normalisation + JSON parsing.
+ *
+ * Resolves with the parsed body on 2xx. Rejects with an `ApiError` (see
+ * ./errors) for network failures, timeouts, and every non-OK status, so
+ * callers can hand the rejection straight to `describeError` / `toast.error`
+ * and get human-readable copy.
+ */
+export async function apiJson<T = unknown>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
+  let res: Response;
+  try {
+    res = await apiFetch(path, init);
+  } catch (err) {
+    throw toApiError(err);
+  }
+  if (!res.ok) throw await errorFromResponse(res);
+  if (res.status === 204) return undefined as T;
+  try {
+    return (await res.json()) as T;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+/** Throws an `ApiError` if the response is not OK; otherwise returns it. */
+export async function ensureOk(res: Response): Promise<Response> {
+  if (!res.ok) throw await errorFromResponse(res);
+  return res;
 }
 
 /**

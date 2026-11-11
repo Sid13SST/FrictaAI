@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api';
+import { apiJson } from '../../lib/api';
 
 export interface Project {
   id: string;
@@ -12,10 +12,9 @@ export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      const res = await apiFetch('/projects');
-      if (!res.ok) throw new Error('Failed to fetch projects');
-      const data = await res.json();
-      return data.projects as Project[];
+      const data = await apiJson<{ projects?: Project[] }>('/projects');
+      return data.projects ?? [];
     },
+    meta: { errorAction: 'refresh your projects' },
   });
 }
