@@ -1,0 +1,20 @@
+<!doctype html>
+<!--
+  DEV-ONLY FIXTURE HARNESS. Not an input of `vite build` (which only bundles
+  index.html), so it is never part of the production output. Serve it with:
+      npm run fixtures -w @fricta/frontend
+  See src/fixtures/README.md.
+-->
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <title>Fricta — FIXTURE HARNESS (dev only)</title>
+  </head>
+  <body class="min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/fixtures/main.tsx"></script>
+  </body>
+</html>
