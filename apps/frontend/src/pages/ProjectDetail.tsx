@@ -1,35 +1,27 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  Globe, ArrowLeft, Pencil, Trash2, Plus, Activity, CheckCircle2,
-  Clock, ArrowRight, AlertTriangle, ExternalLink,
+  Globe, ArrowLeft, Trash2, Plus, Activity, CheckCircle2,
+  Clock, ArrowRight, AlertTriangle, ExternalLink, Loader2,
 } from 'lucide-react';
 import { useProject } from '../hooks/api/useProject';
 import { useWorkflows } from '../hooks/api/useWorkflows';
 import { useDeleteProject } from '../hooks/api/useDeleteProject';
-
-// ─── Workflow status badge (mirrors Dashboard.tsx) ─────────────────────────
-const StatusBadge = ({ status }: { status: string }) => {
-  const cfg = {
-    RUNNING:   { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b', dot: '#f59e0b', label: 'Running'   },
-    PENDING:   { bg: 'rgba(115,66,226,0.1)',  color: '#9B72FA', dot: '#7342E2', label: 'Queued'    },
-    COMPLETED: { bg: 'rgba(16,185,129,0.1)',  color: '#10b981', dot: '#10b981', label: 'Done'      },
-    FAILED:    { bg: 'rgba(239,68,68,0.1)',   color: '#f87171', dot: '#ef4444', label: 'Failed'    },
-  }[status] ?? { bg: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', dot: '#555', label: status };
-
-  return (
-    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: cfg.bg, color: cfg.color }}>
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot, boxShadow: `0 0 6px ${cfg.dot}80` }} />
-      {cfg.label}
-    </span>
-  );
-};
+import { EmptyState } from '../components/common/EmptyState';
+import { ErrorState } from '../components/common/ErrorState';
+import { AuditStatusBadge } from '../components/common/AuditStatusBadge';
+import { Skeleton, SkeletonGroup, SkeletonRows, SkeletonStatCard } from '../components/common/Skeleton';
+import { errorMessage, toApiError } from '../lib/errors';
+import { toast } from '../lib/toast';
 
 export const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: project, isLoading, isError, refetch } = useProject(id);
-  const { data: workflows, isLoading: workflowsLoading } = useWorkflows(id);
+  const { data: project, isLoading, isError, error, refetch, isRefetching } = useProject(id);
+  const {
+    data: workflows, isLoading: workflowsLoading, isError: workflowsError,
+    error: workflowsErr, refetch: refetchWorkflows, isRefetching: workflowsRefetching,
+  } = useWorkflows(id);
   const deleteProject = useDeleteProject();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -39,39 +31,54 @@ export const ProjectDetail = () => {
     setDeleteError(null);
     try {
       await deleteProject.mutateAsync(id);
+      toast.success('Project deleted');
       navigate('/app/projects');
-    } catch (err: any) {
-      setDeleteError(err.message || 'Failed to delete project.');
+    } catch (err) {
+      setDeleteError(errorMessage(err, 'delete the project'));
     }
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="h-8 w-64 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
-        <div className="h-40 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }} />
-      </div>
+      <SkeletonGroup label="Loading project" className="space-y-8">
+        <Skeleton className="h-3 w-24 rounded-full" />
+        <div className="flex items-start gap-4">
+          <Skeleton className="w-12 h-12 rounded-2xl flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <Skeleton className="h-7 w-56 max-w-full rounded-xl" />
+            <Skeleton className="h-3 w-40 max-w-full rounded-full mt-3" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <SkeletonRows count={3} />
+        </div>
+      </SkeletonGroup>
     );
   }
 
   if (isError || !project) {
+    const kind = isError ? toApiError(error).kind : 'NOT_FOUND';
+    // Missing / not-yours: retrying won't help, so send them back to the list.
+    if (kind === 'NOT_FOUND' || kind === 'FORBIDDEN') {
+      return (
+        <EmptyState
+          icon={<AlertTriangle className="w-6 h-6" />}
+          title="Project not found"
+          description="It may have been deleted, or it belongs to a different account."
+          action={{ label: 'Back to all projects', to: '/app/projects' }}
+        />
+      );
+    }
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center px-8 py-10 rounded-2xl max-w-sm" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white mb-2">Project not found</h3>
-          <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            It may have been deleted, or you don't have access to it.
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-rose-400 transition-colors hover:text-white"
-            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <ErrorState
+        error={error}
+        action="load this project"
+        onRetry={() => refetch()}
+        retrying={isRefetching}
+      />
     );
   }
 
@@ -146,29 +153,35 @@ export const ProjectDetail = () => {
 
       {/* Audits list */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <h2 className="text-sm font-bold text-white">Audits</h2>
+          {total > 0 && (
+            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Completed audits open their report · running audits open the live monitor
+            </span>
+          )}
         </div>
 
         {workflowsLoading ? (
-          <div className="p-5 space-y-3">
-            {[...Array(3)].map((_, i) => <div key={i} className="h-12 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }} />)}
+          <SkeletonRows count={3} />
+        ) : workflowsError && !workflows ? (
+          <div className="p-4">
+            <ErrorState
+              variant="banner"
+              error={workflowsErr}
+              action="load this project's audits"
+              onRetry={() => refetchWorkflows()}
+              retrying={workflowsRefetching}
+            />
           </div>
         ) : !workflows || workflows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.2)' }}>
-              <Activity className="w-6 h-6" style={{ color: 'rgba(115,66,226,0.6)' }} />
-            </div>
-            <p className="text-sm font-semibold text-white mb-1">No audits yet</p>
-            <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.35)' }}>Run your first audit against this project.</p>
-            <button
-              onClick={() => navigate(`/app/workflow?projectId=${project.id}`)}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:scale-105"
-              style={{ background: 'rgba(115,66,226,0.15)', border: '1px solid rgba(115,66,226,0.3)' }}
-            >
-              Run First Audit
-            </button>
-          </div>
+          <EmptyState
+            variant="inline"
+            icon={<Activity className="w-6 h-6" />}
+            title="No audits yet"
+            description={`Run your first audit against ${project.projectName} — reports and findings for it will collect here.`}
+            action={{ label: 'Run your first audit', to: `/app/workflow?projectId=${project.id}` }}
+          />
         ) : (
           <div className="divide-y divide-white/[0.03]">
             {workflows.map((w) => {
@@ -189,7 +202,7 @@ export const ProjectDetail = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <StatusBadge status={w.status} />
+                    <AuditStatusBadge status={w.status} />
                     <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" style={{ color: '#9B72FA' }} />
                   </div>
                 </div>
@@ -218,7 +231,7 @@ export const ProjectDetail = () => {
             <p className="text-xs leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>
               This permanently deletes the project and all associated audits, reports, and findings. This cannot be undone.
             </p>
-            {deleteError && <p className="text-xs text-red-400 mb-4">{deleteError}</p>}
+            {deleteError && <p className="text-xs text-red-400 mb-4" role="alert">{deleteError}</p>}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setConfirmDelete(false)}
@@ -230,10 +243,11 @@ export const ProjectDetail = () => {
               <button
                 onClick={handleDelete}
                 disabled={deleteProject.isPending}
-                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 style={{ background: 'rgba(239,68,68,0.85)' }}
               >
-                Delete
+                {deleteProject.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {deleteProject.isPending ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>

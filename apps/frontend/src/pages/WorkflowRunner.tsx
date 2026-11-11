@@ -4,6 +4,8 @@ import {
   Globe, Plus, ChevronRight, ChevronDown, ChevronUp,
   Loader2, ArrowRight, Zap, CheckCircle, AlertCircle, X,
 } from 'lucide-react';
+import { ErrorState } from '../components/common/ErrorState';
+import { errorMessage } from '../lib/errors';
 import { useProjects } from '../hooks/api/useProjects';
 import { useCreateProject } from '../hooks/api/useCreateProject';
 import { useSubmitWorkflow } from '../hooks/api/useSubmitWorkflow';
@@ -237,7 +239,7 @@ export const WorkflowRunner = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ── Data ───────────────────────────────────────────────────────────────────
-  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: projects, isLoading: projectsLoading, isError: projectsError, error: projectsErr, refetch: refetchProjects, isRefetching: projectsRefetching } = useProjects();
   const createProject = useCreateProject();
   const submitWorkflow = useSubmitWorkflow();
 
@@ -372,6 +374,14 @@ export const WorkflowRunner = () => {
                   <div key={i} className="h-28 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }} />
                 ))}
               </div>
+            ) : projectsError && !projects ? (
+              <ErrorState
+                variant="banner"
+                error={projectsErr}
+                action="load your projects"
+                onRetry={() => refetchProjects()}
+                retrying={projectsRefetching}
+              />
             ) : (
               <div className="space-y-4">
                 {/* Existing projects grid */}
@@ -410,7 +420,7 @@ export const WorkflowRunner = () => {
                 {showCreateForm && (
                   <CreateProjectForm
                     isPending={createProject.isPending}
-                    error={createProject.error?.message}
+                    error={createProject.error ? errorMessage(createProject.error, 'create the project') : undefined}
                     showCancel={!!projects && projects.length > 0}
                     onCancel={() => { setShowCreateForm(false); }}
                     onSubmit={handleCreateProject}
@@ -564,7 +574,7 @@ export const WorkflowRunner = () => {
                 style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
               >
                 <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-rose-400">{submitWorkflow.error.message}</p>
+                <p className="text-sm text-rose-400">{errorMessage(submitWorkflow.error, 'launch the audit')}</p>
               </div>
             )}
 
