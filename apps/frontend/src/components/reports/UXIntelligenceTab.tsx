@@ -323,7 +323,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                   <span>Visual Clarity</span>
                   <span>{scores.clarity}%</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-[#7342e2] h-full rounded-full" style={{ width: `${scores.clarity}%` }} />
                 </div>
               </div>
@@ -332,7 +332,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                   <span>Guided Onboarding</span>
                   <span>{scores.onboarding}%</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-amber-500 h-full rounded-full" style={{ width: `${scores.onboarding}%` }} />
                 </div>
               </div>
@@ -341,7 +341,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                   <span>Mental-Model IA Alignment</span>
                   <span>{scores.ia}%</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.ia}%` }} />
                 </div>
               </div>
@@ -350,7 +350,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                   <span>Workflow Efficiency</span>
                   <span>{scores.efficiency}%</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scores.efficiency}%` }} />
                 </div>
               </div>
@@ -380,12 +380,12 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
               }
 
               return (
-                <div key={signal.id || signal.signalType} className="p-3 bg-slate-950/30 border border-slate-850 rounded-lg">
+                <div key={signal.id || signal.signalType} className="p-3 bg-slate-950/30 border border-slate-800 rounded-lg">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-semibold text-slate-300 font-mono">{label}</span>
                     <span className="text-xs font-bold text-slate-400">{(intensity * 100).toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-slate-850 h-2 rounded-full overflow-hidden mb-2">
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden mb-2">
                     <div className={`${barColor} h-full rounded-full`} style={{ width: `${intensity * 100}%` }} />
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-500">
@@ -408,8 +408,8 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
 
       {/* 3. Horizontal Step Heatmap Timeline */}
       <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h4 className="text-sm font-semibold text-slate-300 flex items-center">
+        <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mb-6">
+          <h4 className="text-sm font-semibold text-slate-300 flex items-center whitespace-nowrap">
             <Clock className="w-4 h-4 mr-2 text-[#9b72fa]" /> Friction Heatmap Timeline
           </h4>
           <div className="flex items-center space-x-4 text-[10px] text-slate-500">
@@ -453,7 +453,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         </div>
 
         {selectedStep && (
-          <div className="mt-4 p-4 bg-slate-950/40 rounded-lg border border-slate-850 animate-in slide-in-from-top-2 duration-200">
+          <div className="mt-4 p-4 bg-slate-950/40 rounded-lg border border-slate-800 animate-in slide-in-from-top-2 duration-200">
             <h5 className="text-xs font-semibold text-slate-200 mb-2">Step {selectedStep} Heuristic Insights</h5>
             {filteredFindings.filter(f => f.evidence.toLowerCase().includes(`step ${selectedStep}`)).length === 0 ? (
               <p className="text-xs text-slate-500">No active findings targeting step {selectedStep} for the selected persona profile.</p>
@@ -503,7 +503,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                 const isSaving = savingFindingId === finding.id;
 
                 return (
-                  <div key={finding.id} className="p-4 bg-slate-950/20 border border-slate-850 rounded-xl space-y-3">
+                  <div key={finding.id} className="p-4 bg-slate-950/20 border border-slate-800 rounded-xl space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <h5 className="font-semibold text-slate-200 text-sm">{finding.title}</h5>

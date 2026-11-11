@@ -762,8 +762,8 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       `}} />
 
       {/* Background decoration */}
-      <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-[#7342E2]/3 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[5%] w-[350px] h-[350px] rounded-full bg-emerald-500/3 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-[#7342E2]/[0.03] blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[5%] w-[350px] h-[350px] rounded-full bg-emerald-500/[0.03] blur-[100px] pointer-events-none" />
       
       {/* Header and Quick Stats */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-[#0d0d11]/80 border border-zinc-900/80 rounded-2xl p-6 relative overflow-hidden shadow-2xl backdrop-blur-md">

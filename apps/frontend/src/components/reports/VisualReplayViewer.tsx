@@ -298,7 +298,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
                       width: `${(box.w / vw) * 100}%`,
                       height: `${(box.h / vh) * 100}%`,
                     }}
-                    className="border border-emerald-500/40 bg-emerald-500/2 pointer-events-auto group/region flex items-start p-1"
+                    className="border border-emerald-500/40 bg-emerald-500/[0.02] pointer-events-auto group/region flex items-start p-1"
                   >
                     <span className="px-1.5 py-0.5 bg-emerald-950 border border-emerald-500/30 rounded text-[8px] font-bold text-emerald-400 font-mono uppercase opacity-40 group-hover/region:opacity-100 transition-opacity">
                       {region.type}
@@ -313,8 +313,8 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
                 const getRoleColor = (role: string) => {
                   if (role === 'button') return 'border-blue-400/50 bg-blue-500/5';
                   if (role === 'input') return 'border-violet-400/50 bg-violet-500/5';
-                  if (role === 'link') return 'border-cyan-400/40 bg-cyan-500/2';
-                  return 'border-amber-400/40 bg-amber-500/2';
+                  if (role === 'link') return 'border-cyan-400/40 bg-cyan-500/[0.02]';
+                  return 'border-amber-400/40 bg-amber-500/[0.02]';
                 };
                 const getRoleText = (role: string) => {
                   if (role === 'button') return 'text-blue-300 bg-blue-950';
@@ -458,7 +458,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
               </div>
 
               {/* Speed toggle */}
-              <div className="flex bg-slate-900 border border-slate-850 p-0.5 rounded-lg">
+              <div className="flex bg-slate-900 border border-slate-800 p-0.5 rounded-lg">
                 {[1, 2, 4].map((speed) => (
                   <button
                     key={speed}
@@ -621,7 +621,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
               return (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   {/* Scope Switcher Toggle */}
-                  <div className="flex bg-slate-900 border border-slate-850 p-0.5 rounded-lg w-full">
+                  <div className="flex bg-slate-900 border border-slate-800 p-0.5 rounded-lg w-full">
                     <button
                       onClick={() => setFindingsScope('step')}
                       className={`flex-1 py-1 px-3 text-xs font-medium rounded-md transition-all ${
@@ -728,7 +728,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
                     <div className="bg-slate-900/50 border border-slate-900 rounded-lg p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Type</span>
-                        <span className="text-xs font-semibold text-white px-2 py-0.5 bg-slate-950 border border-slate-850 rounded">
+                        <span className="text-xs font-semibold text-white px-2 py-0.5 bg-slate-950 border border-slate-800 rounded">
                           {currentAction.action}
                         </span>
                       </div>

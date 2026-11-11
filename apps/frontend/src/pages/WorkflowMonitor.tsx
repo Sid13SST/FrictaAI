@@ -916,7 +916,7 @@ export const WorkflowMonitor = () => {
         className="rounded-2xl overflow-hidden"
         style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}
       >
-        <div className="h-px bg-gradient-to-r from-transparent via-[#7342E2]/22 to-transparent pointer-events-none" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#7342E2]/[0.22] to-transparent pointer-events-none" />
 
         {/* Tab bar */}
         <div

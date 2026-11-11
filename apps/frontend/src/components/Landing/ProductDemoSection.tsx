@@ -107,10 +107,10 @@ export function ProductDemoSection() {
                  <div className="w-3 h-3 rounded-full bg-white/20" />
                </div>
                <div className="h-6 w-[1px] bg-white/10" />
-               <div className="flex items-center gap-2 text-sm text-text-secondary font-medium">
-                 <span>Project: Acme Checkout Flow</span>
-                 <ChevronRight className="w-4 h-4 text-white/30" />
-                 <span className="text-white">Workflow #8492</span>
+               <div className="flex items-center gap-2 text-sm text-text-secondary font-medium min-w-0 whitespace-nowrap">
+                 <span className="hidden md:inline">Project: Acme Checkout Flow</span>
+                 <ChevronRight className="hidden md:block w-4 h-4 text-white/30" />
+                 <span className="text-white truncate">Workflow #8492</span>
                </div>
             </div>
             
@@ -119,7 +119,7 @@ export function ProductDemoSection() {
                 <Activity className="w-3 h-3 text-primary animate-pulse" />
                 <span className="text-xs text-primary font-mono">Running</span>
               </div>
-              <span className="text-xs text-text-tertiary font-mono font-medium">00:24s elapsed</span>
+              <span className="hidden sm:inline text-xs text-text-tertiary font-mono font-medium whitespace-nowrap">00:24s elapsed</span>
             </div>
           </div>
 

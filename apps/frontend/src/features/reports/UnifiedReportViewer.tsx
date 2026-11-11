@@ -88,7 +88,10 @@ const Panel = ({ children, className = '' }: { children: React.ReactNode; classN
 
 export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessionId }) => {
   type TabKey = 'replay' | 'timeline' | 'personas' | 'insights' | 'orchestrator' | 'findings';
-  const [activeTab, setActiveTab] = useState<TabKey>('replay');
+  // Replay is desktop-only; below `lg` open on the findings tab so a phone
+  // lands on real content instead of the "optimized for desktop" notice.
+  const [activeTab, setActiveTab] = useState<TabKey>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches ? 'replay' : 'findings');
   const [activeStep, setActiveStep] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -349,7 +352,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       <div className="xl:col-span-3 flex flex-col gap-6">
 
         {/* Navigation Tabs Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#222226] pb-1">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[#222226] pb-1">
           <div className="flex flex-wrap gap-1">
             {tabs.map((t) => (
               <button
@@ -367,7 +370,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             ))}
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap mb-2 sm:mb-0">
+          <div className="flex items-center gap-2.5 flex-wrap mb-2 lg:mb-0 whitespace-nowrap">
             <Link
               to={`/app/console/${sessionId}`}
               className="flex items-center gap-2 px-4 py-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 border border-[#7342e2]/30 text-[#7342e2] text-xs font-bold rounded-lg transition-all"

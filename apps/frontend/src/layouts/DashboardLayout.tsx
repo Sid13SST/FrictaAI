@@ -122,7 +122,7 @@ export const DashboardLayout = () => {
                 to={item.path}
                 className={`flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-300 group relative border ${
                   isActive
-                    ? 'border-indigo-500/16 bg-gradient-to-r from-indigo-500/8 to-purple-500/3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]'
+                    ? 'border-indigo-500/[0.16] bg-gradient-to-r from-indigo-500/[0.08] to-purple-500/[0.03] shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]'
                     : 'border-transparent hover:bg-white/[0.02] hover:border-white/[0.04] hover:translate-x-0.5'
                 }`}
               >
@@ -136,7 +136,7 @@ export const DashboardLayout = () => {
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 border ${
                     isActive
-                      ? 'bg-indigo-500/12 border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(115,66,226,0.08)]'
+                      ? 'bg-indigo-500/[0.12] border-indigo-500/30 text-indigo-400 shadow-[0_0_12px_rgba(115,66,226,0.08)]'
                       : 'bg-white/[0.02] border-white/[0.04] text-zinc-400 group-hover:bg-white/[0.05] group-hover:border-white/[0.08] group-hover:text-zinc-200 group-hover:scale-105'
                   }`}
                 >

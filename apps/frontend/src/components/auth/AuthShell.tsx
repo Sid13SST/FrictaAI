@@ -15,17 +15,11 @@ const COPY = {
     loading: 'Loading secure sign-in…',
     redirect: 'Sign in to continue. You’ll go straight to your dashboard afterwards.',
     after: 'After signing in you’ll land on your dashboard.',
-    switchPrompt: 'New to Fricta?',
-    switchLabel: 'Create an account',
-    switchTo: '/register',
   },
   'sign-up': {
     loading: 'Loading secure sign-up…',
     redirect: 'Create an account to continue. You’ll go straight to your dashboard afterwards.',
     after: 'After signing up you’ll land on your dashboard, ready to create your first project.',
-    switchPrompt: 'Already have an account?',
-    switchLabel: 'Sign in',
-    switchTo: '/login',
   },
 } as const;
 
@@ -126,15 +120,13 @@ export const AuthShell = ({ mode, children }: AuthShellProps) => {
         </ClerkLoading>
         <ClerkLoaded>{children}</ClerkLoaded>
 
-        <div className="w-full max-w-[420px] text-center text-xs leading-relaxed space-y-1.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-          {!wasRedirected && <p>{copy.after}</p>}
-          <p>
-            {copy.switchPrompt}{' '}
-            <Link to={copy.switchTo} className="font-semibold text-[#9B72FA] hover:text-white transition-colors">
-              {copy.switchLabel}
-            </Link>
+        {/* The Clerk card carries its own "Sign up / Sign in" switch link, so only
+            the post-auth destination is stated here. */}
+        {!wasRedirected && (
+          <p className="w-full max-w-[420px] text-center text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            {copy.after}
           </p>
-        </div>
+        )}
       </main>
     </CinematicBackground>
   );

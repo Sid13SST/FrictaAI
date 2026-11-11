@@ -85,7 +85,7 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
       </div>
 
       {/* ── Key Metrics Metrics Grid ──────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 2xl:grid-cols-4 gap-4">
         {[
           { label: 'Orchestrator Run Time', value: `${health.duration || 0}s`, desc: 'Active execution duration', icon: Clock },
           { label: 'Total Model Cost', value: `${health.tokenUsage.toLocaleString()} tokens`, desc: 'Token usage metrics', icon: Cpu },
@@ -106,9 +106,9 @@ export const OrchestrationOverview: React.FC<OrchestrationOverviewProps> = ({
       </div>
 
       {/* ── Active Specialist Grid & Severity Distribution ─────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
         {/* Active Agents grid */}
-        <div className="lg:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
+        <div className="2xl:col-span-2 bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-[#222226] pb-3">
             <h4 className="text-xs font-black font-mono uppercase tracking-wider text-white">Active Specialist Mesh Grid</h4>
             <span className="text-[9.5px] font-mono text-zinc-500">

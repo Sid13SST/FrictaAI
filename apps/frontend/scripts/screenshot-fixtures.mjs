@@ -148,6 +148,9 @@ for (const width of WIDTHS) {
       await page.addStyleTag({ content: `
         div.flex.h-screen.overflow-hidden { height: auto !important; min-height: 100vh; overflow: visible !important; }
         div.flex.h-screen.overflow-hidden > main, main > div.overflow-auto { overflow: visible !important; }
+        /* overflow:hidden gave <main> an implicit min-width of 0; keep that so truncation still applies */
+        div.flex.h-screen.overflow-hidden > main { min-width: 0 !important; }
+        main > div.overflow-auto { min-width: 0 !important; overflow-x: clip !important; }
         div.flex.h-screen.overflow-hidden > aside { align-self: stretch; }
       ` });
       await page.waitForTimeout(300);

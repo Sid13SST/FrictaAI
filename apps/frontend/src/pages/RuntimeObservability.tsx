@@ -12,7 +12,7 @@ export const RuntimeObservability = () => {
             Live worker health, browser pool, and queue state across the execution infrastructure.
           </p>
         </div>
-        <div className="flex items-center gap-1.5 bg-[#7342e2]/5 border border-[#7342e2]/20 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold text-[#7342e2] self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 bg-[#7342e2]/5 border border-[#7342e2]/20 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold text-[#7342e2] self-start sm:self-auto whitespace-nowrap flex-shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-[#7342e2] animate-pulse" />
           LIVE · UPDATES EVERY 3S
         </div>

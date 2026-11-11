@@ -156,7 +156,7 @@ export const ProjectDetail = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <h2 className="text-sm font-bold text-white">Audits</h2>
           {total > 0 && (
-            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            <span className="text-[11px] hidden sm:inline" style={{ color: 'rgba(255,255,255,0.35)' }}>
               Completed audits open their report · running audits open the live monitor
             </span>
           )}
