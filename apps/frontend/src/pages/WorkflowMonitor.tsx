@@ -6,7 +6,10 @@ import {
   ChevronRight, List, Zap, ArrowRight, RefreshCw, Plus,
   Copy, Check, Play, Layers, FileText
 } from 'lucide-react';
-import { apiFetch } from '../lib/api';
+import { apiFetch, apiJson } from '../lib/api';
+import { toApiError } from '../lib/errors';
+import { ErrorState } from '../components/common/ErrorState';
+import { Skeleton } from '../components/common/Skeleton';
 import { AIPipelineRibbon, AICapabilityId } from '../features/shared/AIPipelineRibbon';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -78,27 +81,27 @@ const RouteError = ({ code, message }: { code: number; message: string }) => {
       case 401:
         return {
           title: 'Sign In Required',
-          description: 'You must be signed in to access this workflow audit monitoring page.',
+          description: 'Your session has expired. Sign in again to keep watching this audit.',
           cta: 'Sign In to Fricta',
           link: '/login',
         };
       case 403:
         return {
           title: "You don't have access to this audit",
-          description: "This audit session belongs to another user or you do not have permission to view it.",
+          description: 'This audit belongs to another account, or your permissions have changed.',
           cta: 'Return to Dashboard',
           link: '/app',
         };
       case 404:
         return {
           title: 'Audit Not Found',
-          description: 'The requested workflow audit session identifier does not exist in our system.',
+          description: "This audit doesn't exist. It may have been deleted along with its project, or the link is out of date.",
           cta: 'Return to Dashboard',
           link: '/app',
         };
       default:
         return {
-          title: 'Unexpected Platform Error',
+          title: 'Something went wrong',
           description: message || 'An unexpected error occurred while loading this monitoring session.',
           cta: 'Return to Dashboard',
           link: '/app',
@@ -305,19 +308,18 @@ export const WorkflowMonitor = () => {
     data: statusData,
     isError: statusError,
     error: statusErrObj,
+    refetch: refetchStatus,
+    isFetching: statusFetching,
   } = useQuery({
     queryKey: ['workflow-status', workflowId],
-    queryFn: async () => {
-      const res = await apiFetch(`/agent/workflow/${workflowId}/status`);
-      if (res.status === 401) throw Object.assign(new Error('Unauthorized'), { code: 401 });
-      if (res.status === 403) throw Object.assign(new Error('Access Denied'), { code: 403 });
-      if (res.status === 404) throw Object.assign(new Error('Session Not Found'), { code: 404 });
-      if (!res.ok) throw new Error('Failed to fetch status');
-      return res.json() as Promise<{ session: SessionData; isActive: boolean }>;
-    },
+    queryFn: () =>
+      apiJson<{ session: SessionData; isActive: boolean }>(`/agent/workflow/${workflowId}/status`),
     refetchInterval: isTerminal ? false : 2000,
     enabled: !!workflowId,
     retry: false,
+    // Failures are shown by the live-status indicator in the header and the
+    // inline banner below — a toast every 2s poll would just be noise.
+    meta: { silentError: true },
   });
 
   // ── Thoughts polling ───────────────────────────────────────────────────────
@@ -330,6 +332,7 @@ export const WorkflowMonitor = () => {
     },
     refetchInterval: isTerminal ? false : 2000,
     enabled: !!workflowId,
+    meta: { silentError: true },
   });
 
   // ── Actions polling ────────────────────────────────────────────────────────
@@ -342,6 +345,7 @@ export const WorkflowMonitor = () => {
     },
     refetchInterval: isTerminal ? false : 2000,
     enabled: !!workflowId,
+    meta: { silentError: true },
   });
 
   // ── Report query (only fetched when terminal to read findings count) ─────────
@@ -585,15 +589,29 @@ export const WorkflowMonitor = () => {
   })();
 
   // ── Route error states ─────────────────────────────────────────────────────
-  if (statusError) {
-    const code = (statusErrObj as any)?.code ?? 0;
-    const msg = (statusErrObj as Error)?.message ?? 'Something went wrong';
-    
-    // Check if network error and not explicit code
-    if (code === 401 || code === 403 || code === 404) {
-      return <RouteError code={code} message={msg} />;
-    }
+  // Auth / ownership / missing-session errors replace the page. Anything else
+  // (network blip, 5xx) is transient: keep the monitor on screen, flag the
+  // connection as lost, and keep polling.
+  const statusApiError = statusError ? toApiError(statusErrObj) : null;
+  if (statusApiError && [401, 403, 404].includes(statusApiError.status)) {
+    return <RouteError code={statusApiError.status} message="" />;
   }
+
+  const sessionStatus = session?.status ?? '';
+  const isQueued = !!session && (sessionStatus === 'PENDING' || sessionStatus === 'QUEUED' || sessionStatus === 'idle');
+  const isStalled = !statusError && !!session && secondsSinceUpdate >= 15;
+  const latestAction = actions.length > 0 ? actions[actions.length - 1] : null;
+
+  const liveHeading = !session
+    ? 'Connecting to your audit…'
+    : isQueued
+    ? 'Audit queued'
+    : 'Audit in progress';
+  const liveSubheading = !session
+    ? 'Fetching the latest status from the agent.'
+    : isQueued
+    ? 'Waiting for a worker to pick it up. This usually takes a few seconds.'
+    : 'The AI agent is exploring your site. Audits usually take a few minutes — you can leave this page and it will keep running.';
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -617,8 +635,8 @@ export const WorkflowMonitor = () => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold text-white">Audit Running</h1>
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <h1 className="text-lg font-bold text-white">{liveHeading}</h1>
                   {session?.status && <StatusBadge status={session.status} animate />}
                 </div>
                 
@@ -626,7 +644,12 @@ export const WorkflowMonitor = () => {
                 {statusError ? (
                   <span className="flex items-center gap-1.5 text-xs text-rose-400 font-medium font-mono">
                     <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
-                    Connection Lost · Retrying...
+                    Connection lost · retrying…
+                  </span>
+                ) : !session ? (
+                  <span className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium font-mono">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Connecting…
                   </span>
                 ) : (
                   secondsSinceUpdate <= 2 ? (
@@ -645,25 +668,39 @@ export const WorkflowMonitor = () => {
                 )}
               </div>
 
+              <p className="text-xs leading-relaxed mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {liveSubheading}
+              </p>
+
               {/* Running details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-white/5 border border-white/10 text-xs mb-4">
-                <div>
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase font-mono">Project</p>
-                  <p className="text-white mt-0.5 truncate">{projectName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase font-mono">Target URL</p>
-                  <p className="text-indigo-400 font-mono truncate mt-0.5">{targetUrl}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase font-mono">Duration</p>
-                  <p className="text-white font-mono mt-0.5">{formatDuration(finalDuration)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase font-mono">Est. Remaining</p>
-                  <p className="text-white font-mono mt-0.5">{estimatedRemainingStr}</p>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-white/5 border border-white/10 text-xs mb-4">
+                {[
+                  { label: 'Project', value: projectName, cls: 'text-white' },
+                  { label: 'Target URL', value: targetUrl, cls: 'text-indigo-400 font-mono' },
+                  { label: 'Duration', value: formatDuration(finalDuration), cls: 'text-white font-mono' },
+                  { label: 'Est. Remaining', value: estimatedRemainingStr, cls: 'text-white font-mono' },
+                ].map(item => (
+                  <div key={item.label} className="min-w-0">
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase font-mono">{item.label}</p>
+                    {session
+                      ? <p className={`${item.cls} mt-0.5 truncate`}>{item.value}</p>
+                      : <Skeleton className="h-3 w-20 max-w-full rounded-full mt-1.5" />}
+                  </div>
+                ))}
               </div>
+
+              {/* Current step */}
+              {session && !isQueued && (
+                <p className="text-xs leading-relaxed mb-1.5 flex items-start gap-1.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                  <Activity className="w-3.5 h-3.5 mt-px flex-shrink-0 text-indigo-400" />
+                  <span className="min-w-0 break-words">
+                    <span className="font-semibold text-zinc-300">Current step:</span>{' '}
+                    {latestAction
+                      ? `Step ${latestAction.stepNumber} — ${latestAction.action}${latestAction.target ? ` ${latestAction.target}` : ''}`
+                      : 'Launching the browser and loading the page…'}
+                  </span>
+                </p>
+              )}
 
               {/* Goal */}
               {session?.goal && (
@@ -674,19 +711,55 @@ export const WorkflowMonitor = () => {
             </div>
           </div>
 
-          {/* Progress bar */}
-          {effectiveStep > 0 && (
-            <div className="mt-5 pt-3 border-t border-white/5">
-              <div className="flex justify-between text-[11px] mb-1.5 text-zinc-500">
-                <span className="font-semibold">Execution Progress</span>
-                <span className="font-mono">{effectiveStep} / 30 steps ({Math.round(progressPct)}%)</span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden bg-white/5">
+          {/* Progress bar — indeterminate until the agent reports its first step,
+              so a queued/starting audit never looks frozen. */}
+          <div className="mt-5 pt-3 border-t border-white/5">
+            <div className="flex justify-between gap-3 text-[11px] mb-1.5 text-zinc-500">
+              <span className="font-semibold">Execution Progress</span>
+              <span className="font-mono text-right">
+                {effectiveStep > 0
+                  ? `${effectiveStep} / 30 steps (${Math.round(progressPct)}%)`
+                  : isQueued ? 'Queued' : 'Starting…'}
+              </span>
+            </div>
+            <div
+              className="h-1.5 rounded-full overflow-hidden bg-white/5"
+              role="progressbar"
+              aria-label="Audit progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={effectiveStep > 0 ? Math.round(progressPct) : undefined}
+            >
+              {effectiveStep > 0 ? (
                 <div
                   className="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-indigo-500 to-purple-500"
                   style={{ width: `${progressPct}%` }}
                 />
-              </div>
+              ) : (
+                <div className="progress-indeterminate h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
+              )}
+            </div>
+          </div>
+
+          {/* Connection / stall notices */}
+          {statusError && session && (
+            <ErrorState
+              variant="banner"
+              className="mt-4"
+              error={statusErrObj}
+              action="refresh the audit status"
+              hint="The audit itself keeps running — we'll reconnect automatically."
+            />
+          )}
+          {isStalled && (
+            <div
+              className="mt-4 flex items-start gap-2.5 rounded-2xl px-4 py-3 text-xs"
+              style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', color: 'rgba(255,255,255,0.6)' }}
+            >
+              <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span>
+                No update for {secondsSinceUpdate}s. Some steps take a while (slow pages, long reasoning) — the audit is still running and this page will catch up on its own.
+              </span>
             </div>
           )}
         </div>
@@ -846,7 +919,7 @@ export const WorkflowMonitor = () => {
 
         {/* Tab bar */}
         <div
-          className="flex items-center justify-between px-5 py-3"
+          className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
         >
           <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
@@ -854,7 +927,7 @@ export const WorkflowMonitor = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all"
+                className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold font-mono uppercase tracking-wider transition-all whitespace-nowrap"
                 style={{
                   background: activeTab === tab ? 'rgba(115,66,226,0.12)' : 'transparent',
                   border: activeTab === tab ? '1px solid rgba(115,66,226,0.25)' : '1px solid transparent',
@@ -892,6 +965,17 @@ export const WorkflowMonitor = () => {
         {/* Content */}
         <div className="min-h-72 max-h-[520px] overflow-y-auto p-5 scrollbar-thin">
 
+          {/* Couldn't load the session at all (and it isn't an auth/404 case) */}
+          {!session && statusError && (
+            <ErrorState
+              error={statusErrObj}
+              action="load this audit"
+              onRetry={() => refetchStatus()}
+              retrying={statusFetching}
+              hint="If the audit was already running, it hasn't been interrupted."
+            />
+          )}
+
           {/* Idle / Loading state */}
           {!session && !statusError && (
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
@@ -904,7 +988,7 @@ export const WorkflowMonitor = () => {
               <div>
                 <p className="text-white font-bold">Connecting…</p>
                 <p className="text-sm mt-1 text-zinc-500">
-                  Waiting for the AI agent to launch the browser and connect...
+                  Waiting for the AI agent to launch the browser and connect. This can take up to a minute.
                 </p>
               </div>
             </div>
@@ -916,7 +1000,7 @@ export const WorkflowMonitor = () => {
               {thoughts.length === 0 ? (
                 <div className="flex items-center gap-2 text-sm py-12 justify-center text-zinc-500">
                   <Brain className="w-4 h-4 animate-pulse" />
-                  <span>Waiting for first agent thought…</span>
+                  <span>{isTerminal ? 'The agent recorded no thoughts for this audit.' : isQueued ? 'Queued — thoughts will stream here once the agent starts.' : 'Waiting for first agent thought…'}</span>
                 </div>
               ) : (
                 thoughts.map(t => <ThoughtBubble key={t.id} thought={t} />)
