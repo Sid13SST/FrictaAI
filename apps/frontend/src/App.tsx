@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+import { ClerkProvider, ClerkLoading, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_bGlrZWQtbW91c2UtOTUuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { Toaster } from './components/common/Toaster';
 
 // Everything under /app is already gated behind Clerk's SignedIn check, so a
 // lazy-load boundary there doesn't add a perceptible extra wait — but it keeps
@@ -30,11 +31,27 @@ const HelpCenter = lazy(() => import('./pages/HelpCenter').then(m => ({ default:
 const LearningCenter = lazy(() => import('./pages/LearningCenter').then(m => ({ default: m.LearningCenter })));
 
 const RouteFallback = () => (
-  <div className="min-h-[60vh] w-full flex items-center justify-center">
+  <div role="status" aria-label="Loading page" className="min-h-[60vh] w-full flex items-center justify-center">
     <div
       className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
       style={{ borderColor: 'rgba(115,66,226,0.35)', borderTopColor: '#7342E2' }}
     />
+  </div>
+);
+
+// Shown on /app while Clerk is still resolving the session, so a signed-in
+// user sees a loader (not a blank page) before the dashboard appears, and a
+// signed-out one sees it before being sent to /login.
+const SessionCheck = () => (
+  <div
+    role="status"
+    className="min-h-screen w-full flex flex-col items-center justify-center gap-4 bg-[#070b0a] text-center px-6"
+  >
+    <div
+      className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+      style={{ borderColor: 'rgba(115,66,226,0.35)', borderTopColor: '#7342E2' }}
+    />
+    <p className="text-sm text-white/60">Checking your session…</p>
   </div>
 );
 
@@ -70,6 +87,9 @@ function App() {
           <Route path="/register/*" element={<Register />} />
           <Route path="/app" element={
             <>
+              <ClerkLoading>
+                <SessionCheck />
+              </ClerkLoading>
               <SignedIn>
                 <DashboardLayout />
               </SignedIn>
@@ -98,6 +118,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ErrorBoundary>
+      <Toaster />
     </ClerkProvider>
   );
 }
