@@ -25,6 +25,16 @@ export const DashboardLayout = () => {
     { name: 'Help',                  path: '/app/help',        icon: HelpCircle,      desc: 'Documentation' },
   ];
 
+  // Routes that aren't in the sidebar still need an accurate header label
+  // (the live monitor used to fall back to "Dashboard").
+  const routeTitle = location.pathname.startsWith('/app/monitor')
+    ? 'Live Audit'
+    : navItems.find(n =>
+        n.path !== '/app'
+          ? location.pathname.startsWith(n.path)
+          : location.pathname === n.path
+      )?.name ?? 'Dashboard';
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--fricta-bg, #070b0a)' }}>
 
@@ -221,11 +231,7 @@ export const DashboardLayout = () => {
             </span>
             <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
             <span className="text-xs font-semibold text-white truncate">
-              {navItems.find(n =>
-                n.path !== '/app'
-                  ? location.pathname.startsWith(n.path)
-                  : location.pathname === n.path
-              )?.name ?? 'Dashboard'}
+              {routeTitle}
             </span>
           </div>
 

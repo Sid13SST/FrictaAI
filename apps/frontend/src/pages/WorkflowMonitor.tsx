@@ -617,12 +617,10 @@ export const WorkflowMonitor = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
 
-      <AIPipelineRibbon active={aiActiveStages} persona={session?.persona} />
-
       {/* ── Active Running Banner ─────────────────────────────────────────── */}
       {!isTerminal && (
         <div
-          className="rounded-3xl p-6 relative overflow-hidden border"
+          className="rounded-3xl p-4 sm:p-6 relative overflow-hidden border"
           style={{
             background: 'radial-gradient(ellipse at top left, rgba(115,66,226,0.08), transparent 60%), rgba(9,9,11,0.8)',
             borderColor: 'rgba(115,66,226,0.2)',
@@ -630,7 +628,7 @@ export const WorkflowMonitor = () => {
         >
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7342E2]/40 to-transparent pointer-events-none" />
           <div className="flex flex-wrap items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-indigo-500/10 border border-indigo-500/25">
+            <div className="w-12 h-12 rounded-2xl hidden sm:flex items-center justify-center flex-shrink-0 bg-indigo-500/10 border border-indigo-500/25">
               <Activity className="w-6 h-6 animate-pulse text-indigo-400" />
             </div>
             <div className="flex-1 min-w-0">
@@ -909,6 +907,9 @@ export const WorkflowMonitor = () => {
           </button>
         </div>
       )}
+
+      {/* Sits below the status card so the audit's state is the first thing on screen. */}
+      <AIPipelineRibbon active={aiActiveStages} persona={session?.persona} />
 
       {/* ── Live Stream Panel ─────────────────────────────────────────────── */}
       <div
