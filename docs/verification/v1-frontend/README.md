@@ -40,7 +40,7 @@ npm run fixtures:screenshots -w @fricta/frontend  # writes screenshots/ and layo
 
 | Page | Files | Notes |
 | --- | --- | --- |
-| Landing | `landing.png` | Avatar images in the testimonials show alt text: they load from an external host, which the capture blocks. |
+| Landing | `landing.png` | Unsupported testimonial/customer claims were replaced with labelled example workflows, removing the external-avatar dependency. See the follow-up note below. |
 | Login | `login.png` | Page frame only — the card is a labelled placeholder, not the Clerk widget. |
 | Register | `register.png` | Same caveat as Login. |
 | Dashboard | `dashboard.png` | |
@@ -134,3 +134,17 @@ None of the following can be established from fixtures.
 9. **Other browsers and real devices.** Chromium only; no Safari/Firefox, no
    touch, no real phone.
 10. **Toasts and modals** were not screenshotted.
+
+
+## Independent follow-up (12 November 2026)
+
+These follow-up changes are committed and pushed on `fricta/v1-frontend-completion`. The test counts below come from an independent local run, not from the session that produced the screenshots.
+
+- Replaced unsupported named customer quotes and the "Trusted by engineering teams" heading with explicitly labelled example UX-review goals. No customer endorsement is implied and no third-party avatar is needed.
+- The landing demo reasoner uses non-shrinking panels, a fade without horizontal/height animation, and wrapping log text. Its interval captures each thought before updating state and triggers findings from the sequence index instead of stale state.
+- The decorative checkout order-summary panel is hidden on phones, where it previously extended past its mock window.
+- Landing was recaptured at 390, 768 and 1440 pixels. Fixture screenshots remain local UI evidence, not a real audit run.
+- Independently reran 53 backend unit tests and 31 integration tests: all 84 passed. Integration tests ran against an isolated disposable local PostgreSQL database and Redis; Clerk and the browser/audit executor were mocked. The local services were stopped after the run. These tests exercise local pipeline, security, resilience, database, deployment and performance paths, not real Clerk or provider behavior.
+- Build and typecheck passed. Touched landing components have zero ESLint errors and warnings.
+
+Still pending: confirmation of ownership of the configured Clerk instance and an authorized test account or signup; an OpenRouter key collected securely and a verified zero-cost model before a real audit call. These do not block fixture work or mocked local integration tests. No merge or deploy was performed.

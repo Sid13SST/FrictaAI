@@ -32,14 +32,15 @@ export function ProductDemoSection() {
     let thoughtIndex = 0;
     const thoughtInterval = setInterval(() => {
       if (thoughtIndex < THOUGHTS.length) {
-        setActiveThoughts(prev => [...prev.slice(-4), THOUGHTS[thoughtIndex]]);
+        const thought = THOUGHTS[thoughtIndex];
+        setActiveThoughts(prev => [...prev.slice(-4), thought]);
         setProgress((thoughtIndex / THOUGHTS.length) * 100);
         
         // Trigger findings at specific points
-        if (thoughtIndex === 5 && activeFindings.length === 0) {
+        if (thoughtIndex === 5) {
           setActiveFindings([FINDINGS[0]]);
         }
-        if (thoughtIndex === 11 && activeFindings.length === 1) {
+        if (thoughtIndex === 11) {
           setActiveFindings([...FINDINGS]);
         }
         
@@ -128,7 +129,7 @@ export function ProductDemoSection() {
             
             {/* Left: Thought Stream (hidden on narrow viewports — the fixed
                 300px width doesn't leave room for the core mockup below md) */}
-            <div className="hidden md:flex w-[300px] border-r border-white/10 bg-background-deep/50 flex-col p-4">
+            <div className="hidden md:flex w-[240px] lg:w-[300px] shrink-0 border-r border-white/10 bg-background-deep/50 flex-col p-4">
               <div className="flex items-center gap-2 mb-4">
                 <BrainCircuit className="w-4 h-4 text-accent-secondary" />
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Agent Reasoner</span>
@@ -139,10 +140,10 @@ export function ProductDemoSection() {
                     {activeThoughts.map((thought, i) => (
                       <motion.div 
                         key={`${thought}-${i}`}
-                        initial={{ opacity: 0, x: -20, height: 0 }}
-                        animate={{ opacity: i === activeThoughts.length - 1 ? 1 : 0.5, x: 0, height: 'auto' }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: i === activeThoughts.length - 1 ? 1 : 0.5 }}
                         exit={{ opacity: 0 }}
-                        className="text-xs font-mono text-primary bg-primary/5 border border-primary/10 rounded p-2"
+                        className="break-words text-xs font-mono text-primary bg-primary/5 border border-primary/10 rounded p-2"
                       >
                         <span className="text-white/40 mr-2">{'>'}</span>{thought}
                       </motion.div>
@@ -153,7 +154,7 @@ export function ProductDemoSection() {
             </div>
 
             {/* Center: Live Replay View */}
-            <div className="flex-1 bg-transparent relative flex flex-col">
+            <div className="min-w-0 flex-1 bg-transparent relative flex flex-col">
               <div className="p-2 border-b border-white/5 flex items-center gap-2 bg-card">
                 <div className="flex-1 bg-background-deep rounded border border-white/5 px-3 py-1 flex items-center gap-2">
                   <span className="text-[10px] text-white/30">URL</span>
@@ -179,7 +180,7 @@ export function ProductDemoSection() {
                   {/* Fake Body */}
                   <div className="flex-1 p-5 flex gap-6 relative z-10">
                     {/* Left: Form */}
-                    <div className="flex-1 flex flex-col">
+                    <div className="min-w-0 flex-1 flex flex-col">
                       <h1 className="text-gray-900 font-bold text-lg mb-4">Checkout</h1>
                       
                       <div className="space-y-4">
@@ -230,7 +231,7 @@ export function ProductDemoSection() {
                     </div>
 
                     {/* Right: Order Summary */}
-                    <div className="w-32 bg-gray-50/80 border border-gray-100 rounded-md p-3 flex flex-col gap-3 h-fit">
+                    <div className="hidden sm:flex w-32 shrink-0 bg-gray-50/80 border border-gray-100 rounded-md p-3 flex-col gap-3 h-fit">
                       <div className="w-16 h-2 bg-gray-400 rounded-full mb-1" />
                       <div className="flex justify-between items-center">
                         <div className="w-10 h-10 bg-gray-200 rounded" />
