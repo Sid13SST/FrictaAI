@@ -1,0 +1,1032 @@
+[
+  {
+    "name": "landing",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "register",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "project-detail",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details-findings",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "help-center",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--empty",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--no-audits",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--empty",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "project-detail--empty",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--empty",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console--empty",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--empty",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--loading",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--loading",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--loading",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details--loading",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--connecting",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--queued",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--loading",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login--widget-loading",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login--redirected",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--error",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--error",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--error",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--error",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--error",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "landing",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "register",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "project-detail",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details-findings",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "help-center",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--empty",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--no-audits",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--empty",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "project-detail--empty",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--empty",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console--empty",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--empty",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--loading",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--loading",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--loading",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details--loading",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--connecting",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--queued",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--loading",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login--widget-loading",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login--redirected",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--error",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--error",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--error",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--error",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--error",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "landing",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "register",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "project-detail",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details-findings",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console-evidence",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "help-center",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--empty",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--no-audits",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--empty",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "project-detail--empty",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--empty",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "investigation-console--empty",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--empty",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--loading",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--loading",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--loading",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-details--loading",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--connecting",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--queued",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--loading",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login--widget-loading",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "login--redirected",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "dashboard--error",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "projects--error",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports--error",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "workflow-monitor--error",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "runtime-observability--error",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  }
+]
