@@ -16,7 +16,7 @@ const divider = { borderBottom: '1px solid rgba(255,255,255,0.04)' };
 const DashboardSkeleton = () => (
   <SkeletonGroup label="Loading your dashboard" className="space-y-8">
     <SkeletonPageHeader />
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 min-[340px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
     </div>
     <div className="rounded-2xl overflow-hidden" style={surface}>
@@ -326,7 +326,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[340px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map(s => <StatCard key={s.label} {...s} />)}
       </div>
 

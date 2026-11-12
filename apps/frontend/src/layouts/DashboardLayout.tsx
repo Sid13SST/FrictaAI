@@ -204,7 +204,7 @@ export const DashboardLayout = () => {
       </aside>
 
       {/* ── Main Content ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Top header bar */}
         <header

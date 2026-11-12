@@ -157,9 +157,13 @@ for (const width of WIDTHS) {
     }
 
     const file = path.join(OUT, String(width), `${shot.name}.png`);
-    await page.screenshot({ path: file, fullPage: true });
-    report.push({ name: shot.name, width, ...layout, errors });
-    const flag = layout.documentOverflowPx || layout.contentOverflowPx || layout.offenders.length || errors.length ? '  <-- CHECK' : '';
+    const png = await page.screenshot({ path: file, fullPage: true });
+    // Belt and braces: the PNG's own width (bytes 16-19 of the IHDR chunk) must
+    // equal the viewport. A wider image means the page — or this script's
+    // capture CSS — overflowed horizontally, whatever the DOM measurements said.
+    const imageWidth = png.readUInt32BE(16);
+    report.push({ name: shot.name, width, imageWidth, ...layout, errors });
+    const flag = imageWidth !== width || layout.documentOverflowPx || layout.contentOverflowPx || layout.offenders.length || errors.length ? '  <-- CHECK' : '';
     console.log(`${String(width).padStart(4)}  ${shot.name}${flag}`);
     await context.close();
   }
@@ -167,6 +171,7 @@ for (const width of WIDTHS) {
 
 await browser.close();
 if (!only) fs.writeFileSync(path.join(OUT, '..', 'layout-report.json'), JSON.stringify(report, null, 2) + '\n');
-const bad = report.filter(r => r.documentOverflowPx || r.contentOverflowPx || r.offenders.length || r.errors.length);
+const bad = report.filter(r => r.imageWidth !== r.width || r.documentOverflowPx || r.contentOverflowPx || r.offenders.length || r.errors.length);
 console.log(`\n${report.length} screenshots, ${bad.length} flagged.`);
 for (const b of bad) console.log(JSON.stringify(b));
+if (bad.length) process.exitCode = 1;

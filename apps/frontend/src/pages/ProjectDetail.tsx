@@ -49,7 +49,7 @@ export const ProjectDetail = () => {
             <Skeleton className="h-3 w-40 max-w-full rounded-full mt-3" />
           </div>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 min-[340px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
         </div>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -134,7 +134,7 @@ export const ProjectDetail = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[340px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Total Audits', value: total, icon: <Activity className="w-4 h-4" />, color: '#9B72FA' },
           { label: 'Completed', value: completed, icon: <CheckCircle2 className="w-4 h-4" />, color: '#10b981' },
