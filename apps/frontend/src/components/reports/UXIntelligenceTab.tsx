@@ -266,7 +266,7 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
             <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center">
               <Gauge className="w-4 h-4 mr-2 text-[#9b72fa]" /> {scores.isOfficial ? 'Audit Score' : 'Persona Projection'}
             </h4>
-            <div className="flex items-center space-x-6 mb-6">
+            <div className="flex items-center gap-5 mb-3">
               <div className="relative flex items-center justify-center w-24 h-24 shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-slate-800" strokeWidth="6" fill="transparent" />
@@ -278,17 +278,19 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
                 </svg>
                 <span className="absolute text-xl font-bold text-white">{scores.overall}</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-white">{scores.isOfficial ? 'Audit score' : 'Projected for persona'}</div>
-                <p className="text-xs text-slate-400">
-                  {scores.isOfficial
-                    ? 'Same score as the report grade.'
-                    : scores.personaPenalty > 0
-                      ? `Audit score ${officialScores.overallScore} minus ${scores.personaPenalty} for findings affecting this persona. Not a separate grade.`
-                      : `No findings affect this persona, so it matches the audit score (${officialScores.overallScore}).`}
-                </p>
+              <div className="min-w-0 text-lg font-bold text-white leading-tight">
+                {scores.isOfficial ? 'Audit score' : 'Projected for persona'}
               </div>
             </div>
+            {/* Full-width caption: in the narrow column beside the gauge it
+                became a tall sliver of wrapped text. */}
+            <p className="text-xs text-slate-400 mb-6">
+              {scores.isOfficial
+                ? 'Same score as the report grade.'
+                : scores.personaPenalty > 0
+                  ? `Audit score ${officialScores.overallScore} minus ${scores.personaPenalty} for findings affecting this persona. Not a separate grade.`
+                  : `No findings affect this persona, so it matches the audit score (${officialScores.overallScore}).`}
+            </p>
 
             <div className="space-y-3">
               <div>
