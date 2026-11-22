@@ -150,6 +150,14 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
 
   useEffect(() => { fetchReportData(true); }, [sessionId]);
 
+  // Poll quietly while the report is provisional.
+  const isPending = reportData?.analysis?.state === 'pending';
+  useEffect(() => {
+    if (!isPending) return;
+    const id = window.setTimeout(() => { void fetchReportData(false); }, 3000);
+    return () => window.clearTimeout(id);
+  }, [isPending, reportData]);
+
   const handleRunDiagnostics = async () => {
     setAnalyzing(true);
     try {
@@ -249,8 +257,11 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const timeline = timelineData?.timeline || [];
   // Grade comes from the backend (same bands as exports/PDF); 'N/A' when the
   // audit produced no evidence. Never default to a letter.
-  const notScored = reportData.evidence?.status === 'insufficient' || scores.overallScore === null;
-  const grade: string = notScored ? 'N/A' : (executiveSummary?.overallUXGrade ?? gradeForScore(scores.overallScore));
+  // Provisional report: the run or its post-run analysis has not finished.
+  // Nothing on the page may look final until it has.
+  const analysisPending = reportData.analysis?.state === 'pending';
+  const notScored = !analysisPending && (reportData.evidence?.status === 'insufficient' || scores.overallScore === null);
+  const grade: string = analysisPending ? '…' : notScored ? 'N/A' : (executiveSummary?.overallUXGrade ?? gradeForScore(scores.overallScore));
   const coverage = reportData.visualCoverage as
     | { status: string; complete: boolean; note: string }
     | undefined;
@@ -271,6 +282,13 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         persona={reportData.session?.persona}
       />
 
+      {analysisPending && (
+        <div role="status" data-analysis-pending className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.35)', color: 'rgba(221,214,254,0.95)' }}>
+          <strong className="font-semibold">Analysis in progress.</strong>{' '}
+          The audit has finished but its visual review, UX analysis and scoring are still running. This page refreshes automatically; scores and findings appear when it is done.
+        </div>
+      )}
       {notScored && (
         <div role="alert" className="rounded-xl px-4 py-3 text-sm leading-relaxed"
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)', color: 'rgba(253,230,138,0.95)' }}>
@@ -279,7 +297,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           This is a failure record, not a UX assessment. Re-run the audit.
         </div>
       )}
-      {coverage && !coverage.complete && (
+      {coverage && !coverage.complete && !analysisPending && (
         <div role="status" className="rounded-xl px-4 py-3 text-sm leading-relaxed"
           style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.3)', color: 'rgba(186,230,253,0.95)' }}>
           <strong className="font-semibold">Visual coverage incomplete.</strong> {coverage.note}
@@ -297,7 +315,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#7342E2]/5 to-[#7342E2]/20 border-2 border-[#7342E2]/30 flex items-center justify-center text-3xl font-black text-[#7342E2] mt-4 shadow-[0_0_24px_rgba(115,66,226,0.15)] transition-transform hover:scale-105 duration-300">
             {grade}
           </div>
-          <div className="text-xl font-bold text-white mt-4 font-mono">{notScored ? 'Not scored' : `${scores.overallScore}/100`}</div>
+          <div className="text-xl font-bold text-white mt-4 font-mono">{analysisPending ? 'Analysis in progress' : notScored ? 'Not scored' : `${scores.overallScore}/100`}</div>
           {notScored && (
             <p className="text-[11px] text-amber-300/90 mt-1 px-2 leading-relaxed">Insufficient evidence: the audit recorded no agent actions.</p>
           )}
@@ -463,7 +481,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           </>
         )}
 
-        {activeTab === 'findings' && (
+        {analysisPending && (activeTab === 'findings' || activeTab === 'personas' || activeTab === 'insights') && (
+          <Panel><div className="p-6"><NoEvidenceNote title="Analysis in progress" detail="Findings, persona projections and insights appear when the post-run analysis finishes. This page refreshes automatically." /></div></Panel>
+        )}
+        {!analysisPending && activeTab === 'findings' && (
           <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} officialScores={scores} noEvidence={notScored} />
         )}
 
@@ -494,10 +515,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           </>
         )}
 
-        {activeTab === 'personas' && notScored && (
+        {!analysisPending && activeTab === 'personas' && notScored && (
           <Panel><div className="p-6"><NoEvidenceNote detail="Persona simulations compare recorded behaviour across personas; this audit recorded no agent actions." /></div></Panel>
         )}
-        {activeTab === 'personas' && !notScored && (
+        {!analysisPending && activeTab === 'personas' && !notScored && (
           <PersonaComparisonPanel
             personaProfiles={reportData.personaProfiles}
             uxFindings={reportData.uxFindings}
@@ -507,10 +528,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           />
         )}
 
-        {activeTab === 'insights' && notScored && (
+        {!analysisPending && activeTab === 'insights' && notScored && (
           <Panel><div className="p-6"><NoEvidenceNote detail="UX insights are synthesised from findings and scores; this audit has neither." /></div></Panel>
         )}
-        {activeTab === 'insights' && !notScored && (
+        {!analysisPending && activeTab === 'insights' && !notScored && (
           <div className="flex flex-col gap-6">
             <GlobalInsightEngine executiveSummary={executiveSummary} />
 

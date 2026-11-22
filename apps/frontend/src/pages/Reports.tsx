@@ -289,6 +289,7 @@ export const Reports = () => {
           {filtered.map((report) => {
             const grade = gradeOf(report);
             const score = report.score ?? null;
+            const pendingAnalysis = !!report.analysisPending;
             const sev = score === null ? 'NOT SCORED' : score >= 80 ? 'LOW' : score >= 60 ? 'MEDIUM' : score >= 40 ? 'HIGH' : 'CRITICAL';
             const sevStyle = severityStyle(sev);
             const date = new Date(report.createdAt);
@@ -342,7 +343,7 @@ export const Reports = () => {
                           className="text-[9px] px-2 py-0.5 rounded-full font-black font-mono uppercase"
                           style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
                         >
-                          {grade === 'N/A' ? 'Not scored' : `Grade ${grade}`}
+                          {pendingAnalysis ? 'Analysing…' : grade === 'N/A' ? 'Not scored' : `Grade ${grade}`}
                         </span>
                       </div>
                       <h3 className="text-sm font-bold text-white mt-1.5">
@@ -362,7 +363,7 @@ export const Reports = () => {
                 {score === null ? (
                   <div className="flex items-center gap-3" data-no-evidence>
                     <span className="text-[10px] w-24 flex-shrink-0 font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>Overall UX</span>
-                    <span className="text-[10px] font-mono font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>{NO_EVIDENCE_LABEL}</span>
+                    <span className="text-[10px] font-mono font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>{pendingAnalysis ? 'Analysis in progress' : NO_EVIDENCE_LABEL}</span>
                   </div>
                 ) : (
                 <div className="flex flex-col gap-2">
@@ -404,7 +405,7 @@ export const Reports = () => {
                   <div className="flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.25)' }} />
                     <span className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                      {score === null ? `Findings ${NO_EVIDENCE_LABEL.toLowerCase()}` : `${report.uxFindingsCount ?? '—'} findings compiled`}
+                      {pendingAnalysis ? 'Findings pending analysis' : score === null ? `Findings ${NO_EVIDENCE_LABEL.toLowerCase()}` : `${report.uxFindingsCount ?? '—'} findings compiled`}
                     </span>
                   </div>
                   <div className="flex gap-2">
