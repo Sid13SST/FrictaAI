@@ -86,7 +86,7 @@ npm run dev
 ```
 
 The app will be available at:
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:3000 (Vite dev server; proxies /api to the backend)
 - Backend API: http://localhost:3001
 
 ## 6. Tests

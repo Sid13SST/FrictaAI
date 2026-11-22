@@ -1,0 +1,219 @@
+{
+  "llm": "local-stub (not a live LLM)",
+  "at": "2026-11-22T12:07:56.982Z",
+  "projectId": "f6d7e1bd-b18e-489a-93e4-c6568f108880",
+  "sessionId": "8b60b4e6-a280-475e-a67e-ca47730a4bba",
+  "deadEndSessionId": "2c86a517-cf42-42c9-a8cf-3a70328399c2",
+  "results": [
+    {
+      "step": "stub LLM server up",
+      "ok": true,
+      "detail": "/tmp/fricta-e2e-ycwt1U/stub-llm.log"
+    },
+    {
+      "step": "backend boots (env validation, DB, Redis, migrations)",
+      "ok": true,
+      "detail": "/tmp/fricta-e2e-ycwt1U/backend.log"
+    },
+    {
+      "step": "unauthenticated request rejected",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "token with bad signature rejected",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "create project",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "launch audit (POST /api/agent/workflow/run)",
+      "ok": true,
+      "detail": "HTTP 200 model=google/gemma-4-31b-it:free"
+    },
+    {
+      "step": "other user cannot read the audit",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "worker runs audit to a terminal status",
+      "ok": true,
+      "detail": "seen=RUNNING\u2192COMPLETED final=COMPLETED steps=3"
+    },
+    {
+      "step": "audit completes (goal reached)",
+      "ok": true,
+      "detail": "final=COMPLETED"
+    },
+    {
+      "step": "thoughts persisted",
+      "ok": true,
+      "detail": "3 thoughts"
+    },
+    {
+      "step": "actions persisted",
+      "ok": true,
+      "detail": "scroll:down:success, click:Pricing:success, wait:goal_complete:success"
+    },
+    {
+      "step": "agent clicked through to pricing",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "audit listed under project",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "SSE /api/realtime/replay connects + hydrates",
+      "ok": true,
+      "detail": "HTTP 200 events=system.connected,system.hydrated"
+    },
+    {
+      "step": "SSE /api/realtime/timeline connects + hydrates",
+      "ok": true,
+      "detail": "HTTP 200 events=system.connected,system.hydrated"
+    },
+    {
+      "step": "SSE /api/realtime/orchestration connects + hydrates",
+      "ok": true,
+      "detail": "HTTP 200 events=system.connected,system.hydrated"
+    },
+    {
+      "step": "SSE rejects other user",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "report generated + readable",
+      "ok": true,
+      "detail": "keys=session,scores,uxFindings,cognitiveSignals,visualFindings,personaProfiles"
+    },
+    {
+      "step": "report in /api/reports list",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "executive summary",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "report timeline",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "JSON export",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "PDF export",
+      "ok": true,
+      "detail": "HTTP 200 type=application/pdf bytes=85239 head=\"%PDF-\""
+    },
+    {
+      "step": "visual replay timeline",
+      "ok": true,
+      "detail": "HTTP 200 keys=screenshots,events,actions,thoughts,signals items=3"
+    },
+    {
+      "step": "replay screenshot served only with auth",
+      "ok": true,
+      "detail": "anon=401 owner=200 type=image/webp bytes=81802"
+    },
+    {
+      "step": "screenshot timeline events",
+      "ok": true,
+      "detail": "3 events"
+    },
+    {
+      "step": "visual analysis (vision via stub)",
+      "ok": true,
+      "detail": "HTTP 200 aiUsed=true findings=9"
+    },
+    {
+      "step": "visual findings persisted",
+      "ok": true,
+      "detail": "9 findings"
+    },
+    {
+      "step": "visual score persisted",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "UX analysis",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "UX findings readable",
+      "ok": true,
+      "detail": "HTTP 200 count=0"
+    },
+    {
+      "step": "UX recommendations readable",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "orchestrator run",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "agent findings readable",
+      "ok": true,
+      "detail": "HTTP 200 count=undefined"
+    },
+    {
+      "step": "shared memory readable",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "historical analysis (project-scoped POST)",
+      "ok": true,
+      "detail": "HTTP 200 "
+    },
+    {
+      "step": "historical analysis rejects other user",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "other user blocked on all session-scoped routes",
+      "ok": true,
+      "detail": "13 routes checked"
+    },
+    {
+      "step": "dead-end audit ends unsuccessfully",
+      "ok": true,
+      "detail": "final=FAILED steps=6"
+    },
+    {
+      "step": "dead-end audit still gets a diagnostic report",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "dead-end audit produces UX friction findings",
+      "ok": true,
+      "detail": "count=1 Friction Loops Interrupting Expert Speed"
+    },
+    {
+      "step": "stub actually served planner + vision calls",
+      "ok": true,
+      "detail": "{\"stub\":true,\"chat\":15,\"planner\":12,\"vision\":3,\"models\":0,\"malformed\":0}"
+    }
+  ]
+}
