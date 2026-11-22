@@ -21,6 +21,7 @@ import { AIPipelineRibbon } from '../shared/AIPipelineRibbon';
 import { UXIntelligenceTab } from '../../components/reports/UXIntelligenceTab';
 import { DesktopOnlyNotice } from '../../components/common/DesktopOnlyNotice';
 import { gradeForScore } from '../../lib/grade';
+import { NoEvidenceNote } from '../../components/common/NoEvidenceNote';
 
 interface UnifiedReportViewerProps {
   sessionId: string;
@@ -463,7 +464,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         )}
 
         {activeTab === 'findings' && (
-          <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} officialScores={scores} />
+          <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} officialScores={scores} noEvidence={notScored} />
         )}
 
         {activeTab === 'timeline' && timeline.length === 0 && (
@@ -493,7 +494,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           </>
         )}
 
-        {activeTab === 'personas' && (
+        {activeTab === 'personas' && notScored && (
+          <Panel><div className="p-6"><NoEvidenceNote detail="Persona simulations compare recorded behaviour across personas; this audit recorded no agent actions." /></div></Panel>
+        )}
+        {activeTab === 'personas' && !notScored && (
           <PersonaComparisonPanel
             personaProfiles={reportData.personaProfiles}
             uxFindings={reportData.uxFindings}
@@ -503,7 +507,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           />
         )}
 
-        {activeTab === 'insights' && (
+        {activeTab === 'insights' && notScored && (
+          <Panel><div className="p-6"><NoEvidenceNote detail="UX insights are synthesised from findings and scores; this audit has neither." /></div></Panel>
+        )}
+        {activeTab === 'insights' && !notScored && (
           <div className="flex flex-col gap-6">
             <GlobalInsightEngine executiveSummary={executiveSummary} />
 

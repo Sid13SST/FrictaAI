@@ -8,6 +8,7 @@ import {
   XCircle, Eye, RotateCcw, Loader2
 } from 'lucide-react';
 import { projectPersonaScores, type OfficialScores } from '../../lib/personaProjection';
+import { NoEvidenceNote } from '../common/NoEvidenceNote';
 
 type FindingStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
@@ -49,9 +50,15 @@ interface Recommendation {
   remedySteps: string[];
 }
 
-export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, officialScores }: {
+export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, officialScores, noEvidence = false }: {
   sessionId: string;
   stepCount?: number | null;
+  /**
+   * Zero-evidence report (no recorded agent actions): every diagnostic panel
+   * shows "Unavailable: no evidence" instead of numbers, "Good" or a positive
+   * empty state.
+   */
+  noEvidence?: boolean;
   /** The report's scores (single source of truth for the audit score). */
   officialScores: OfficialScores;
 }) {
@@ -184,6 +191,9 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
           <Brain className="w-5 h-5 text-[#9b72fa]" />
           <h3 className="text-lg font-medium text-white">Persona Usability Projections</h3>
         </div>
+        {noEvidence ? (
+          <NoEvidenceNote compact detail="Persona projections need recorded agent behaviour; this audit has none." />
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* Persona Card: Standard */}
@@ -255,6 +265,7 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
           </button>
 
         </div>
+        )}
       </section>
 
       {/* 2. Cognitive Metrics Dashboard */}
@@ -340,6 +351,9 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
           <h4 className="text-sm font-semibold text-slate-300 mb-6 flex items-center">
             <Brain className="w-4 h-4 mr-2 text-[#9b72fa]" /> Cognitive Load Profile
           </h4>
+          {noEvidence ? (
+            <NoEvidenceNote compact detail="Cognitive load is derived from recorded actions and thoughts; this audit recorded none." />
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {cognitiveSignals.map(signal => {
@@ -379,6 +393,7 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
             })}
 
           </div>
+          )}
         </div>
 
       </div>
@@ -389,13 +404,16 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
           <h4 className="text-sm font-semibold text-slate-300 flex items-center whitespace-nowrap">
             <Clock className="w-4 h-4 mr-2 text-[#9b72fa]" /> Friction Heatmap Timeline
           </h4>
-          <div className="flex items-center space-x-4 text-[10px] text-slate-500">
+          {!noEvidence && <div className="flex items-center space-x-4 text-[10px] text-slate-500">
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1" /> Low</span>
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1" /> Moderate</span>
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-1" /> Critical</span>
-          </div>
+          </div>}
         </div>
 
+        {noEvidence ? (
+          <NoEvidenceNote compact detail="No steps were executed, so there is no per-step friction to show." />
+        ) : (<>
         {/* Wraps at every width: forcing one row from md up overflowed the panel at 768px. */}
         <div className="flex flex-wrap gap-2 items-center">
           {Array.from({ length: stepCount }).map((_, i) => {
@@ -452,6 +470,7 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
             )}
           </div>
         )}
+        </>)}
       </section>
 
       {/* 4. Actionable UX Findings & Pattern Checklist */}
@@ -463,7 +482,9 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
             <AlertCircle className="w-4 h-4 mr-2 text-[#9b72fa]" /> Active Heuristic Findings
           </h4>
 
-          {filteredFindings.length === 0 ? (
+          {noEvidence ? (
+            <NoEvidenceNote detail="Findings come from recorded agent behaviour; this audit has none. This is not a clean result." />
+          ) : filteredFindings.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-sm">
               <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
               No friction findings detected under this persona filter.
@@ -573,7 +594,9 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
             <CheckCircle2 className="w-4 h-4 mr-2 text-[#9b72fa]" /> UX Recommendations Timeline
           </h4>
 
-          {recommendations.length === 0 ? (
+          {noEvidence ? (
+            <NoEvidenceNote detail="Recommendations need findings; none can be derived without evidence." />
+          ) : recommendations.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-sm">
               No recommendations generated. Scan session to run.
             </div>

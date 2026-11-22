@@ -11,6 +11,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Skeleton, SkeletonGroup } from '../components/common/Skeleton';
 import { gradeForScore } from '../lib/grade';
+import { NO_EVIDENCE_LABEL } from '../components/common/NoEvidenceNote';
 
 // ─── Score Ring ───────────────────────────────────────────────────────────────
 
@@ -358,6 +359,12 @@ export const Reports = () => {
                 </div>
 
                 {/* Score bar breakdown */}
+                {score === null ? (
+                  <div className="flex items-center gap-3" data-no-evidence>
+                    <span className="text-[10px] w-24 flex-shrink-0 font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>Overall UX</span>
+                    <span className="text-[10px] font-mono font-bold" style={{ color: 'rgba(255,255,255,0.55)' }}>{NO_EVIDENCE_LABEL}</span>
+                  </div>
+                ) : (
                 <div className="flex flex-col gap-2">
                   {[
                     { label: 'Overall UX',   val: score },
@@ -377,6 +384,7 @@ export const Reports = () => {
                     );
                   })}
                 </div>
+                )}
 
                 {/* Summary */}
                 {report.summary && (
@@ -396,7 +404,7 @@ export const Reports = () => {
                   <div className="flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.25)' }} />
                     <span className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                      {report.uxFindingsCount ?? '—'} findings compiled
+                      {score === null ? `Findings ${NO_EVIDENCE_LABEL.toLowerCase()}` : `${report.uxFindingsCount ?? '—'} findings compiled`}
                     </span>
                   </div>
                   <div className="flex gap-2">
