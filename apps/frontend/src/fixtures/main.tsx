@@ -43,7 +43,9 @@ if (!import.meta.env.DEV) {
   throw new Error('The fixture harness must never run in a production build.');
 }
 
-installMockApi();
+// Live-API mode (FIXTURES_API_TARGET set): real backend behind the /api proxy.
+const liveApi = import.meta.env.VITE_FIXTURES_LIVE_API === 'true';
+if (!liveApi) installMockApi();
 
 const FixtureBadge = () => (
   <div
@@ -51,7 +53,9 @@ const FixtureBadge = () => (
     className="fixed top-0 left-1/2 -translate-x-1/2 z-[200] px-2.5 py-0.5 rounded-b-md text-[9px] font-mono font-bold uppercase tracking-widest pointer-events-none whitespace-nowrap"
     style={{ background: '#f59e0b', color: '#1a1205' }}
   >
-    Fixture data · {scenario}{authLoading ? ' · auth loading' : ''} · not a live session
+    {liveApi
+      ? 'Real backend data · stub-LLM audit · Clerk mocked · not a live session'
+      : <>Fixture data · {scenario}{authLoading ? ' · auth loading' : ''} · not a live session</>}
   </div>
 );
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ClerkLoaded, ClerkLoading } from '@clerk/clerk-react';
+import { ClerkFailed, ClerkLoaded, ClerkLoading } from '@clerk/clerk-react';
 import { ArrowLeft, Info, RefreshCw } from 'lucide-react';
 import { CinematicBackground } from '../CinematicBackground';
 import { Skeleton } from '../common/Skeleton';
@@ -119,6 +119,29 @@ export const AuthShell = ({ mode, children }: AuthShellProps) => {
           <AuthCardSkeleton label={copy.loading} />
         </ClerkLoading>
         <ClerkLoaded>{children}</ClerkLoaded>
+        {/* clerk-js could not be loaded (network/firewall/content blocker, or
+            the Clerk instance is unreachable). Without this the page fell
+            through to an empty background once the loading state timed out. */}
+        <ClerkFailed>
+          <div
+            role="alert"
+            className="liquid-glass w-full max-w-[420px] rounded-2xl p-6 sm:p-8 text-center"
+          >
+            <h1 className="font-jakarta text-white font-semibold text-lg">Sign-in is unavailable right now</h1>
+            <p className="font-inter text-white/60 text-sm mt-2 leading-relaxed">
+              We couldn’t reach our sign-in service. Check your connection, or allow
+              clerk.accounts.dev and challenges.cloudflare.com if a firewall or content
+              blocker is active, then try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="btn-primary-cta mt-5 h-10 w-full rounded-xl text-sm"
+            >
+              Reload
+            </button>
+          </div>
+        </ClerkFailed>
 
         {/* The Clerk card carries its own "Sign up / Sign in" switch link, so only
             the post-auth destination is stated here. */}
