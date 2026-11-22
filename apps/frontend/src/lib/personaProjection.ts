@@ -15,12 +15,13 @@
  */
 export type PersonaKey = 'STANDARD' | 'BEGINNER' | 'POWER_USER' | 'FIRST_TIME_USER';
 
+/** Scores are null when the audit could not be scored (insufficient evidence). */
 export interface OfficialScores {
-  clarityScore: number;
-  onboardingScore: number;
-  iaScore: number;
-  efficiencyScore: number;
-  overallScore: number;
+  clarityScore: number | null;
+  onboardingScore: number | null;
+  iaScore: number | null;
+  efficiencyScore: number | null;
+  overallScore: number | null;
 }
 
 export interface PersonaFinding {
@@ -29,11 +30,12 @@ export interface PersonaFinding {
 }
 
 export interface PersonaProjection {
-  clarity: number;
-  onboarding: number;
-  ia: number;
-  efficiency: number;
-  overall: number;
+  clarity: number | null;
+  onboarding: number | null;
+  ia: number | null;
+  efficiency: number | null;
+  /** null when the audit itself is not scored. */
+  overall: number | null;
   /** Points removed from the official overall for this persona (0 for STANDARD). */
   personaPenalty: number;
   isOfficial: boolean;
@@ -58,11 +60,16 @@ export function projectPersonaScores(
   findings: PersonaFinding[],
   persona: PersonaKey,
 ): PersonaProjection {
+  // Nothing to project from an audit that was not scored.
+  if (official.overallScore === null) {
+    return { clarity: null, onboarding: null, ia: null, efficiency: null, overall: null, personaPenalty: 0, isOfficial: persona === 'STANDARD' };
+  }
+  const n = (v: number | null) => clamp(v ?? 0);
   const base = {
-    clarity: clamp(official.clarityScore),
-    onboarding: clamp(official.onboardingScore),
-    ia: clamp(official.iaScore),
-    efficiency: clamp(official.efficiencyScore),
+    clarity: n(official.clarityScore),
+    onboarding: n(official.onboardingScore),
+    ia: n(official.iaScore),
+    efficiency: n(official.efficiencyScore),
   };
 
   if (persona === 'STANDARD') {
@@ -78,7 +85,7 @@ export function projectPersonaScores(
 
   const projected = { ...base };
   for (const pillar of PERSONA_SENSITIVITY[persona]) {
-    projected[pillar] = clamp(projected[pillar] - personaPenalty);
+    projected[pillar] = clamp((projected[pillar] ?? 0) - personaPenalty);
   }
 
   return {

@@ -272,20 +272,22 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
                   <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-slate-800" strokeWidth="6" fill="transparent" />
                   <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-[#7342e2]" strokeWidth="6" fill="transparent"
                     strokeDasharray={251.2}
-                    strokeDashoffset={251.2 - (251.2 * scores.overall) / 100}
+                    strokeDashoffset={251.2 - (251.2 * (scores.overall ?? 0)) / 100}
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="absolute text-xl font-bold text-white">{scores.overall}</span>
+                <span className="absolute text-xl font-bold text-white">{scores.overall ?? '—'}</span>
               </div>
               <div className="min-w-0 text-lg font-bold text-white leading-tight">
-                {scores.isOfficial ? 'Audit score' : 'Projected for persona'}
+                {scores.overall === null ? 'Not scored' : scores.isOfficial ? 'Audit score' : 'Projected for persona'}
               </div>
             </div>
             {/* Full-width caption: in the narrow column beside the gauge it
                 became a tall sliver of wrapped text. */}
             <p className="text-xs text-slate-400 mb-6">
-              {scores.isOfficial
+              {scores.overall === null
+                ? 'Insufficient evidence: the audit recorded no agent actions, so there is no score to project.'
+                : scores.isOfficial
                 ? 'Same score as the report grade.'
                 : scores.personaPenalty > 0
                   ? `Audit score ${officialScores.overallScore} minus ${scores.personaPenalty} for findings affecting this persona. Not a separate grade.`
@@ -296,37 +298,37 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Visual Clarity</span>
-                  <span>{scores.clarity}%</span>
+                  <span>{scores.clarity === null ? 'n/a' : `${scores.clarity}%`}</span>
                 </div>
                 <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-[#7342e2] h-full rounded-full" style={{ width: `${scores.clarity}%` }} />
+                  <div className="bg-[#7342e2] h-full rounded-full" style={{ width: `${scores.clarity ?? 0}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Guided Onboarding</span>
-                  <span>{scores.onboarding}%</span>
+                  <span>{scores.onboarding === null ? 'n/a' : `${scores.onboarding}%`}</span>
                 </div>
                 <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${scores.onboarding}%` }} />
+                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${scores.onboarding ?? 0}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Mental-Model IA Alignment</span>
-                  <span>{scores.ia}%</span>
+                  <span>{scores.ia === null ? 'n/a' : `${scores.ia}%`}</span>
                 </div>
                 <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.ia}%` }} />
+                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.ia ?? 0}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Workflow Efficiency</span>
-                  <span>{scores.efficiency}%</span>
+                  <span>{scores.efficiency === null ? 'n/a' : `${scores.efficiency}%`}</span>
                 </div>
                 <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scores.efficiency}%` }} />
+                  <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scores.efficiency ?? 0}%` }} />
                 </div>
               </div>
             </div>

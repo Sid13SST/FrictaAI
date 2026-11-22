@@ -20,6 +20,7 @@ import { AgentOrchestrationConsole } from '../orchestrator/AgentOrchestrationCon
 import { AIPipelineRibbon } from '../shared/AIPipelineRibbon';
 import { UXIntelligenceTab } from '../../components/reports/UXIntelligenceTab';
 import { DesktopOnlyNotice } from '../../components/common/DesktopOnlyNotice';
+import { gradeForScore } from '../../lib/grade';
 
 interface UnifiedReportViewerProps {
   sessionId: string;
@@ -29,7 +30,18 @@ interface UnifiedReportViewerProps {
 
 // ─── Score Gauge ───────────────────────────────────────────────────────────────
 
-const ScoreGauge = ({ label, value }: { label: string; value: number }) => {
+const ScoreGauge = ({ label, value }: { label: string; value: number | null }) => {
+  if (value === null) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</span>
+          <span className="text-[10px] font-black font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>n/a</span>
+        </div>
+        <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }} />
+      </div>
+    );
+  }
   const color =
     value >= 80 ? '#7342E2' :
     value >= 60 ? '#eab308' :
@@ -234,7 +246,13 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   const scores = reportData.scores;
   const screenshots = timelineData?.screenshots || [];
   const timeline = timelineData?.timeline || [];
-  const grade = executiveSummary?.overallUXGrade || 'C';
+  // Grade comes from the backend (same bands as exports/PDF); 'N/A' when the
+  // audit produced no evidence. Never default to a letter.
+  const notScored = reportData.evidence?.status === 'insufficient' || scores.overallScore === null;
+  const grade: string = notScored ? 'N/A' : (executiveSummary?.overallUXGrade ?? gradeForScore(scores.overallScore));
+  const coverage = reportData.visualCoverage as
+    | { status: string; complete: boolean; note: string }
+    | undefined;
 
   const tabs: { key: TabKey; label: string; icon?: React.ReactNode }[] = [
     { key: 'replay',       label: 'Timeline Replay',       icon: <Activity className="w-3 h-3" /> },
@@ -251,6 +269,21 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         active={['intelligence', 'correlation', 'severity', 'recommendations']}
         persona={reportData.session?.persona}
       />
+
+      {notScored && (
+        <div role="alert" className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)', color: 'rgba(253,230,138,0.95)' }}>
+          <strong className="font-semibold">Not scored: insufficient evidence.</strong>{' '}
+          {reportData.evidence?.reason ? `${reportData.evidence.reason.charAt(0).toUpperCase()}${reportData.evidence.reason.slice(1)}.` : 'The audit recorded no agent actions.'}{' '}
+          This is a failure record, not a UX assessment. Re-run the audit.
+        </div>
+      )}
+      {coverage && !coverage.complete && (
+        <div role="status" className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.3)', color: 'rgba(186,230,253,0.95)' }}>
+          <strong className="font-semibold">Visual coverage incomplete.</strong> {coverage.note}
+        </div>
+      )}
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
       {/* ── Left Sidebar ──────────────────────────────────────────────────────── */}
@@ -263,7 +296,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#7342E2]/5 to-[#7342E2]/20 border-2 border-[#7342E2]/30 flex items-center justify-center text-3xl font-black text-[#7342E2] mt-4 shadow-[0_0_24px_rgba(115,66,226,0.15)] transition-transform hover:scale-105 duration-300">
             {grade}
           </div>
-          <div className="text-xl font-bold text-white mt-4 font-mono">{scores.overallScore}/100</div>
+          <div className="text-xl font-bold text-white mt-4 font-mono">{notScored ? 'Not scored' : `${scores.overallScore}/100`}</div>
+          {notScored && (
+            <p className="text-[11px] text-amber-300/90 mt-1 px-2 leading-relaxed">Insufficient evidence: the audit recorded no agent actions.</p>
+          )}
           <p className="text-xs text-[#a1a1aa] mt-1 italic px-4 font-mono leading-relaxed">
             Workflow goal: "{reportData.session?.goal || 'Not specified'}"
           </p>
@@ -277,10 +313,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             </h4>
             <div className="flex flex-col gap-3">
               {[
-                { label: 'Onboarding',  val: scores.onboardingScore  ?? 0 },
-                { label: 'Clarity',     val: scores.clarityScore     ?? 0 },
-                { label: 'Architecture',val: scores.iaScore           ?? 0 },
-                { label: 'Efficiency',  val: scores.efficiencyScore  ?? 0 },
+                { label: 'Onboarding',  val: scores.onboardingScore  ?? null },
+                { label: 'Clarity',     val: scores.clarityScore     ?? null },
+                { label: 'Architecture',val: scores.iaScore           ?? null },
+                { label: 'Efficiency',  val: scores.efficiencyScore  ?? null },
               ].map(s => <ScoreGauge key={s.label} label={s.label} value={s.val} />)}
             </div>
           </div>

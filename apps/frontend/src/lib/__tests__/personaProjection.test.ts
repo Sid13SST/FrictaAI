@@ -38,7 +38,15 @@ describe('projectPersonaScores', () => {
     expect(p.overall).toBe(0);
     expect(p.ia).toBe(0);
     for (const persona of ['BEGINNER', 'POWER_USER', 'FIRST_TIME_USER'] as const) {
-      expect(projectPersonaScores(official, many, persona).overall).toBeLessThanOrEqual(official.overallScore);
+      expect(projectPersonaScores(official, many, persona).overall!).toBeLessThanOrEqual(official.overallScore!);
+    }
+  });
+
+  it('an unscored audit (insufficient evidence) projects to null for every persona', () => {
+    const unscored = { clarityScore: null, onboardingScore: null, iaScore: null, efficiencyScore: null, overallScore: null };
+    for (const persona of ['STANDARD', 'BEGINNER', 'POWER_USER', 'FIRST_TIME_USER'] as const) {
+      const p = projectPersonaScores(unscored, [{ severity: 'HIGH', personaType: persona }], persona);
+      expect([p.overall, p.clarity, p.onboarding, p.ia, p.efficiency]).toEqual([null, null, null, null, null]);
     }
   });
 });
