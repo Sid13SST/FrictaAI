@@ -4,6 +4,7 @@ import { VisualIntelligenceCoordinator } from '@fricta/visual-intelligence';
 import { getCurrentUser } from '../middleware/authContext';
 import { verifyWorkflowOwnership } from '../guards/ownership';
 import { ApiErrors } from '../utils/errors';
+import { refreshReportScore } from './reports';
 
 export const visualRoutes = new Hono();
 const prisma = new PrismaClient();
@@ -85,6 +86,7 @@ visualRoutes.post('/analyze/:sessionId', async (c) => {
     const result = await coordinator.analyzeSession(sessionId, {
       forceAIVision: !!forceAIVision
     });
+    await refreshReportScore(sessionId);
     return c.json(result);
   } catch (error: any) {
     console.error(`[Backend] Visual analysis failed for session ${sessionId}:`, error.message);

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@fricta/db';
 import { VisualIntelligenceCoordinator } from '@fricta/visual-intelligence';
 import { UXIntelligenceCoordinator } from '@fricta/ux-intelligence';
-import { buildUXReport } from '@fricta/ux-engine';
+import { buildUXReport, scoreAudit } from '@fricta/ux-engine';
 import { SharedContext } from '../memory';
 import { MessageBroker } from '../communication';
 import { TimelineRecorder } from '../timeline';
@@ -279,6 +279,24 @@ export class UXOrchestratorAgent extends BaseOrchestratedAgent {
         });
       }
     });
+
+    // UXReport.score must be the audit score (scoreAudit: behaviour + outcome +
+    // findings), the same number the report page grades. Writing the raw
+    // behavioural overall here reset the reports list to 100 after every
+    // "Run UX Diagnostics".
+    const scored = await this.prisma.workflowSession.findUnique({
+      where: { id: this.sessionId },
+      select: { status: true, uxFindings: { select: { severity: true } }, visualFindings: { select: { severity: true, findingType: true } } },
+    });
+    if (scored) {
+      const audit = scoreAudit({
+        behavioural: reportData.scores,
+        outcome: scored.status,
+        uxFindings: scored.uxFindings,
+        visualFindings: scored.visualFindings,
+      });
+      await this.prisma.uXReport.updateMany({ where: { sessionId: this.sessionId }, data: { score: audit.overallScore } });
+    }
 
     await this.context.appendEvent('REPORT_SYNTHESIS_SYNC', {
       overallScore: reportData.scores.overallScore,

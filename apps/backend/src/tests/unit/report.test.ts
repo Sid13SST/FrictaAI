@@ -120,8 +120,13 @@ describe('Report Generation and Compilation Unit Tests', () => {
 
       const json = await res.json();
       expect(json.scores).toBeDefined();
-      expect(json.scores.overallScore).toBe(85);
+      // Behavioural 85/90/80 (overall 85) minus one HIGH UX finding (-10
+      // smoothness) → scoreAudit gives 82. The raw stored 85 must not leak.
+      expect(json.scores.overallScore).toBe(82);
+      expect(json.scores.basis).toMatchObject({ goalReached: true, behaviouralOverall: 85, uxFindingsPenalty: 10, outcomeCap: null });
       expect(json.uxFindings).toHaveLength(1);
+      // The stored list score is brought in line with the report.
+      expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_123' }, data: { score: 82 } });
     });
   });
 
@@ -150,9 +155,60 @@ describe('Report Generation and Compilation Unit Tests', () => {
       expect(res.status).toBe(200);
 
       const json = await res.json();
-      expect(json.overallScore).toBe(85);
+      expect(json.overallScore).toBe(82);
       expect(json.overallUXGrade).toBe('B');
       expect(json.synthesizedInsights).toBeDefined();
+    });
+  });
+
+  describe('grade reflects outcome and findings', () => {
+    it('a dead-end (FAILED) audit with no findings is graded F, not A 100/100', async () => {
+      mockPrisma.workflowSession.findUnique.mockImplementation(async (args: any) => {
+        if (args.where.id !== 'workflow_123') return null;
+        if (!args.include) return { projectId: 'project_123' };
+        return {
+          ...mockWorkflow,
+          status: 'FAILED',
+          scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
+          visualScores: [], uxFindings: [], cognitiveSignals: [], visualFindings: [],
+        };
+      });
+      mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+      mockPrisma.uXReport.findFirst.mockResolvedValue({ id: 'report_dead', score: 100 });
+      mockPrisma.personaProfile.findMany.mockResolvedValue([]);
+
+      const exec = await (await app.request('/workflow_123/executive')).json();
+      expect(exec.overallScore).toBe(55);
+      expect(exec.overallUXGrade).toBe('F');
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.scores.overallScore).toBe(exec.overallScore);
+      expect(rep.scores.basis.goalReached).toBe(false);
+      // The stale stored 100 is corrected so the reports list agrees.
+      expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_dead' }, data: { score: 55 } });
+    });
+
+    it('visual defect findings lower the grade of a completed run', async () => {
+      mockPrisma.workflowSession.findUnique.mockImplementation(async (args: any) => {
+        if (args.where.id !== 'workflow_123') return null;
+        if (!args.include) return { projectId: 'project_123' };
+        return {
+          ...mockWorkflow,
+          status: 'COMPLETED',
+          scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
+          visualScores: [], uxFindings: [], cognitiveSignals: [],
+          visualFindings: [
+            { id: 'v1', workflowSessionId: 'workflow_123', screenshotId: null, findingType: 'weak_cta', severity: 'high', title: 't', description: 'd', boundingBoxes: [], metadata: {}, timestamp: new Date() },
+            { id: 'v2', workflowSessionId: 'workflow_123', screenshotId: null, findingType: 'vision_summary', severity: 'low', title: 't', description: 'd', boundingBoxes: [], metadata: {}, timestamp: new Date() },
+          ],
+        };
+      });
+      mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+      mockPrisma.uXReport.findFirst.mockResolvedValue({ id: 'report_vis', score: 100 });
+      mockPrisma.personaProfile.findMany.mockResolvedValue([]);
+
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.scores.overallScore).toBeLessThan(100);
+      expect(rep.scores.basis.visualFindingsPenalty).toBe(5);
     });
   });
 

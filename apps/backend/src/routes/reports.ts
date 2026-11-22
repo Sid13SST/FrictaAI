@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
-import { buildUXReport, SessionData, ActionData, InteractionData, ThoughtData } from '@fricta/ux-engine';
+import { buildUXReport, scoreAudit, SessionData, ActionData, InteractionData, ThoughtData } from '@fricta/ux-engine';
 import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, PDFRenderer, UnifiedUXReportPayload, WorkflowSessionDetails } from '@fricta/report-engine';
 import { chromium } from 'playwright';
+import { VisualIntelligenceCoordinator } from '@fricta/visual-intelligence';
+import { UXIntelligenceCoordinator } from '@fricta/ux-intelligence';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import {
@@ -56,6 +58,8 @@ async function renderHtmlToPdf(html: string): Promise<Buffer> {
 }
 
 export const reportRoutes = new Hono();
+const visualCoordinator = new VisualIntelligenceCoordinator(prisma as any);
+const uxCoordinator = new UXIntelligenceCoordinator(prisma as any);
 
 export async function generateReportForSession(sessionId: string) {
   const session = await prisma.workflowSession.findUnique({
@@ -162,7 +166,46 @@ export async function generateReportForSession(sessionId: string) {
     }
   });
 
+  // The row above stores the behavioural overall; replace it with the audit
+  // score (outcome + findings) so the list matches the report page.
+  await refreshReportScore(sessionId);
+
   return reportData;
+}
+
+/**
+ * Run once when an audit job ends (completed or failed): produce the findings
+ * the grade depends on, then the report, then persist the final score.
+ * Visual analysis runs heuristics; the vision model is only called for
+ * high-severity ambiguity (forceAIVision=false). Each analysis is best-effort:
+ * a failure is logged and the report is still generated from what exists.
+ */
+export async function finalizeAuditReport(sessionId: string): Promise<void> {
+  try {
+    await visualCoordinator.analyzeSession(sessionId, { forceAIVision: false });
+  } catch (err: any) {
+    console.warn(`[Report] Visual analysis failed for ${sessionId}: ${err.message}`);
+  }
+  try {
+    await uxCoordinator.analyzeSession(sessionId);
+  } catch (err: any) {
+    console.warn(`[Report] UX analysis failed for ${sessionId}: ${err.message}`);
+  }
+  await generateReportForSession(sessionId);
+  await compileUnifiedReport(sessionId); // writes the final score back to UXReport
+}
+
+/**
+ * Re-derive the audit score and write it to UXReport.score. Call after
+ * anything that changes findings (visual/UX analysis) so the reports list
+ * never shows a stale grade. No-op if the session has no report yet.
+ */
+export async function refreshReportScore(sessionId: string): Promise<void> {
+  try {
+    await compileUnifiedReport(sessionId);
+  } catch (err: any) {
+    console.warn(`[Report] Score refresh failed for ${sessionId}: ${err?.message}`);
+  }
 }
 
 async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportPayload | null> {
@@ -179,25 +222,36 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
 
   if (!session) return null;
 
-  // Extract or calculate scores
+  // Single source of truth for the overall score / grade: scoreAudit()
+  // combines the behavioural pillars with the run outcome and the current UX +
+  // visual findings. Computed at read time so it always reflects findings
+  // produced after the run (visual/UX analysis), and written back to
+  // UXReport.score so the reports list shows the same number.
   const uxScore = session.scores[0];
   const visualScore = session.visualScores[0];
+  const audit = scoreAudit({
+    behavioural: uxScore ?? null,
+    outcome: session.status,
+    uxFindings: session.uxFindings,
+    visualFindings: session.visualFindings,
+  });
 
-  const clarityScore = Math.round(
-    uxScore?.clarityScore ?? visualScore?.clarityScore ?? 80
-  );
-  const onboardingScore = Math.round(
-    uxScore?.smoothnessScore ?? 80
-  );
+  const clarityScore = audit.clarityScore;
+  const onboardingScore = audit.smoothnessScore;
   const iaScore = Math.round(
-    visualScore?.navigationScore ?? visualScore?.layoutBalanceScore ?? 80
+    visualScore?.navigationScore ?? visualScore?.layoutBalanceScore ?? audit.clarityScore
   );
-  const efficiencyScore = Math.round(
-    uxScore?.efficiencyScore ?? 80
-  );
-  const overallScore = Math.round(
-    uxScore?.overallScore ?? visualScore?.overallScore ?? 80
-  );
+  const efficiencyScore = audit.efficiencyScore;
+  const overallScore = audit.overallScore;
+
+  const storedReport = await prisma.uXReport.findFirst({ where: { sessionId } });
+  if (storedReport && storedReport.score !== overallScore) {
+    try {
+      await prisma.uXReport.update({ where: { id: storedReport.id }, data: { score: overallScore } });
+    } catch (err: any) {
+      console.warn(`[Report] Could not persist score for ${sessionId}: ${err?.message}`);
+    }
+  }
 
   // Fetch persona profiles (custom or default)
   const dbPersonaProfiles = await prisma.personaProfile.findMany();
@@ -262,6 +316,7 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
     startedAt: session.startedAt,
     endedAt: session.endedAt,
     stepCount: session.stepCount,
+    status: session.status,
   };
 
   return {
@@ -271,7 +326,8 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
       onboardingScore,
       iaScore,
       efficiencyScore,
-      overallScore
+      overallScore,
+      basis: { goalReached: audit.goalReached, ...audit.breakdown },
     },
     uxFindings: session.uxFindings.map(f => ({
       id: f.id,
@@ -324,155 +380,6 @@ reportRoutes.get('/', async (c) => {
     }
   });
   return c.json({ reports });
-});
-
-// ─── POST /:sessionId/generate - Generate UX report (Session ownership required) 
-reportRoutes.post('/:sessionId/generate', requireWorkflowOwner('sessionId'), async (c) => {
-  const sessionId = c.req.param('sessionId');
-  try {
-    const reportData = await generateReportForSession(sessionId);
-    if (!reportData) return c.json({ error: 'Session not found' }, 404);
-    return c.json({ success: true, reportData });
-  } catch (error: any) {
-    console.error(`[Backend] Report generation failed for session ${sessionId}:`, error.message);
-    try {
-      await prisma.workflowSession.update({
-        where: { id: sessionId },
-        data: { status: 'FAILED' }
-      });
-    } catch (dbErr: any) {
-      console.error(`[Backend] Failed to transition session to FAILED status after report failure:`, dbErr.message);
-    }
-    return c.json({ error: error.message }, 500);
-  }
-});
-
-// ─── GET /:id - Fetch unified report payload (Session ownership required) ──────
-reportRoutes.get('/:id', requireWorkflowOwner('id'), async (c) => {
-  const id = c.req.param('id');
-  
-  // Auto-generate legacy report if it doesn't exist
-  const legacyReport = await prisma.uXReport.findFirst({ where: { sessionId: id } });
-  if (!legacyReport) {
-    await generateReportForSession(id);
-  }
-
-  const payload = await compileUnifiedReport(id);
-  if (!payload) return c.json({ error: 'Report not found' }, 404);
-
-  return c.json(payload);
-});
-
-// ─── GET /:id/executive - Fetch synthesized executive summary (Session ownership required)
-reportRoutes.get('/:id/executive', requireWorkflowOwner('id'), async (c) => {
-  const id = c.req.param('id');
-  const payload = await compileUnifiedReport(id);
-  if (!payload) return c.json({ error: 'Report not found' }, 404);
-
-  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
-  return c.json(executiveSummary);
-});
-
-// ─── GET /:id/export - Export report payload (Session ownership required) ─────
-reportRoutes.get('/:id/export', requireWorkflowOwner('id'), async (c) => {
-  const id = c.req.param('id');
-  const payload = await compileUnifiedReport(id);
-  if (!payload) return c.json({ error: 'Report not found' }, 404);
-
-  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
-  return c.json({
-    markdown: ExportEngine.toMarkdown(payload, executiveSummary),
-    textSheet: ExportEngine.toTextSheet(payload, executiveSummary),
-    developerJson: ExportEngine.toDeveloperJson(payload, executiveSummary)
-  });
-});
-
-// ─── GET /:id/export/pdf - Render report as a downloadable PDF (Session ownership required) ─────
-reportRoutes.get('/:id/export/pdf', requireWorkflowOwner('id'), async (c) => {
-  const id = c.req.param('id');
-  const payload = await compileUnifiedReport(id);
-  if (!payload) return c.json({ error: 'Report not found' }, 404);
-
-  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
-  const html = PDFRenderer.renderHTML(payload, executiveSummary);
-
-  try {
-    const pdfBuffer = await renderHtmlToPdf(html);
-    return new Response(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="fricta-ux-report-${id}.pdf"`,
-      },
-    });
-  } catch (error: any) {
-    console.error(`[Backend] Failed to render PDF for report ${id}:`, error.message);
-    return c.json({ error: 'Failed to generate PDF export' }, 500);
-  }
-});
-
-// ─── GET /:id/personas - Fetch personas list (Session ownership required) ─────
-reportRoutes.get('/:id/personas', requireWorkflowOwner('id'), async (c) => {
-  const id = c.req.param('id');
-  const payload = await compileUnifiedReport(id);
-  if (!payload) return c.json({ error: 'Report not found' }, 404);
-
-  return c.json({
-    personaProfiles: payload.personaProfiles,
-    uxFindings: payload.uxFindings
-  });
-});
-
-// ─── GET /:id/timeline - Fetch compiled timeline (Session ownership required) ────
-reportRoutes.get('/:id/timeline', requireWorkflowOwner('id'), async (c) => {
-  const id = c.req.param('id');
-  const actions = await prisma.agentAction.findMany({
-    where: { workflowSessionId: id },
-    orderBy: { timestamp: 'asc' }
-  });
-  const thoughts = await prisma.agentThought.findMany({
-    where: { workflowSessionId: id },
-    orderBy: { timestamp: 'asc' }
-  });
-  const uxFindings = await prisma.uXFinding.findMany({
-    where: { workflowSessionId: id },
-    orderBy: { timestamp: 'asc' }
-  });
-  const cognitiveSignals = await prisma.cognitiveSignal.findMany({
-    where: { workflowSessionId: id },
-    orderBy: { timestamp: 'asc' }
-  });
-  const visualFindings = await prisma.visualFinding.findMany({
-    where: { workflowSessionId: id },
-    orderBy: { timestamp: 'asc' }
-  });
-  const screenshots = await prisma.workflowScreenshot.findMany({
-    where: { workflowSessionId: id },
-    orderBy: { stepIndex: 'asc' }
-  });
-
-  const compiledTimeline = TimelineCompiler.compile(
-    actions,
-    thoughts,
-    uxFindings,
-    cognitiveSignals,
-    visualFindings
-  );
-
-  return c.json({
-    timeline: compiledTimeline,
-    screenshots: screenshots.map(s => ({
-      id: s.id,
-      stepIndex: s.stepIndex,
-      filePath: s.filePath,
-      thumbnailPath: s.thumbnailPath,
-      pageUrl: s.pageUrl,
-      viewportWidth: s.viewportWidth,
-      viewportHeight: s.viewportHeight,
-      actionContext: s.actionContext,
-      metadata: s.metadata
-    }))
-  });
 });
 
 // ─── Resolve User Helper ──────────────────────────────────────────────────────
@@ -832,6 +739,28 @@ reportRoutes.post('/sharing/revoke', async (c) => {
  * GET /api/reports/sharing/resolve/:token
  * Resolves shared report public view
  */
+/**
+ * Public (no auth) share-link resolver, mounted at /api/shared in index.ts.
+ * Returns only the shared report and the link's expiry: not the creator's
+ * user id, the recipient email or the token's use counters. Invalid, expired,
+ * exhausted and revoked (deleted) tokens all answer 403.
+ */
+export const sharedReportRoutes = new Hono();
+sharedReportRoutes.get('/:token', async (c) => {
+  const share = await shareManager.verifyShare(c.req.param('token'));
+  if (!share) return c.json({ error: 'Invalid or expired share token' }, 403);
+  const report = await prisma.executiveReport.findUnique({
+    where: { id: share.reportId },
+    select: {
+      id: true, title: true, summary: true, stabilityScore: true, completionRate: true,
+      riskLevel: true, sections: true, createdAt: true, updatedAt: true,
+      project: { select: { projectName: true, websiteUrl: true } },
+    },
+  });
+  if (!report) return c.json({ error: 'Invalid or expired share token' }, 403);
+  return c.json({ report, expiresAt: share.expiresAt });
+});
+
 reportRoutes.get('/sharing/resolve/:token', async (c) => {
   const token = c.req.param('token');
   const share = await shareManager.verifyShare(token);
@@ -1011,4 +940,161 @@ reportRoutes.post('/analytics/digests', async (c) => {
   } catch (err: any) {
     return c.json({ error: err.message }, 400);
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION-SCOPED ROUTES — registered LAST on purpose.
+// `/:id` matches any single segment. Registered earlier, it shadowed every
+// static GET above (/exports, /sharing, /templates, /evidence, /distribution):
+// Hono ran requireWorkflowOwner('exports') and answered 404 before the real
+// handler. Keep new static routes above this block.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── POST /:sessionId/generate - Generate UX report (Session ownership required) 
+reportRoutes.post('/:sessionId/generate', requireWorkflowOwner('sessionId'), async (c) => {
+  const sessionId = c.req.param('sessionId');
+  try {
+    const reportData = await generateReportForSession(sessionId);
+    if (!reportData) return c.json({ error: 'Session not found' }, 404);
+    return c.json({ success: true, reportData });
+  } catch (error: any) {
+    console.error(`[Backend] Report generation failed for session ${sessionId}:`, error.message);
+    try {
+      await prisma.workflowSession.update({
+        where: { id: sessionId },
+        data: { status: 'FAILED' }
+      });
+    } catch (dbErr: any) {
+      console.error(`[Backend] Failed to transition session to FAILED status after report failure:`, dbErr.message);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ─── GET /:id - Fetch unified report payload (Session ownership required) ──────
+reportRoutes.get('/:id', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  
+  // Auto-generate legacy report if it doesn't exist
+  const legacyReport = await prisma.uXReport.findFirst({ where: { sessionId: id } });
+  if (!legacyReport) {
+    await generateReportForSession(id);
+  }
+
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  return c.json(payload);
+});
+
+// ─── GET /:id/executive - Fetch synthesized executive summary (Session ownership required)
+reportRoutes.get('/:id/executive', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+  return c.json(executiveSummary);
+});
+
+// ─── GET /:id/export - Export report payload (Session ownership required) ─────
+reportRoutes.get('/:id/export', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+  return c.json({
+    markdown: ExportEngine.toMarkdown(payload, executiveSummary),
+    textSheet: ExportEngine.toTextSheet(payload, executiveSummary),
+    developerJson: ExportEngine.toDeveloperJson(payload, executiveSummary)
+  });
+});
+
+// ─── GET /:id/export/pdf - Render report as a downloadable PDF (Session ownership required) ─────
+reportRoutes.get('/:id/export/pdf', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
+  const html = PDFRenderer.renderHTML(payload, executiveSummary);
+
+  try {
+    const pdfBuffer = await renderHtmlToPdf(html);
+    return new Response(new Uint8Array(pdfBuffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="fricta-ux-report-${id}.pdf"`,
+      },
+    });
+  } catch (error: any) {
+    console.error(`[Backend] Failed to render PDF for report ${id}:`, error.message);
+    return c.json({ error: 'Failed to generate PDF export' }, 500);
+  }
+});
+
+// ─── GET /:id/personas - Fetch personas list (Session ownership required) ─────
+reportRoutes.get('/:id/personas', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const payload = await compileUnifiedReport(id);
+  if (!payload) return c.json({ error: 'Report not found' }, 404);
+
+  return c.json({
+    personaProfiles: payload.personaProfiles,
+    uxFindings: payload.uxFindings
+  });
+});
+
+// ─── GET /:id/timeline - Fetch compiled timeline (Session ownership required) ────
+reportRoutes.get('/:id/timeline', requireWorkflowOwner('id'), async (c) => {
+  const id = c.req.param('id');
+  const actions = await prisma.agentAction.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const thoughts = await prisma.agentThought.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const uxFindings = await prisma.uXFinding.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const cognitiveSignals = await prisma.cognitiveSignal.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const visualFindings = await prisma.visualFinding.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { timestamp: 'asc' }
+  });
+  const screenshots = await prisma.workflowScreenshot.findMany({
+    where: { workflowSessionId: id },
+    orderBy: { stepIndex: 'asc' }
+  });
+
+  const compiledTimeline = TimelineCompiler.compile(
+    actions,
+    thoughts,
+    uxFindings,
+    cognitiveSignals,
+    visualFindings
+  );
+
+  return c.json({
+    timeline: compiledTimeline,
+    screenshots: screenshots.map(s => ({
+      id: s.id,
+      stepIndex: s.stepIndex,
+      filePath: s.filePath,
+      thumbnailPath: s.thumbnailPath,
+      pageUrl: s.pageUrl,
+      viewportWidth: s.viewportWidth,
+      viewportHeight: s.viewportHeight,
+      actionContext: s.actionContext,
+      metadata: s.metadata
+    }))
+  });
 });

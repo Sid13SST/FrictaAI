@@ -8,6 +8,8 @@ export interface WorkflowSessionDetails {
   startedAt: Date | null;
   endedAt: Date | null;
   stepCount: number;
+  /** Final run status (COMPLETED / FAILED / TIMEOUT / LOOP_DETECTED / RUNNING …). */
+  status?: string | null;
 }
 
 export interface UnifiedUXReportPayload {
@@ -18,6 +20,14 @@ export interface UnifiedUXReportPayload {
     iaScore: number;
     efficiencyScore: number;
     overallScore: number;
+    /** How overallScore was derived (see scoreAudit in @fricta/ux-engine). */
+    basis?: {
+      goalReached: boolean;
+      behaviouralOverall: number;
+      uxFindingsPenalty: number;
+      visualFindingsPenalty: number;
+      outcomeCap: number | null;
+    };
   };
   uxFindings: UXFindingData[];
   cognitiveSignals: CognitiveSignalData[];

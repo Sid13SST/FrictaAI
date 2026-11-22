@@ -3,6 +3,7 @@ import { PrismaClient } from '@fricta/db';
 import { UXIntelligenceCoordinator, RecommendationEngine } from '@fricta/ux-intelligence';
 import { requireFindingOwner, requireWorkflowOwner } from '../guards/ownership';
 import { getCurrentUser } from '../middleware/authContext';
+import { refreshReportScore } from './reports';
 
 export const uxRoutes = new Hono();
 const prisma = new PrismaClient();
@@ -101,6 +102,7 @@ uxRoutes.post('/analyze/:sessionId', requireWorkflowOwner('sessionId'), async (c
   const sessionId = c.req.param('sessionId');
   try {
     const result = await coordinator.analyzeSession(sessionId);
+    await refreshReportScore(sessionId);
     return c.json(result);
   } catch (error: any) {
     console.error(`[Backend] UX analysis failed for session ${sessionId}:`, error.message);
