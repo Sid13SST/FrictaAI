@@ -202,10 +202,10 @@ Please review the visual presentation and provide deep structural insights on ov
               screenshotId,
               findingType: 'vision_summary',
               severity: 'low',
-              title: 'AI Visual Feedback',
+              title: visionResult.truncated ? 'AI Visual Feedback (answer cut off; partial)' : 'AI Visual Feedback',
               description: visionResult.clarityFeedback,
               boundingBoxes: [],
-              metadata: { explanation: visionResult.explanation }
+              metadata: { explanation: visionResult.explanation, truncated: !!visionResult.truncated, model: visionResult.model ?? null }
             });
           } else {
             // Vision failed (429s, empty responses, timeouts…) or was skipped.

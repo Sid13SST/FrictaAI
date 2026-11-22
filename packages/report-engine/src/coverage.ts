@@ -9,13 +9,18 @@ import { VisualCoverage } from './types';
 export function computeVisualCoverage(input: {
   screenshots: number;
   analyzed: boolean;
-  visualFindings: Array<{ findingType: string; screenshotId?: string | null }>;
+  visualFindings: Array<{ findingType: string; screenshotId?: string | null; metadata?: unknown }>;
 }): VisualCoverage {
   const distinct = (type: string) =>
     new Set(input.visualFindings.filter((f) => f.findingType === type).map((f) => f.screenshotId ?? `${type}-${Math.random()}`)).size;
   const visionSucceeded = distinct('vision_summary');
   const visionUnavailable = distinct('vision_unavailable');
-  const base = { screenshots: input.screenshots, visionSucceeded, visionUnavailable };
+  const visionTruncated = new Set(
+    input.visualFindings
+      .filter((f) => f.findingType === 'vision_summary' && (f.metadata as any)?.truncated === true)
+      .map((f) => f.screenshotId ?? Math.random()),
+  ).size;
+  const base = { screenshots: input.screenshots, visionSucceeded, visionUnavailable, visionTruncated };
 
   if (!input.analyzed || input.screenshots === 0) {
     return { ...base, status: 'not_analyzed', complete: false, note: 'Visual analysis has not run for this audit; no visual review is included.' };
@@ -27,6 +32,10 @@ export function computeVisualCoverage(input: {
   if (visionUnavailable > 0) {
     return { ...base, status: 'partial', complete: false,
       note: `AI vision answered for ${visionSucceeded} screenshot(s) but failed or was skipped for ${visionUnavailable}. Those steps were reviewed by layout heuristics only.` };
+  }
+  if (visionTruncated > 0) {
+    return { ...base, status: 'partial', complete: false,
+      note: `AI vision answered for ${visionSucceeded} screenshot(s), but ${visionTruncated} answer(s) were cut off by the model; only the findings completed before the cut are included.` };
   }
   if (visionSucceeded === 0) {
     return { ...base, status: 'heuristics_only', complete: false,

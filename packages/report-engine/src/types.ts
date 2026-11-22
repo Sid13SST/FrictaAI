@@ -15,7 +15,8 @@ export interface WorkflowSessionDetails {
 /**
  * How much of the visual review actually had an AI vision pass.
  *   full            — vision answered for every screenshot it was asked about
- *   partial         — some vision calls failed / were skipped
+ *   partial         — some vision calls failed / were skipped, or answers
+ *                     were cut off and only partly recovered
  *   failed          — every vision call failed / was skipped
  *   heuristics_only — no vision pass ran (none was triggered); layout heuristics only
  *   not_analyzed    — visual analysis has not run for this session
@@ -27,6 +28,8 @@ export interface VisualCoverage {
   screenshots: number;
   visionSucceeded: number;
   visionUnavailable: number;
+  /** Vision answers that were cut off and repaired (counted in visionSucceeded). */
+  visionTruncated: number;
   /** Human-readable, shown in the UI, exports and PDF. */
   note: string;
 }
