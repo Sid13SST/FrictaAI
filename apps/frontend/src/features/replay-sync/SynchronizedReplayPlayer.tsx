@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, ChevronLeft, ChevronRight, Monitor, Maximize2, ZoomIn, ZoomOut, MousePointer2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch, API_BASE } from '../../lib/api';
+import { AuthedImg } from '../../components/common/AuthedImg';
 
 interface VisualFinding {
   id: string;
@@ -341,7 +342,7 @@ export const SynchronizedReplayPlayer: React.FC<SynchronizedReplayPlayerProps> =
               >
                 {/* Tightly hugging container */}
                 <div className="relative inline-block max-w-full shadow-lg" style={{ maxHeight: '65vh' }}>
-                  <img
+                  <AuthedImg
                     src={imageUrl}
                     alt={`Investigation step ${activeStep}`}
                     className="max-w-full block pointer-events-none rounded-md"

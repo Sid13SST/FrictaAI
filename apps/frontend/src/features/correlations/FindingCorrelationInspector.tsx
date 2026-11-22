@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, ShieldAlert, Layers, Activity } from 'lucide-react';
 import { apiFetch, API_BASE } from '../../lib/api';
+import { AuthedImg } from '../../components/common/AuthedImg';
 
 interface Screenshot {
   id: string;
@@ -160,7 +161,7 @@ export const FindingCorrelationInspector: React.FC<FindingCorrelationInspectorPr
                 className="bg-[#0d0d0f] border border-[#222226] hover:border-[#7342e2]/40 rounded-xl overflow-hidden cursor-pointer group transition-all"
               >
                 <div className="relative aspect-video bg-black overflow-hidden flex items-center justify-center">
-                  <img
+                  <AuthedImg
                     src={imageUrl}
                     alt={`Screenshot ${s.stepIndex}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"

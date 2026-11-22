@@ -1,6 +1,7 @@
 import React from 'react';
 import { MousePointer, Brain, Eye, Zap, AlertCircle } from 'lucide-react';
 import { apiFetch, API_BASE } from '../../lib/api';
+import { AuthedImg } from '../../components/common/AuthedImg';
 
 interface TimelineEvent {
   id: string;
@@ -145,8 +146,8 @@ export const CorrelatedTimeline: React.FC<CorrelatedTimelineProps> = ({
                     onClick={() => onStepSelect(stepIdx)}
                     className="md:w-48 shrink-0 aspect-video rounded-lg overflow-hidden border border-[#222226] cursor-pointer hover:border-[#f43f5e]/40 relative group/thumb"
                   >
-                    <img 
-                      src={screenshotUrl} 
+                    <AuthedImg
+                      src={screenshotUrl}
                       alt={`Step ${stepIdx + 1}`}
                       className="w-full h-full object-cover transition-transform group-hover/thumb:scale-105 pointer-events-none"
                     />

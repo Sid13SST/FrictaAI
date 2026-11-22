@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch, ensureOk, API_BASE } from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { toast } from '../../lib/toast';
+import { AuthedImg } from '../common/AuthedImg';
 
 interface VisualReplayViewerProps {
   sessionId: string;
@@ -277,7 +278,7 @@ export function VisualReplayViewer({ sessionId }: VisualReplayViewerProps) {
         <div className="lg:col-span-3 p-6 border-r border-slate-900/60 flex flex-col justify-between bg-black/20">
           <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-slate-900 bg-slate-950 flex items-center justify-center shadow-inner group">
             {/* The actual screenshot image */}
-            <img 
+            <AuthedImg
               src={`${API_BASE}/workflows/screenshots/raw/${currentScreenshot.filePath}`}
               alt={`Replay step ${currentScreenshot.stepIndex}`}
               className="max-h-full max-w-full object-contain transition-all duration-300 select-none"
