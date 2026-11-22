@@ -1,25 +1,25 @@
 {
   "llm": "local-stub (not a live LLM)",
-  "at": "2026-11-22T13:15:23.721Z",
-  "projectId": "cbc6343f-ba49-4e19-8d27-6314e549340e",
-  "sessionId": "97450eba-f14e-4579-b082-a2e1f4266f8e",
-  "deadEndSessionId": "27589afc-ab1b-4114-bc6b-9c397079a74f",
-  "noExitSessionId": "61d0d8c4-8332-4182-9d36-c92265c2f76e",
-  "insufficientEvidenceSessionId": "6c47fc14-4d72-4cf5-a848-a785ea1f4f25",
+  "at": "2026-11-22T15:29:20.464Z",
+  "projectId": "c85569b6-ec90-4f2c-87d9-40cb6ebba499",
+  "sessionId": "51a6279e-7135-4dce-b532-5d030e32c15d",
+  "deadEndSessionId": "cb7b43bd-493d-4126-866c-cabd721d3f04",
+  "noExitSessionId": "9fd532c0-268b-4c92-b9c0-08b5e8c437a0",
+  "insufficientEvidenceSessionId": "2f15ca8c-21cf-4d4a-8cc2-9b508c542b10",
   "concurrent": {
-    "alpha": "ba596b1d-45f8-4578-a4f0-b89780213f6e",
-    "beta": "1441d5cb-d748-451d-b8cf-55544aa2175c"
+    "alpha": "29231508-9e12-43a6-af58-3c070acf0958",
+    "beta": "cbb5b525-1ec7-452a-a2a9-32bc1064264d"
   },
   "results": [
     {
       "step": "stub LLM server up",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-jUtcPE/stub-llm.log"
+      "detail": "/tmp/fricta-e2e-Kii0vV/stub-llm.log"
     },
     {
       "step": "backend boots (env validation, DB, Redis, migrations)",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-jUtcPE/backend.log"
+      "detail": "/tmp/fricta-e2e-Kii0vV/backend.log"
     },
     {
       "step": "unauthenticated request rejected",
@@ -124,7 +124,7 @@
     {
       "step": "PDF export",
       "ok": true,
-      "detail": "HTTP 200 type=application/pdf bytes=86955 head=\"%PDF-\""
+      "detail": "HTTP 200 type=application/pdf bytes=86941 head=\"%PDF-\""
     },
     {
       "step": "visual replay timeline",
@@ -204,7 +204,7 @@
     {
       "step": "dead-end audit ends unsuccessfully",
       "ok": true,
-      "detail": "final=FAILED steps=3"
+      "detail": "final=FAILED steps=6"
     },
     {
       "step": "dead-end audit still gets a diagnostic report",
@@ -344,12 +344,12 @@
     {
       "step": "second backend/worker process boots on the same DB + Redis",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-jUtcPE/backend-2.log"
+      "detail": "/tmp/fricta-e2e-Kii0vV/backend-2.log"
     },
     {
       "step": "two audits launched concurrently",
       "ok": true,
-      "detail": "alpha=ba596b1d-45f8-4578-a4f0-b89780213f6e beta=1441d5cb-d748-451d-b8cf-55544aa2175c"
+      "detail": "alpha=29231508-9e12-43a6-af58-3c070acf0958 beta=cbb5b525-1ec7-452a-a2a9-32bc1064264d"
     },
     {
       "step": "both concurrent audits complete (no stuck jobs)",
@@ -369,7 +369,7 @@
     {
       "step": "exactly one report per concurrent audit (no duplicates)",
       "ok": true,
-      "detail": "{\"ba596b1d-45f8-4578-a4f0-b89780213f6e\":1,\"1441d5cb-d748-451d-b8cf-55544aa2175c\":1}"
+      "detail": "{\"29231508-9e12-43a6-af58-3c070acf0958\":1,\"cbb5b525-1ec7-452a-a2a9-32bc1064264d\":1}"
     },
     {
       "step": "each concurrent job processed by exactly one worker",
@@ -392,6 +392,11 @@
       "detail": "report=null evidence=insufficient grade=N/A list=null"
     },
     {
+      "step": "0-action audit: no behavioural diagnostics invented (UX analysis, report, JSON, Markdown)",
+      "ok": true,
+      "detail": "ux.evidence=insufficient signals=0 reportSignals=0 risk=UNKNOWN json=Unavailable: no evidence"
+    },
+    {
       "step": "0-action FAILED audit: exports say \"not scored\", PDF still renders",
       "ok": true,
       "detail": "pdf=200 \"%PDF-\""
@@ -404,7 +409,7 @@
     {
       "step": "vision 429: report says visual coverage incomplete (field, executive, exports)",
       "ok": true,
-      "detail": "coverage={\"screenshots\":3,\"visionSucceeded\":0,\"visionUnavailable\":3,\"status\":\"failed\",\"complete\":false,\"note\":\"AI vision failed or was skipped for all 3 screenshot(s) it was asked to review (e.g. rate limits or empty responses). Visual findings come from layout heuristics only.\"}"
+      "detail": "coverage={\"screenshots\":3,\"visionSucceeded\":0,\"visionUnavailable\":3,\"visionTruncated\":0,\"status\":\"failed\",\"complete\":false,\"note\":\"AI vision failed or was skipped for all 3 screenshot(s) it was asked to review (e.g. rate limits or empty responses). Visual findings come from layout heuristics only.\"}"
     },
     {
       "step": "a coverage note does not change the grade into a clean result",
@@ -417,6 +422,11 @@
       "detail": "stubEmpty=15 coverage=failed"
     },
     {
+      "step": "truncated vision JSON: complete findings kept, cut-off ones dropped, coverage partial",
+      "ok": true,
+      "detail": "kept=[STUB] complete box|[STUB] complete box|[STUB] complete box partialSummaries=3 coverage=partial truncated=3"
+    },
+    {
       "step": "vision recovers: coverage complete again once the model answers",
       "ok": true,
       "detail": "coverage=full succeeded=3"
@@ -424,7 +434,7 @@
     {
       "step": "stub actually served planner + vision calls",
       "ok": true,
-      "detail": "{\"stub\":true,\"mode\":{\"planner\":\"ok\",\"vision\":\"ok\"},\"chat\":91,\"planner\":20,\"vision\":26,\"models\":0,\"malformed\":0,\"planner429\":15,\"plannerEmpty\":0,\"vision429\":15,\"visionEmpty\":15}"
+      "detail": "{\"stub\":true,\"mode\":{\"planner\":\"ok\",\"vision\":\"ok\"},\"chat\":97,\"planner\":20,\"vision\":26,\"models\":0,\"malformed\":0,\"planner429\":15,\"plannerEmpty\":0,\"vision429\":15,\"visionEmpty\":15,\"visionTruncated\":6}"
     }
   ]
 }

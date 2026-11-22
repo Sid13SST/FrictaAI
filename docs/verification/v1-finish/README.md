@@ -1,7 +1,7 @@
 # V1 finish — verification record
 
 Branch `fricta/v1-finish` (from `fricta/v1-frontend-completion` @ `489e803`).
-Run dates: 2026-11-22 (rounds 1–3, same day), in a sandboxed cloud container with local PostgreSQL 16
+Run dates: 2026-11-22 (rounds 1–4, same day), in a sandboxed cloud container with local PostgreSQL 16
 and Redis 7. **No live LLM was called from inside this sandbox** (openrouter.ai
 is blocked here). The only real-provider evidence is the reviewer's own run
 outside the sandbox (§0). No paid model or service was used, and no secret is in
@@ -23,11 +23,23 @@ Reported results, not reproduced here:
 | `google/gemma-4-31b-it:free` (agent + vision) | **FAIL.** The audit FAILED at step 2: all three planner attempts (1 s / 2 s backoff) got HTTP 429 (upstream rate limit). Vision calls also got 429. |
 | `openrouter/free` | **PASS** for the agent: audit COMPLETED in 3 steps (click "Pricing", `goal_complete`). **Partial** for vision: some calls returned 429 or an empty response. |
 
-Round 3 responds to this (bugs 18–22 in §2, rows "Rate limits", "Insufficient evidence" and "Vision 429 / empty"). **The round-3 code has not been re-run against
-the real provider.** Whether `google/gemma-4-31b-it:free` now completes under
-real rate limits (5 attempts honouring `Retry-After` / `X-RateLimit-Reset`,
-then one fallback to `openrouter/free`) is unproven until the reviewer re-runs
-it.
+Round 3 responded to this (bugs 18–22 in §2).
+
+**Reviewer re-run on round-3 head `6cde80e`, real OpenRouter free pool
+(reported by the reviewer, not reproduced here):**
+
+| Area | Result |
+|---|---|
+| Agent retry + fallback | **PASS (real provider).** `google/gemma-4-31b-it:free` got HTTP 429 ×5, then the call fell back to `openrouter/free` and the real audit **COMPLETED**. |
+| Vision | **FAIL ×4 in one run:** one 429, one empty response, and **twice truncated model JSON** ("Unterminated string in JSON at position ~1260"). |
+
+Round 4 responds to the vision failures and a retry-compliance issue (bugs
+23–29 below). **The round-4 code has not been run against the real provider.**
+It is verified with fake-response unit tests and the local stub only.
+
+Separate stub-only evidence: the reviewer also ran the round-3 stub harness
+independently on `6cde80e`: 83/83 PASS in about 45 s. That is stub evidence,
+not real-provider proof.
 
 ## 1. Provider config: free models only by default
 
@@ -119,6 +131,16 @@ Round 3:
 21. **The reports list used different grade bands** (A ≥ 80) from the report (A ≥ 90). Unified.
 22. **The stored report summary contradicted the grade** ("Workflow completed with 0 actions … Overall UX is excellent"). It now states only what was recorded.
 
+Round 4:
+
+23. **Vision JSON cut off (root cause).** `max_tokens` was 500 while the prompt asked for a "detailed" explanation and an unbounded box list in a code fence; answers hit the limit mid-string at about 1,260 characters. Now: `max_tokens` 1200 (`AGENT_VISION_MAX_TOKENS`); the prompt caps output (explanation ≤400 chars, feedback ≤200, ≤5 boxes, labels ≤60, JSON only), and parsing enforces the same limits. `finish_reason` `length` / `MAX_TOKENS` marks the answer truncated.
+24. **Bounded JSON repair that never completes a cut value.** It cuts back to the last element the model actually finished (≤400 candidates; input ≤50k chars) and closes the open brackets. A cut string or number is dropped with its field, never closed artificially. Boxes missing any of x/y/w/h/label are discarded. A truncated or unparseable answer gets **one** retry with stricter limits. A complete retry wins; otherwise the repaired partial is kept but flagged truncated; unparseable twice → `failed`.
+25. **Coverage with truncation.** A repaired or `finish_reason=length` answer is never full coverage: `visualCoverage` becomes `partial` (`visionTruncated` counted) with a note. Total failures keep `vision_unavailable` → incomplete (round 3).
+26. **Retry compliance.** Round 3 clamped every wait to 20 s, so `Retry-After: 60` was retried after 20 s, inside the provider's cooldown. Now server-requested waits are honoured in full; only our own jittered backoff is capped at 20 s. If the server asks for longer than the call's remaining 120 s budget, the call stops with a "rate-limit cooldown" reason and does **not** fall back to `openrouter/free` (that would evade the same account-wide cooldown).
+27. **Zero-evidence reports showed fake diagnostics.** With 0 recorded actions the UX engines still emitted default values (cognitive overload 10%, decision fatigue 27%…). There was also a heatmap "STEP 1 15% Good", a green "No friction findings detected", persona projections, "Discoverability risk: LOW", and persona tables in the exports. Now no behavioural signals or findings are produced or reported without actions. Every report panel, the Persona Simulations / UX Insights tabs, the reports-list card, and Markdown / PM / PDF / JSON (an explicit `availability` block) say "Unavailable: no evidence"; risk levels are UNKNOWN. Visual observations of recorded screenshots are kept and labelled as such.
+28. **The production backend could never start.** `node apps/backend/dist/index.js` (the Docker `CMD`) failed: ESM output without file extensions (`ERR_MODULE_NOT_FOUND`) and deep imports of TypeScript source (`@fricta/optimization-intelligence/src/*`). Dev hid it via `tsx`. Backend and packages now compile to CommonJS; the deep imports are gone.
+29. **Docker compose could not reach its own database.** `DATABASE_URL` / `REDIS_URL` were taken from `.env` (localhost for dev = the backend container itself). Also: Prisma OpenSSL detection on `node:20-slim`, ports exposed on all interfaces. See §7.
+
 ## 3. Landing/auth video and Clerk fallback
 - **Mux video:** the auth-shell background streamed `stream.mux.com/…m3u8` (reported 403). This sandbox can't reach Mux at all, so the 403 itself was not reproduced here. Replaced with the bundled, previously unused `Video_Fricta.mp4`, and `hls.js` removed. The landing page already used a bundled MP4. **Verified:** the video renders as the auth background (local probe screenshot).
 - **Clerk fallback:** the hardcoded `liked-mouse-95` key is gone. The key comes only from `VITE_CLERK_PUBLISHABLE_KEY`; missing or malformed → "Sign-in is not configured" screen. **Verified** by typecheck/build and by the probe below loading the safe-terrier-54 instance from env. The real safe-terrier-54 key is not in this environment; it was derived from the public instance host for the probe and is not committed.
@@ -161,19 +183,20 @@ the likely cause and a reload button. Verified in the second probe attempt.
 | `npm ci` | passes (after removing the browser-download postinstall) |
 | `npx turbo run build` (45 packages incl. frontend) | **pass** |
 | `npm run typecheck` (backend + frontend) | **pass** |
-| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 (round 1) → 2,583 (round 2) → 2,593 (round 3; new `any` casts in test mocks and Prisma wiring) |
-| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76**; round 3 **106/106** (22 fake-fetch retry/fallback/vision tests, insufficient-evidence and coverage tests) |
+| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 (round 1) → 2,583 (round 2) → 2,593 (round 3) → 2,604 (round 4; `any` in test helpers and parsing) |
+| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76**; round 3 **106/106**; round 4 **137/137** (truncated JSON / length / empty fake responses, Retry-After 60, far-future reset, budget exhaustion, zero-evidence exports) |
 | Backend integration (`vitest --config vitest.integration.config.ts`, real `fricta_test` DB) | **31/31 pass** (all rounds) |
 | `npm run test:security` | **8/8 + 19/19 pass** (all rounds) |
-| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75**; round 3 **83/83** |
-| Frontend unit (`npm test -w @fricta/frontend`, new in round 2) | Round 2 **4/4**; round 3 **7/7** (grade bands, unscored projection) |
+| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75**; round 3 **83/83**; round 4 **85/85** in 33 s (truncated vision JSON, zero-evidence diagnostics) |
+| Frontend unit (`npm test -w @fricta/frontend`, new in round 2) | Round 2 **4/4**; round 3 **7/7**; round 4 **8/8** (no-evidence note) |
+| Compiled backend with plain `node` (round 4) | **pass**: boots, health 200, auth 401, migrations validated (node 22 host; node 24 in the Playwright runtime image) |
 
 ## 6. Screenshots (390 / 768 / 1440)
 `screenshots/<width>/`: `landing`, `dashboard`, `new-audit`, `audit-monitor`,
 `report` (UX Findings tab), `report-replay` (Timeline Replay tab),
 `report-dead-end`, and (round 2) `report-dead-end-persona` (Power
 Administrator selected), and (round 3) `reports` (the reports list) and
-`report-insufficient-evidence`. 30 images, all re-shot in round 3 from a fresh
+`report-insufficient-evidence`. 30 images, all re-shot in round 4 from a fresh
 run; `layout-report.json` has per-shot overflow measurements.
 
 How they were made: the dev-only harness in **live-API mode**
@@ -183,6 +206,17 @@ written by the stub-driven audits above, and the replay frames are the agent's
 real screenshots of the local target site. **Clerk is mocked** (no real session
 is possible here; see §4), so the user shows as "Fixture User". The amber badge
 on every shot says "Live API · stub LLM · Clerk mocked".
+
+Round 4 inspection: automated overflow check, 0 of 30 flagged. Visual review
+of `report-insufficient-evidence` at 1440 and 390: persona projections,
+cognitive load, friction heatmap (legend hidden), heuristic findings and
+recommendations each show a neutral "Unavailable: no evidence" note. There are
+no percentages, no "Good" and no green check. Grade N/A and the amber banner
+are unchanged, and nothing clips at 390. The `reports` list card (390) shows
+"Overall UX: Unavailable: no evidence" and "Findings unavailable: no
+evidence". 28 of 30 PNGs changed; only `report-insufficient-evidence` and
+`reports` (all widths) show new behaviour, while the others changed because a
+fresh run has new session ids, timestamps and list contents.
 
 Round 3 inspection: automated overflow check, 0 of 30 flagged. Visual review
 of the insufficient-evidence report (1440) shows the amber "Not scored:
@@ -207,8 +241,24 @@ monitor (390) found no clipping, except the two defects already listed (768
 heatmap overflow, broken replay images), both fixed before the final run. On
 phones the Timeline Replay tab intentionally shows a "best on desktop" notice.
 
+## 7. Local run with Docker (round 4)
+
+Route: `docker-compose.prod.yml` + the two Dockerfiles, on the user's own
+computer. No hosting, accounts or domains beyond a free Clerk app and a free
+OpenRouter key. Docs: `docs/LOCAL_RUN.md`; preflight: `scripts/local-preflight.sh`.
+
+| Check | Status |
+|---|---|
+| Preflight script | Verified here: all checks pass/fail as intended; it never prints a value |
+| Backend runtime image `mcr.microsoft.com/playwright:v1.60.0-jammy` running the compiled backend (host-built `dist` + `node_modules` mounted) against `postgres:16-alpine` + `redis:7-alpine` containers | **Verified here**: `prisma migrate deploy` applied all 13 migrations, server started, migration check up to date; Playwright's Chromium 148.0.7778.96 launched and rendered a PDF (image Playwright 1.60.0 = lockfile `playwright-core` 1.60.0) |
+| Frontend: real `nginx:1.27-alpine` with the repo `nginx.conf` serving the built SPA, on the same network as the backend | **Verified here**: `nginx -t` OK, `/` and SPA deep links 200, hashed assets 200, `/api/health` proxied 200, `/api/projects` and the SSE route `/api/realtime/...` proxied (401 without a token) |
+| Full `docker compose … up --build` (building both images) | **Not verified here.** The sandbox's egress proxy blocks Debian package mirrors (and plain-HTTP proxying), so `apt-get` in the builder cannot run even with the documented proxy/CA workaround (applied only to scratch copies of the Dockerfiles, never committed). Docker Hub also returned 429 for anonymous pulls at first. The image builds therefore need to be confirmed on a normal machine. |
+| Authenticated SSE stream and real Clerk sign-in through nginx | **Not verified** (no real Clerk session possible here; §4) |
+| Notes | Builder uses Node 20, the Playwright runtime image ships Node 24.15.0 (fine for the compiled CommonJS). Same-origin via nginx, so no CORS setup; a Clerk development instance accepts `localhost` origins. The frontend's Clerk key is baked in at build time (rebuild after changing it). |
+
 ## Remaining gaps (honest list)
-- **No live LLM call has been made from inside this sandbox.** The reviewer's real run (§0, on `150bc79`) showed `google/gemma-4-31b-it:free` failing on 429s and `openrouter/free` completing the agent flow with partial vision. The round-3 retry/fallback changes are verified only with fake fetch and the stub; they are **unproven against the real provider** until re-run. Still unknown: free-model JSON reliability, latency against the 150-token cap and the new 180 s step timeout, real free-tier rate-limit behaviour over a full audit, and vision quality.
+- **No live LLM call has been made from inside this sandbox.** Real-provider evidence comes only from the reviewer (§0). On `150bc79` gemma `:free` failed on 429s. On `6cde80e` the round-3 retry + fallback worked and a real audit completed, but vision failed four times (429, empty, 2× truncated JSON). The **round-4** vision fixes (token cap, bounded output, length detection, repair, single retry) and the cooldown-compliance change are verified only with fake responses and the stub. They are **unproven against the real provider** until re-run. Still unknown: real vision quality and truncation rate after the fix; whether honouring long cooldowns makes real audits fail more often (by design they now stop instead of retrying early); and latency against the 180 s step timeout.
+- **Local Docker route:** runtime images and nginx verified here; full image builds not (see §7).
 - **Concurrency under a real LLM is unproven.** Two parallel audits against the shared free pool will compete for the same rate limit; only stub concurrency was tested.
 - The default model is unchanged (`google/gemma-4-31b-it:free`) as instructed, even though the reviewer's run suggests `openrouter/free` is currently more reliable. With round 3, a rate-limited primary falls back to `openrouter/free` automatically.
 - **Real-Clerk sign-up not verified** (blocked hosts; see §4). Real sign-in was verified in an earlier session, not in this one.
