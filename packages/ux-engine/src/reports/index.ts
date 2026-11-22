@@ -38,14 +38,18 @@ export function buildUXReport(session: SessionData): UXReportData {
     durationMs = last - first;
   }
 
-  // Summary generation (Deterministic)
-  let summary = `Workflow completed with ${session.actions.length} actions and ${session.interactions.length} interactions. `;
-  if (scores.overallScore >= 80) {
-    summary += `Overall UX is excellent, indicating a smooth and discoverable flow.`;
-  } else if (scores.overallScore >= 60) {
-    summary += `Overall UX is acceptable but has areas for improvement, particularly concerning ${recommendations.length > 0 ? recommendations[0].title.toLowerCase() : 'friction'}.`;
+  // Summary generation (Deterministic). Deliberately states only what was
+  // recorded: the overall verdict belongs to the audit grade (scoreAudit,
+  // which also weighs the outcome and findings). The old text said "Workflow
+  // completed … Overall UX is excellent" from the behavioural score alone, even
+  // for failed audits with no actions at all.
+  let summary: string;
+  if (session.actions.length === 0) {
+    summary = `No agent actions were recorded, so this audit produced no behavioural evidence and is not scored.`;
   } else {
-    summary += `Overall UX indicates significant user struggle. High friction detected.`;
+    summary = `Agent recorded ${session.actions.length} action${session.actions.length === 1 ? '' : 's'} and ${session.interactions.length} interaction${session.interactions.length === 1 ? '' : 's'}.`;
+    if (recommendations.length > 0) summary += ` Main behavioural friction: ${recommendations[0].title.toLowerCase()}.`;
+    else summary += ` No behavioural friction signals were detected in the action log.`;
   }
 
   return {

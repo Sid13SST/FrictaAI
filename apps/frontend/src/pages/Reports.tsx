@@ -329,12 +329,14 @@ export const Reports = () => {
                     <ScoreRing score={score} />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className="text-[9px] px-2 py-0.5 rounded-full font-black font-mono uppercase tracking-wider"
-                          style={{ background: sevStyle.bg, color: sevStyle.color, border: `1px solid ${sevStyle.border}` }}
-                        >
-                          {sev}
-                        </span>
+                        {score !== null && (
+                          <span
+                            className="text-[9px] px-2 py-0.5 rounded-full font-black font-mono uppercase tracking-wider"
+                            style={{ background: sevStyle.bg, color: sevStyle.color, border: `1px solid ${sevStyle.border}` }}
+                          >
+                            {sev}
+                          </span>
+                        )}
                         <span
                           className="text-[9px] px-2 py-0.5 rounded-full font-black font-mono uppercase"
                           style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
@@ -358,19 +360,19 @@ export const Reports = () => {
                 {/* Score bar breakdown */}
                 <div className="flex flex-col gap-2">
                   {[
-                    { label: 'Overall UX',   val: report.score ?? 0 },
+                    { label: 'Overall UX',   val: score },
                   ].map(bar => {
-                    const barColor = bar.val >= 80 ? '#7342E2' : bar.val >= 60 ? '#eab308' : bar.val >= 40 ? '#f97316' : '#f43f5e';
+                    const barColor = bar.val === null ? 'rgba(255,255,255,0.45)' : bar.val >= 80 ? '#7342E2' : bar.val >= 60 ? '#eab308' : bar.val >= 40 ? '#f97316' : '#f43f5e';
                     return (
                       <div key={bar.label} className="flex items-center gap-3">
                         <span className="text-[10px] w-24 flex-shrink-0 font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>{bar.label}</span>
                         <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div
                             className="h-full rounded-full transition-all duration-700"
-                            style={{ width: `${bar.val}%`, background: barColor, boxShadow: `0 0 6px ${barColor}60` }}
+                            style={{ width: `${bar.val ?? 0}%`, background: barColor, boxShadow: `0 0 6px ${barColor}60` }}
                           />
                         </div>
-                        <span className="text-[10px] font-mono font-bold w-8 text-right" style={{ color: barColor }}>{bar.val}</span>
+                        <span className="text-[10px] font-mono font-bold w-8 text-right" style={{ color: barColor }}>{bar.val ?? 'n/a'}</span>
                       </div>
                     );
                   })}
