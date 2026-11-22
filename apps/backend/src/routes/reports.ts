@@ -4,6 +4,7 @@ import { buildUXReport, scoreAudit, SessionData, ActionData, InteractionData, Th
 import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, PDFRenderer, UnifiedUXReportPayload, WorkflowSessionDetails, computeVisualCoverage } from '@fricta/report-engine';
 import { chromium } from 'playwright';
 import { VisualIntelligenceCoordinator } from '@fricta/visual-intelligence';
+import { pendingAnalysisSet, clearAnalysisPending } from '@fricta/agent';
 import { UXIntelligenceCoordinator } from '@fricta/ux-intelligence';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -182,14 +183,20 @@ export async function generateReportForSession(sessionId: string) {
  */
 export async function finalizeAuditReport(sessionId: string): Promise<void> {
   try {
-    await visualCoordinator.analyzeSession(sessionId, { forceAIVision: false });
-  } catch (err: any) {
-    console.warn(`[Report] Visual analysis failed for ${sessionId}: ${err.message}`);
-  }
-  try {
-    await uxCoordinator.analyzeSession(sessionId);
-  } catch (err: any) {
-    console.warn(`[Report] UX analysis failed for ${sessionId}: ${err.message}`);
+    try {
+      await visualCoordinator.analyzeSession(sessionId, { forceAIVision: false });
+    } catch (err: any) {
+      console.warn(`[Report] Visual analysis failed for ${sessionId}: ${err.message}`);
+    }
+    try {
+      await uxCoordinator.analyzeSession(sessionId);
+    } catch (err: any) {
+      console.warn(`[Report] UX analysis failed for ${sessionId}: ${err.message}`);
+    }
+  } finally {
+    // The report is final from here on (even if an analysis step failed;
+    // coverage fields then say what is missing).
+    await clearAnalysisPending(sessionId);
   }
   await generateReportForSession(sessionId);
   await compileUnifiedReport(sessionId); // writes the final score back to UXReport
@@ -237,7 +244,11 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
     visualFindings: session.visualFindings,
     actionCount: session._count.actions,
   });
-  const insufficient = audit.evidence === 'insufficient';
+  // Provisional until the run ends AND post-run analysis has finished. Reading
+  // the report earlier used to show a final-looking 100 with no findings.
+  const pending = ['RUNNING', 'QUEUED', 'PENDING'].includes(String(session.status))
+    || (await pendingAnalysisSet([sessionId])).has(sessionId);
+  const insufficient = !pending && audit.evidence === 'insufficient';
   const evidence = insufficient
     ? {
         status: 'insufficient' as const,
@@ -250,13 +261,16 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
     visualFindings: session.visualFindings,
   });
 
-  const clarityScore = audit.clarityScore;
-  const onboardingScore = audit.smoothnessScore;
-  const iaScore = insufficient ? null : Math.round(
+  const clarityScore = pending ? null : audit.clarityScore;
+  const onboardingScore = pending ? null : audit.smoothnessScore;
+  const iaScore = insufficient || pending ? null : Math.round(
     visualScore?.navigationScore ?? visualScore?.layoutBalanceScore ?? audit.clarityScore ?? 0
   );
-  const efficiencyScore = audit.efficiencyScore;
-  const overallScore = audit.overallScore;
+  const efficiencyScore = pending ? null : audit.efficiencyScore;
+  const overallScore = pending ? null : audit.overallScore;
+  if (pending && visualCoverage.status === 'not_analyzed') {
+    visualCoverage.note = 'Visual analysis is still running for this audit; findings appear when it finishes.';
+  }
 
   const storedReport = await prisma.uXReport.findFirst({ where: { sessionId } });
   if (storedReport && storedReport.score !== overallScore) {
@@ -345,6 +359,9 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
     },
     evidence,
     visualCoverage,
+    analysis: pending
+      ? { state: 'pending' as const, note: 'post-run analysis (visual review, UX analysis, scoring) is still running' }
+      : { state: 'ready' as const },
     // Zero-evidence report: behavioural findings/signals have no provenance
     // (no recorded actions), so none are reported even if stale rows exist.
     // Visual findings stay: they are observations of recorded screenshots.
@@ -398,7 +415,11 @@ reportRoutes.get('/', async (c) => {
       }
     }
   });
-  return c.json({ reports });
+  // Reports whose post-run analysis is still running carry no final score.
+  const pending = await pendingAnalysisSet(reports.map((r: any) => r.sessionId));
+  return c.json({
+    reports: reports.map((r: any) => (pending.has(r.sessionId) ? { ...r, score: null, analysisPending: true } : { ...r, analysisPending: false })),
+  });
 });
 
 // ─── Resolve User Helper ──────────────────────────────────────────────────────

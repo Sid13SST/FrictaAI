@@ -96,7 +96,7 @@ export class PDFRenderer {
   <div class="grade-row">
     <div class="grade-circle">${escapeHtml(executive.overallUXGrade)}</div>
     <div>
-      <div class="grade-score">${executive.evidenceStatus === 'insufficient' ? 'Not scored: insufficient evidence' : `${executive.overallScore}/100 Overall UX Score`}</div>
+      <div class="grade-score">${executive.analysisState === 'pending' ? 'Pending: analysis still running' : executive.evidenceStatus === 'insufficient' ? 'Not scored: insufficient evidence' : `${executive.overallScore}/100 Overall UX Score`}</div>
       <div class="muted">Onboarding friction: ${escapeHtml(executive.onboardingFrictionLevel)} · Discoverability risk: ${escapeHtml(executive.discoverabilityRiskLevel)}</div>
     </div>
   </div>

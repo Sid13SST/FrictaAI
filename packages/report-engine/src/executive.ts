@@ -6,11 +6,12 @@ export class ExecutiveSummaryEngine {
    */
   static synthesize(report: UnifiedUXReportPayload): ExecutiveSummaryPayload {
     const score = report.scores.overallScore;
-    const insufficient = report.evidence?.status === 'insufficient' || score === null;
+    const pending = report.analysis?.state === 'pending';
+    const insufficient = !pending && (report.evidence?.status === 'insufficient' || score === null);
 
     // 1. Calculate Overall UX Grade (none without evidence)
     let overallUXGrade: ExecutiveSummaryPayload['overallUXGrade'] = 'N/A';
-    if (!insufficient && score !== null) {
+    if (!pending && !insufficient && score !== null) {
       if (score >= 90) overallUXGrade = 'A';
       else if (score >= 80) overallUXGrade = 'B';
       else if (score >= 70) overallUXGrade = 'C';
@@ -68,8 +69,9 @@ export class ExecutiveSummaryEngine {
     // Sort step indices chronologically
     majorFrictionStepIndices.sort((a, b) => a - b);
 
-    // Without evidence these are not measurements: say so instead of "LOW".
-    if (insufficient) {
+    // Without evidence (or before analysis finishes) these are not
+    // measurements: say so instead of "LOW".
+    if (insufficient || pending) {
       discoverabilityRiskLevel = 'UNKNOWN';
       onboardingFrictionLevel = 'UNKNOWN';
       majorFrictionStepIndices.length = 0;
@@ -116,7 +118,12 @@ export class ExecutiveSummaryEngine {
       );
     }
 
-    if (insufficient) {
+    if (pending) {
+      synthesizedInsights.length = 0;
+      synthesizedInsights.push(
+        `Analysis in progress: ${report.analysis?.note ?? 'post-run analysis has not finished yet'}. Scores and findings are not final.`
+      );
+    } else if (insufficient) {
       // No behavioural evidence: do not claim the flow was smooth.
       synthesizedInsights.length = 0;
       synthesizedInsights.push(
@@ -137,8 +144,9 @@ export class ExecutiveSummaryEngine {
 
     return {
       overallUXGrade,
-      overallScore: insufficient ? null : score,
+      overallScore: insufficient || pending ? null : score,
       evidenceStatus: insufficient ? 'insufficient' : 'sufficient',
+      analysisState: pending ? 'pending' : 'ready',
       visualCoverageNote: coverage && !coverage.complete ? coverage.note : undefined,
       onboardingFrictionLevel,
       discoverabilityRiskLevel,

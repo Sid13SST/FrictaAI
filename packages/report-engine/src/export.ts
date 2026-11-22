@@ -26,7 +26,9 @@ export class ExportEngine {
     md += `| Metric | Value | Rating / Risk |\n`;
     md += `| :--- | :--- | :--- |\n`;
     const insufficient = executive.evidenceStatus === 'insufficient';
-    md += insufficient
+    md += executive.analysisState === 'pending'
+      ? `| **Overall UX Score** | **Pending: analysis still running** | **Grade: N/A** |\n`
+      : insufficient
       ? `| **Overall UX Score** | **Not scored: insufficient evidence** | **Grade: N/A** |\n`
       : `| **Overall UX Score** | **${executive.overallScore}/100** | **Grade: ${executive.overallUXGrade}** |\n`;
     md += `| **Onboarding Friction** | ${outOf100(scores.onboardingScore)} | **${executive.onboardingFrictionLevel}** |\n`;
@@ -119,7 +121,9 @@ export class ExportEngine {
     text += `FRICTA UX REPORT SUMMARY SHEET\n`;
     text += `==================================================\n`;
     text += `Session ID: ${report.session.id}\n`;
-    text += executive.evidenceStatus === 'insufficient'
+    text += executive.analysisState === 'pending'
+      ? `Overall Score: PENDING - analysis still running (Grade: N/A)\n`
+      : executive.evidenceStatus === 'insufficient'
       ? `Overall Score: NOT SCORED - insufficient evidence (Grade: N/A)\n`
       : `Overall Score: ${executive.overallScore}/100 (Grade: ${executive.overallUXGrade})\n`;
     if (report.visualCoverage) {

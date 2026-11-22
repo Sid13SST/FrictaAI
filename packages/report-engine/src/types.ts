@@ -63,6 +63,12 @@ export interface UnifiedUXReportPayload {
   };
   evidence?: AuditEvidenceInfo;
   visualCoverage?: VisualCoverage;
+  /**
+   * 'pending' while the audit is still running or its post-run analysis
+   * (visual review, UX analysis, scoring) has not finished: scores are null
+   * and nothing may be presented as final. 'ready' afterwards.
+   */
+  analysis?: { state: 'pending' | 'ready'; note?: string };
   uxFindings: UXFindingData[];
   cognitiveSignals: CognitiveSignalData[];
   visualFindings: VisualFindingData[];
@@ -74,6 +80,8 @@ export interface ExecutiveSummaryPayload {
   overallUXGrade: 'A' | 'B' | 'C' | 'D' | 'F' | 'N/A';
   overallScore: number | null;
   evidenceStatus: 'sufficient' | 'insufficient';
+  /** 'pending' = provisional report (analysis still running); no grade yet. */
+  analysisState: 'pending' | 'ready';
   onboardingFrictionLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
   discoverabilityRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
   majorFrictionStepIndices: number[];

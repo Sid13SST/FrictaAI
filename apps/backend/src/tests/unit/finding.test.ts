@@ -3,6 +3,12 @@ import { mockPrisma } from '../mocks/prismaMock';
 
 // Mock DB
 vi.mock('@fricta/db', () => ({ prisma: mockPrisma }));
+// Readiness marker lives in Redis; control it per test instead.
+const pendingSessions = new Set<string>();
+vi.mock('@fricta/agent', () => ({
+  pendingAnalysisSet: vi.fn(async (ids: string[]) => new Set(ids.filter((id) => pendingSessions.has(id)))),
+  clearAnalysisPending: vi.fn(async (id: string) => { pendingSessions.delete(id); }),
+}));
 
 import { Hono } from 'hono';
 import { uxRoutes } from '../../routes/ux';

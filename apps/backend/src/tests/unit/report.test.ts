@@ -3,6 +3,12 @@ import { mockPrisma } from '../mocks/prismaMock';
 
 // Mock DB
 vi.mock('@fricta/db', () => ({ prisma: mockPrisma }));
+// Readiness marker lives in Redis; control it per test instead.
+const pendingSessions = new Set<string>();
+vi.mock('@fricta/agent', () => ({
+  pendingAnalysisSet: vi.fn(async (ids: string[]) => new Set(ids.filter((id) => pendingSessions.has(id)))),
+  clearAnalysisPending: vi.fn(async (id: string) => { pendingSessions.delete(id); }),
+}));
 
 import { Hono } from 'hono';
 import { reportRoutes } from '../../routes/reports';
@@ -246,6 +252,53 @@ describe('Report Generation and Compilation Unit Tests', () => {
       const exp = await (await app.request('/workflow_123/export')).json();
       expect(exp.markdown).toContain('Not scored: insufficient evidence');
       expect(exp.textSheet).toContain('NOT SCORED');
+    });
+
+    it('while post-run analysis is pending: no score anywhere, analysis.state pending, nothing persisted as final', async () => {
+      mockSession({ status: 'COMPLETED', _count: { actions: 2, workflowScreenshots: 2 } });
+      pendingSessions.add('workflow_123');
+      try {
+        const rep = await (await app.request('/workflow_123')).json();
+        expect(rep.analysis).toMatchObject({ state: 'pending' });
+        expect(rep.scores.overallScore).toBeNull();
+        expect([rep.scores.clarityScore, rep.scores.onboardingScore, rep.scores.efficiencyScore, rep.scores.iaScore]).toEqual([null, null, null, null]);
+        expect(rep.evidence.status).toBe('sufficient'); // pending is not "insufficient evidence"
+        expect(rep.visualCoverage.note).toMatch(/still running/);
+        const exec = await (await app.request('/workflow_123/executive')).json();
+        expect(exec).toMatchObject({ analysisState: 'pending', overallUXGrade: 'N/A', overallScore: null });
+        const exp = await (await app.request('/workflow_123/export')).json();
+        expect(exp.markdown).toContain('Pending: analysis still running');
+        expect(exp.textSheet).toContain('PENDING - analysis still running');
+        expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_ie' }, data: { score: null } });
+      } finally {
+        pendingSessions.delete('workflow_123');
+      }
+      // Once analysis has finished, the same session is scored normally.
+      const ready = await (await app.request('/workflow_123')).json();
+      expect(ready.analysis).toEqual({ state: 'ready' });
+      expect(ready.scores.overallScore).toBe(100);
+    });
+
+    it('a session that is still RUNNING is pending even without the marker', async () => {
+      mockSession({ status: 'RUNNING', _count: { actions: 1, workflowScreenshots: 1 } });
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.analysis.state).toBe('pending');
+      expect(rep.scores.overallScore).toBeNull();
+    });
+
+    it('reports list hides the score of reports still being analysed', async () => {
+      mockPrisma.uXReport.findMany.mockResolvedValue([
+        { id: 'r1', sessionId: 's-pending', summary: 's', score: 100, createdAt: new Date() },
+        { id: 'r2', sessionId: 's-ready', summary: 's', score: 90, createdAt: new Date() },
+      ]);
+      pendingSessions.add('s-pending');
+      try {
+        const list = await (await app.request('/')).json();
+        expect(list.reports.find((r: any) => r.id === 'r1')).toMatchObject({ score: null, analysisPending: true });
+        expect(list.reports.find((r: any) => r.id === 'r2')).toMatchObject({ score: 90, analysisPending: false });
+      } finally {
+        pendingSessions.delete('s-pending');
+      }
     });
 
     it('stale behavioural findings/signals are not reported on a zero-evidence audit', async () => {

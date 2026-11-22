@@ -18,3 +18,4 @@ export * from './scheduler';
 export * from './workers';
 export * from './queue';
 export * from './queue/connection';
+export * from './queue/analysisState';
