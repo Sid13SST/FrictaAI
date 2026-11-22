@@ -22,9 +22,9 @@ export interface VisionAnalysisResult {
   clarityFeedback: string;
 }
 
-const DEFAULT_MODEL = 'google/gemini-2.5-flash';
+import { resolveLLMEndpoint, resolveVisionModel, assertModelAllowed } from '@fricta/shared';
+
 const DEFAULT_MAX_TOKENS = 500;
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 export class VisualAIAnalyzer {
   private apiKey: string;
@@ -32,13 +32,23 @@ export class VisualAIAnalyzer {
   private temperature: number;
   private maxTokens: number;
   private baseUrl: string;
+  private isOpenRouter: boolean;
 
+  /**
+   * Endpoint and model come from AGENT_BASE_URL / AGENT_API_KEY (or
+   * OPENROUTER_API_KEY) / AGENT_VISION_MODEL, the same policy as the agent
+   * planner. The model must accept image input; the default is a free one.
+   * A non-free model throws PaidModelNotAllowedError unless ALLOW_PAID_MODELS=true.
+   */
   constructor(options: VisionAnalysisOptions = {}) {
-    this.apiKey = options.apiKey || process.env.OPENROUTER_API_KEY || '';
-    this.model = options.model || DEFAULT_MODEL;
+    const endpoint = resolveLLMEndpoint();
+    this.apiKey = options.apiKey || endpoint.apiKey;
+    this.model = options.model || resolveVisionModel();
+    assertModelAllowed(this.model, 'AGENT_VISION_MODEL');
     this.temperature = options.temperature ?? 0.2; // Low temperature for structured analysis
     this.maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
-    this.baseUrl = options.baseUrl || OPENROUTER_BASE_URL;
+    this.baseUrl = (options.baseUrl || endpoint.baseUrl).replace(/\/+$/, '');
+    this.isOpenRouter = /^https?:\/\/(www\.)?openrouter\.ai(\/|$)/i.test(this.baseUrl);
   }
 
   /**
@@ -50,7 +60,7 @@ export class VisualAIAnalyzer {
     imagePath: string,
     contextPrompt: string
   ): Promise<VisionAnalysisResult> {
-    if (!this.apiKey) {
+    if (!this.apiKey && this.isOpenRouter) {
       console.warn('[VisualAIAnalyzer] OPENROUTER_API_KEY is not set. Visual AI analysis skipped.');
       return {
         rawResponse: '',
@@ -97,7 +107,7 @@ Note: All coordinates in "annotatedBoxes" must represent bounding box percentage
         response = await fetch(`${this.baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+            ...(this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {}),
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://fricta.ai',
             'X-Title': 'Fricta AI UX Visual Intelligence',

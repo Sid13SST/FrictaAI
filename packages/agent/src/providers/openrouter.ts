@@ -10,8 +10,15 @@ import { AIMessage, AIProviderConfig, AIProviderResponse } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+import {
+  OPENROUTER_BASE_URL,
+  DEFAULT_FREE_AGENT_MODEL,
+  OPENROUTER_FREE_ROUTER,
+  isFreeModelId,
+  assertModelAllowed,
+} from '@fricta/shared';
+
+const DEFAULT_MODEL = DEFAULT_FREE_AGENT_MODEL;
 const DEFAULT_MAX_TOKENS = 150;
 const DEFAULT_TEMPERATURE = 0.3; // Low temp = deterministic, structured outputs
 
@@ -61,6 +68,7 @@ function updateRateLimitState(): void {
 
 export class OpenRouterProvider {
   private readonly config: Required<AIProviderConfig>;
+  private readonly isOpenRouter: boolean;
 
   constructor(config: AIProviderConfig) {
     this.config = {
@@ -68,8 +76,11 @@ export class OpenRouterProvider {
       model: config.model || DEFAULT_MODEL,
       maxTokens: config.maxTokens ?? DEFAULT_MAX_TOKENS,
       temperature: config.temperature ?? DEFAULT_TEMPERATURE,
-      baseUrl: config.baseUrl || OPENROUTER_BASE_URL,
+      baseUrl: (config.baseUrl || OPENROUTER_BASE_URL).replace(/\/+$/, ''),
     };
+    // Guard direct construction too, not just the factory.
+    assertModelAllowed(this.config.model, 'AGENT_MODEL');
+    this.isOpenRouter = /^https?:\/\/(www\.)?openrouter\.ai(\/|$)/i.test(this.config.baseUrl);
   }
 
   /**
@@ -88,14 +99,17 @@ export class OpenRouterProvider {
       try {
         updateRateLimitState();
 
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://fricta.ai',
+          'X-Title': 'Fricta AI UX Agent',
+        };
+        // Self-hosted OpenAI-compatible endpoints may not need a key.
+        if (this.config.apiKey) headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+
         const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.config.apiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://fricta.ai',
-            'X-Title': 'Fricta AI UX Agent',
-          },
+          headers,
           body: JSON.stringify({
             model: currentModel,
             messages: messages.map((m) => ({ role: m.role, content: m.content })),
@@ -110,9 +124,10 @@ export class OpenRouterProvider {
           const errorBody = await response.text().catch(() => '');
 
           if (response.status === 402) {
-            // Check if we are already using a free model fallback
-            if (currentModel !== 'openrouter/free' && !currentModel.endsWith(':free')) {
-              const fallbackModel = 'openrouter/free';
+            // Paid model (only reachable with ALLOW_PAID_MODELS=true) ran out of
+            // credit: fall back to OpenRouter's free router. Only meaningful on OpenRouter.
+            if (this.isOpenRouter && !isFreeModelId(currentModel)) {
+              const fallbackModel = OPENROUTER_FREE_ROUTER;
               console.warn(
                 `[OpenRouter] HTTP 402 Credit limit hit. ` +
                 `Switching model from ${currentModel} to free fallback model: ${fallbackModel}`

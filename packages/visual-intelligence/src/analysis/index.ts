@@ -5,6 +5,7 @@ import { VisualHeuristicsEngine } from '../heuristics';
 import { VisualAIAnalyzer, VisionAnalysisResult } from '../vision';
 import { VisualScoringEngine } from '../scoring';
 import { VisualObservation, VisualScoresResult } from '../types';
+import { llmKeyMissing } from '@fricta/shared';
 
 export interface AnalysisSessionResult {
   findings: VisualObservation[];
@@ -131,7 +132,7 @@ export class VisualIntelligenceCoordinator {
     let visionResult: VisionAnalysisResult | null = null;
 
     const hasAmbiguity = findings.some(f => f.severity === 'high' || f.severity === 'critical');
-    const triggerAI = options.forceAIVision || (hasAmbiguity && options.absoluteImagePath && process.env.OPENROUTER_API_KEY);
+    const triggerAI = options.forceAIVision || (hasAmbiguity && options.absoluteImagePath && !llmKeyMissing());
 
     if (triggerAI && options.absoluteImagePath) {
       // Check if we already have cached vision findings in the database for this screenshot
