@@ -12,23 +12,51 @@ export interface WorkflowSessionDetails {
   status?: string | null;
 }
 
+/**
+ * How much of the visual review actually had an AI vision pass.
+ *   full            — vision answered for every screenshot it was asked about
+ *   partial         — some vision calls failed / were skipped
+ *   failed          — every vision call failed / was skipped
+ *   heuristics_only — no vision pass ran (none was triggered); layout heuristics only
+ *   not_analyzed    — visual analysis has not run for this session
+ * Only 'full' is complete.
+ */
+export interface VisualCoverage {
+  status: 'full' | 'partial' | 'failed' | 'heuristics_only' | 'not_analyzed';
+  complete: boolean;
+  screenshots: number;
+  visionSucceeded: number;
+  visionUnavailable: number;
+  /** Human-readable, shown in the UI, exports and PDF. */
+  note: string;
+}
+
+export interface AuditEvidenceInfo {
+  status: 'sufficient' | 'insufficient';
+  /** Set when insufficient; shown wherever a score would be. */
+  reason?: string;
+}
+
 export interface UnifiedUXReportPayload {
   session: WorkflowSessionDetails;
+  /** All null when evidence.status is 'insufficient'. */
   scores: {
-    clarityScore: number;
-    onboardingScore: number;
-    iaScore: number;
-    efficiencyScore: number;
-    overallScore: number;
+    clarityScore: number | null;
+    onboardingScore: number | null;
+    iaScore: number | null;
+    efficiencyScore: number | null;
+    overallScore: number | null;
     /** How overallScore was derived (see scoreAudit in @fricta/ux-engine). */
     basis?: {
       goalReached: boolean;
-      behaviouralOverall: number;
+      behaviouralOverall: number | null;
       uxFindingsPenalty: number;
       visualFindingsPenalty: number;
       outcomeCap: number | null;
     };
   };
+  evidence?: AuditEvidenceInfo;
+  visualCoverage?: VisualCoverage;
   uxFindings: UXFindingData[];
   cognitiveSignals: CognitiveSignalData[];
   visualFindings: VisualFindingData[];
@@ -36,12 +64,15 @@ export interface UnifiedUXReportPayload {
 }
 
 export interface ExecutiveSummaryPayload {
-  overallUXGrade: 'A' | 'B' | 'C' | 'D' | 'F';
-  overallScore: number;
-  onboardingFrictionLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  /** 'N/A' when there is not enough evidence to grade. */
+  overallUXGrade: 'A' | 'B' | 'C' | 'D' | 'F' | 'N/A';
+  overallScore: number | null;
+  evidenceStatus: 'sufficient' | 'insufficient';
+  onboardingFrictionLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
   discoverabilityRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   majorFrictionStepIndices: number[];
   synthesizedInsights: string[];
+  visualCoverageNote?: string;
 }
 
 export interface CorrelatedTimelineEvent {

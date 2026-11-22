@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { prisma } from '@fricta/db';
 import { buildUXReport, scoreAudit, SessionData, ActionData, InteractionData, ThoughtData } from '@fricta/ux-engine';
-import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, PDFRenderer, UnifiedUXReportPayload, WorkflowSessionDetails } from '@fricta/report-engine';
+import { ExecutiveSummaryEngine, TimelineCompiler, ExportEngine, PDFRenderer, UnifiedUXReportPayload, WorkflowSessionDetails, computeVisualCoverage } from '@fricta/report-engine';
 import { chromium } from 'playwright';
 import { VisualIntelligenceCoordinator } from '@fricta/visual-intelligence';
 import { UXIntelligenceCoordinator } from '@fricta/ux-intelligence';
@@ -217,6 +217,7 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
       uxFindings: true,
       cognitiveSignals: true,
       visualFindings: true,
+      _count: { select: { actions: true, workflowScreenshots: true } },
     }
   });
 
@@ -234,12 +235,25 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
     outcome: session.status,
     uxFindings: session.uxFindings,
     visualFindings: session.visualFindings,
+    actionCount: session._count.actions,
+  });
+  const insufficient = audit.evidence === 'insufficient';
+  const evidence = insufficient
+    ? {
+        status: 'insufficient' as const,
+        reason: `the audit ended ${session.status ?? 'without a result'} before the agent recorded any action (for example every model call was rate-limited), so there is no behavioural evidence to grade`,
+      }
+    : { status: 'sufficient' as const };
+  const visualCoverage = computeVisualCoverage({
+    screenshots: session._count.workflowScreenshots,
+    analyzed: session.visualScores.length > 0,
+    visualFindings: session.visualFindings,
   });
 
   const clarityScore = audit.clarityScore;
   const onboardingScore = audit.smoothnessScore;
-  const iaScore = Math.round(
-    visualScore?.navigationScore ?? visualScore?.layoutBalanceScore ?? audit.clarityScore
+  const iaScore = insufficient ? null : Math.round(
+    visualScore?.navigationScore ?? visualScore?.layoutBalanceScore ?? audit.clarityScore ?? 0
   );
   const efficiencyScore = audit.efficiencyScore;
   const overallScore = audit.overallScore;
@@ -329,6 +343,8 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
       overallScore,
       basis: { goalReached: audit.goalReached, ...audit.breakdown },
     },
+    evidence,
+    visualCoverage,
     uxFindings: session.uxFindings.map(f => ({
       id: f.id,
       workflowSessionId: f.workflowSessionId,

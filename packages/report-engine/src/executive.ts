@@ -6,19 +6,23 @@ export class ExecutiveSummaryEngine {
    */
   static synthesize(report: UnifiedUXReportPayload): ExecutiveSummaryPayload {
     const score = report.scores.overallScore;
-    
-    // 1. Calculate Overall UX Grade
-    let overallUXGrade: 'A' | 'B' | 'C' | 'D' | 'F' = 'C';
-    if (score >= 90) overallUXGrade = 'A';
-    else if (score >= 80) overallUXGrade = 'B';
-    else if (score >= 70) overallUXGrade = 'C';
-    else if (score >= 60) overallUXGrade = 'D';
-    else overallUXGrade = 'F';
+    const insufficient = report.evidence?.status === 'insufficient' || score === null;
+
+    // 1. Calculate Overall UX Grade (none without evidence)
+    let overallUXGrade: ExecutiveSummaryPayload['overallUXGrade'] = 'N/A';
+    if (!insufficient && score !== null) {
+      if (score >= 90) overallUXGrade = 'A';
+      else if (score >= 80) overallUXGrade = 'B';
+      else if (score >= 70) overallUXGrade = 'C';
+      else if (score >= 60) overallUXGrade = 'D';
+      else overallUXGrade = 'F';
+    }
 
     // 2. Compute Onboarding Friction and Discoverability Risks
     const onboardingScore = report.scores.onboardingScore;
-    let onboardingFrictionLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
-    if (onboardingScore < 50) onboardingFrictionLevel = 'CRITICAL';
+    let onboardingFrictionLevel: ExecutiveSummaryPayload['onboardingFrictionLevel'] = 'LOW';
+    if (onboardingScore === null) onboardingFrictionLevel = 'UNKNOWN';
+    else if (onboardingScore < 50) onboardingFrictionLevel = 'CRITICAL';
     else if (onboardingScore < 70) onboardingFrictionLevel = 'HIGH';
     else if (onboardingScore < 85) onboardingFrictionLevel = 'MEDIUM';
 
@@ -105,6 +109,18 @@ export class ExecutiveSummaryEngine {
       );
     }
 
+    if (insufficient) {
+      // No behavioural evidence: do not claim the flow was smooth.
+      synthesizedInsights.length = 0;
+      synthesizedInsights.push(
+        `Not scored: ${report.evidence?.reason ?? 'the audit produced no recorded agent actions'}. Re-run the audit; nothing here reflects the product's UX.`
+      );
+    }
+    const coverage = report.visualCoverage;
+    if (coverage && !coverage.complete) {
+      synthesizedInsights.push(`Visual coverage incomplete: ${coverage.note}`);
+    }
+
     // Add fallback if empty
     if (synthesizedInsights.length === 0) {
       synthesizedInsights.push(
@@ -114,7 +130,9 @@ export class ExecutiveSummaryEngine {
 
     return {
       overallUXGrade,
-      overallScore: score,
+      overallScore: insufficient ? null : score,
+      evidenceStatus: insufficient ? 'insufficient' : 'sufficient',
+      visualCoverageNote: coverage && !coverage.complete ? coverage.note : undefined,
       onboardingFrictionLevel,
       discoverabilityRiskLevel,
       majorFrictionStepIndices,

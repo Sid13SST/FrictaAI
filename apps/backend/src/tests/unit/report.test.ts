@@ -105,6 +105,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
               uxFindings: [mockFinding],
               cognitiveSignals: [],
               visualFindings: [],
+              _count: { actions: 3, workflowScreenshots: 3 },
             };
           }
           return { projectId: 'project_123' };
@@ -142,6 +143,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
               uxFindings: [mockFinding],
               cognitiveSignals: [],
               visualFindings: [],
+              _count: { actions: 3, workflowScreenshots: 3 },
             };
           }
           return { projectId: 'project_123' };
@@ -171,6 +173,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
           status: 'FAILED',
           scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
           visualScores: [], uxFindings: [], cognitiveSignals: [], visualFindings: [],
+          _count: { actions: 3, workflowScreenshots: 3 },
         };
       });
       mockPrisma.project.findUnique.mockResolvedValue(mockProject);
@@ -200,6 +203,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
             { id: 'v1', workflowSessionId: 'workflow_123', screenshotId: null, findingType: 'weak_cta', severity: 'high', title: 't', description: 'd', boundingBoxes: [], metadata: {}, timestamp: new Date() },
             { id: 'v2', workflowSessionId: 'workflow_123', screenshotId: null, findingType: 'vision_summary', severity: 'low', title: 't', description: 'd', boundingBoxes: [], metadata: {}, timestamp: new Date() },
           ],
+          _count: { actions: 3, workflowScreenshots: 3 },
         };
       });
       mockPrisma.project.findUnique.mockResolvedValue(mockProject);
@@ -209,6 +213,58 @@ describe('Report Generation and Compilation Unit Tests', () => {
       const rep = await (await app.request('/workflow_123')).json();
       expect(rep.scores.overallScore).toBeLessThan(100);
       expect(rep.scores.basis.visualFindingsPenalty).toBe(5);
+    });
+  });
+
+  describe('insufficient evidence and visual coverage', () => {
+    function mockSession(overrides: any) {
+      mockPrisma.workflowSession.findUnique.mockImplementation(async (args: any) => {
+        if (args.where.id !== 'workflow_123') return null;
+        if (!args.include) return { projectId: 'project_123' };
+        return {
+          ...mockWorkflow, status: 'FAILED',
+          scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
+          visualScores: [], uxFindings: [], cognitiveSignals: [], visualFindings: [],
+          _count: { actions: 0, workflowScreenshots: 0 },
+          ...overrides,
+        };
+      });
+      mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+      mockPrisma.uXReport.findFirst.mockResolvedValue({ id: 'report_ie', score: 55 });
+      mockPrisma.personaProfile.findMany.mockResolvedValue([]);
+    }
+
+    it('a FAILED audit with 0 actions has null scores, no grade, and the list score is cleared', async () => {
+      mockSession({});
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.scores.overallScore).toBeNull();
+      expect(rep.evidence.status).toBe('insufficient');
+      const exec = await (await app.request('/workflow_123/executive')).json();
+      expect(exec.overallUXGrade).toBe('N/A');
+      expect(exec.overallScore).toBeNull();
+      expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_ie' }, data: { score: null } });
+      const exp = await (await app.request('/workflow_123/export')).json();
+      expect(exp.markdown).toContain('Not scored: insufficient evidence');
+      expect(exp.textSheet).toContain('NOT SCORED');
+    });
+
+    it('failed vision is reported as incomplete visual coverage', async () => {
+      mockSession({
+        status: 'COMPLETED',
+        _count: { actions: 3, workflowScreenshots: 3 },
+        visualScores: [{ overallScore: 90 }],
+        visualFindings: [
+          { id: 'u1', workflowSessionId: 'workflow_123', screenshotId: 's1', findingType: 'vision_unavailable', severity: 'info', title: 't', description: 'd', boundingBoxes: [], metadata: { status: 'failed', reason: 'rate_limited: HTTP 429' }, timestamp: new Date() },
+        ],
+      });
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.visualCoverage).toMatchObject({ status: 'failed', complete: false, visionUnavailable: 1 });
+      expect(rep.scores.overallScore).toBe(100); // a coverage note is not a defect
+      const exec = await (await app.request('/workflow_123/executive')).json();
+      expect(exec.visualCoverageNote).toMatch(/heuristics only/);
+      const exp = await (await app.request('/workflow_123/export')).json();
+      expect(exp.markdown).toContain('Visual coverage incomplete (failed)');
+      expect(exp.textSheet).toContain('Visual Coverage: INCOMPLETE (failed)');
     });
   });
 
@@ -224,6 +280,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
               uxFindings: [mockFinding],
               cognitiveSignals: [],
               visualFindings: [],
+              _count: { actions: 3, workflowScreenshots: 3 },
             };
           }
           return { projectId: 'project_123' };

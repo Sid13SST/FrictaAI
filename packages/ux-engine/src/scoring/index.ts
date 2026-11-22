@@ -62,16 +62,26 @@ export interface AuditScoreInput {
   outcome: AuditOutcome;
   uxFindings: Array<{ severity: string }>;
   visualFindings: Array<{ severity: string; findingType: string }>;
+  /**
+   * Number of actions the agent actually executed and recorded. 0 means the
+   * run produced no behavioural evidence (e.g. every LLM call was
+   * rate-limited), so there is nothing to grade.
+   */
+  actionCount: number;
 }
 
+export type AuditEvidence = 'sufficient' | 'insufficient';
+
 export interface AuditScore {
-  clarityScore: number;
-  efficiencyScore: number;
-  smoothnessScore: number;
-  overallScore: number;
+  /** All scores are null when evidence is 'insufficient'. */
+  clarityScore: number | null;
+  efficiencyScore: number | null;
+  smoothnessScore: number | null;
+  overallScore: number | null;
+  evidence: AuditEvidence;
   goalReached: boolean;
   breakdown: {
-    behaviouralOverall: number;
+    behaviouralOverall: number | null;
     uxFindingsPenalty: number;
     visualFindingsPenalty: number;
     outcomeCap: number | null;
@@ -85,7 +95,7 @@ const MAX_VISUAL_FINDINGS_PENALTY = 25;
 /** An audit whose goal was not reached cannot score above this (grade F band). */
 export const GOAL_NOT_REACHED_CAP = 55;
 /** Visual finding types that are commentary, not defects. */
-const NON_DEFECT_VISUAL_TYPES = new Set(['vision_summary']);
+const NON_DEFECT_VISUAL_TYPES = new Set(['vision_summary', 'vision_unavailable']);
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 const weighted = (c: number, e: number, s: number) => Math.round(c * 0.4 + e * 0.3 + s * 0.3);
@@ -99,8 +109,24 @@ const weighted = (c: number, e: number, s: number) => Math.round(c * 0.4 + e * 0
  *   - an audit that did not reach its goal is capped at GOAL_NOT_REACHED_CAP.
  * Missing behavioural data starts each pillar at 100; it is never a constant
  * 100 regardless of findings.
+ *
+ * A run with no recorded actions has no evidence: every score is null and
+ * evidence is 'insufficient'. (It used to get 55/F with "behavioural 100",
+ * i.e. a grade for an audit that never happened.)
  */
 export function scoreAudit(input: AuditScoreInput): AuditScore {
+  if (!input.actionCount || input.actionCount <= 0) {
+    return {
+      clarityScore: null,
+      efficiencyScore: null,
+      smoothnessScore: null,
+      overallScore: null,
+      evidence: 'insufficient',
+      goalReached: false,
+      breakdown: { behaviouralOverall: null, uxFindingsPenalty: 0, visualFindingsPenalty: 0, outcomeCap: null },
+    };
+  }
+
   const b = input.behavioural ?? { clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100 };
   const behaviouralOverall = weighted(b.clarityScore, b.efficiencyScore, b.smoothnessScore);
 
@@ -132,6 +158,7 @@ export function scoreAudit(input: AuditScoreInput): AuditScore {
     efficiencyScore,
     smoothnessScore,
     overallScore,
+    evidence: 'sufficient',
     goalReached,
     breakdown: { behaviouralOverall, uxFindingsPenalty, visualFindingsPenalty, outcomeCap },
   };

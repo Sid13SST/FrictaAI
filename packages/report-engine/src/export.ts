@@ -1,5 +1,8 @@
 import { UnifiedUXReportPayload, ExecutiveSummaryPayload } from './types';
 
+/** "72/100", or "n/a" when the audit could not be scored. */
+const outOf100 = (n: number | null | undefined) => (n === null || n === undefined ? 'n/a' : `${n}/100`);
+
 export class ExportEngine {
   /**
    * Formats the UX Report into a structured, executive-ready Markdown document.
@@ -22,11 +25,21 @@ export class ExportEngine {
     md += `## Executive Usability Assessment\n`;
     md += `| Metric | Value | Rating / Risk |\n`;
     md += `| :--- | :--- | :--- |\n`;
-    md += `| **Overall UX Score** | **${executive.overallScore}/100** | **Grade: ${executive.overallUXGrade}** |\n`;
-    md += `| **Onboarding Friction** | ${scores.onboardingScore}/100 | **${executive.onboardingFrictionLevel}** |\n`;
-    md += `| **Information Architecture (IA)** | ${scores.iaScore}/100 | - |\n`;
-    md += `| **Visual Clarity** | ${scores.clarityScore}/100 | **Discoverability Risk: ${executive.discoverabilityRiskLevel}** |\n`;
-    md += `| **Interaction Efficiency** | ${scores.efficiencyScore}/100 | - |\n\n`;
+    const insufficient = executive.evidenceStatus === 'insufficient';
+    md += insufficient
+      ? `| **Overall UX Score** | **Not scored: insufficient evidence** | **Grade: N/A** |\n`
+      : `| **Overall UX Score** | **${executive.overallScore}/100** | **Grade: ${executive.overallUXGrade}** |\n`;
+    md += `| **Onboarding Friction** | ${outOf100(scores.onboardingScore)} | **${executive.onboardingFrictionLevel}** |\n`;
+    md += `| **Information Architecture (IA)** | ${outOf100(scores.iaScore)} | - |\n`;
+    md += `| **Visual Clarity** | ${outOf100(scores.clarityScore)} | **Discoverability Risk: ${executive.discoverabilityRiskLevel}** |\n`;
+    md += `| **Interaction Efficiency** | ${outOf100(scores.efficiencyScore)} | - |\n\n`;
+
+    if (insufficient) {
+      md += `> [!CAUTION]\n> **Insufficient evidence.** ${report.evidence?.reason ?? 'The audit recorded no agent actions.'} This report is a failure record, not a UX assessment.\n\n`;
+    }
+    if (report.visualCoverage && !report.visualCoverage.complete) {
+      md += `> [!NOTE]\n> **Visual coverage incomplete (${report.visualCoverage.status}).** ${report.visualCoverage.note}\n\n`;
+    }
 
     md += `### Core Executive Insights\n`;
     executive.synthesizedInsights.forEach((insight, idx) => {
@@ -41,7 +54,9 @@ export class ExportEngine {
 
     md += `## Human-Centric UX Findings\n`;
     if (report.uxFindings.length === 0) {
-      md += `*No major behavioral UX issues detected.*\n\n`;
+      md += insufficient
+        ? `*No behavioural evidence: the audit recorded no agent actions.*\n\n`
+        : `*No major behavioral UX issues detected.*\n\n`;
     } else {
       const sortedFindings = [...report.uxFindings].sort((a, b) => {
         const priority: Record<string, number> = { 'CRITICAL': 1, 'HIGH': 2, 'MEDIUM': 3, 'LOW': 4 };
@@ -99,7 +114,12 @@ export class ExportEngine {
     text += `FRICTA UX REPORT SUMMARY SHEET\n`;
     text += `==================================================\n`;
     text += `Session ID: ${report.session.id}\n`;
-    text += `Overall Score: ${executive.overallScore}/100 (Grade: ${executive.overallUXGrade})\n`;
+    text += executive.evidenceStatus === 'insufficient'
+      ? `Overall Score: NOT SCORED - insufficient evidence (Grade: N/A)\n`
+      : `Overall Score: ${executive.overallScore}/100 (Grade: ${executive.overallUXGrade})\n`;
+    if (report.visualCoverage) {
+      text += `Visual Coverage: ${report.visualCoverage.complete ? 'complete' : `INCOMPLETE (${report.visualCoverage.status})`}\n`;
+    }
     text += `Onboarding Friction: ${executive.onboardingFrictionLevel}\n`;
     text += `Discoverability Risk: ${executive.discoverabilityRiskLevel}\n`;
     text += `Steps with Spikes: ${executive.majorFrictionStepIndices.join(', ') || 'None'}\n`;
@@ -111,7 +131,9 @@ export class ExportEngine {
     text += `--------------------------------------------------\n`;
     text += `TOP RECOMMENDATIONS:\n`;
     const highFindings = report.uxFindings.filter(f => f.severity === 'HIGH' || f.severity === 'CRITICAL');
-    if (highFindings.length === 0) {
+    if (executive.evidenceStatus === 'insufficient') {
+      text += `- Re-run the audit; it ended before the agent recorded any action.\n`;
+    } else if (highFindings.length === 0) {
       text += `- Maintain existing workflow routes.\n`;
     } else {
       highFindings.forEach(f => {

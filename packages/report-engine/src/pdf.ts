@@ -68,6 +68,7 @@ export class PDFRenderer {
   .grade-row { display: flex; align-items: center; gap: 20px; margin: 20px 0; padding: 16px; background: #f4f3ff; border-radius: 10px; }
   .grade-circle { width: 56px; height: 56px; border-radius: 50%; background: #7342e2; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; }
   .grade-score { font-size: 20px; font-weight: 700; }
+  .notice { border: 1px solid #f59e0b; background: #fffbeb; color: #78350f; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
   .table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; }
   .table th, .table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e4e4e7; font-size: 11px; }
   .table th { color: #71717a; text-transform: uppercase; font-size: 9px; letter-spacing: 0.04em; }
@@ -90,19 +91,25 @@ export class PDFRenderer {
   <div class="grade-row">
     <div class="grade-circle">${escapeHtml(executive.overallUXGrade)}</div>
     <div>
-      <div class="grade-score">${executive.overallScore}/100 Overall UX Score</div>
+      <div class="grade-score">${executive.evidenceStatus === 'insufficient' ? 'Not scored: insufficient evidence' : `${executive.overallScore}/100 Overall UX Score`}</div>
       <div class="muted">Onboarding friction: ${escapeHtml(executive.onboardingFrictionLevel)} · Discoverability risk: ${escapeHtml(executive.discoverabilityRiskLevel)}</div>
     </div>
   </div>
+  ${executive.evidenceStatus === 'insufficient'
+    ? `<p class="notice"><strong>Insufficient evidence.</strong> ${escapeHtml(report.evidence?.reason ?? 'The audit recorded no agent actions.')} This is a failure record, not a UX assessment.</p>`
+    : ''}
+  ${report.visualCoverage && !report.visualCoverage.complete
+    ? `<p class="notice"><strong>Visual coverage incomplete (${escapeHtml(report.visualCoverage.status)}).</strong> ${escapeHtml(report.visualCoverage.note)}</p>`
+    : ''}
 
   <h2>Severity Breakdown</h2>
   <table class="table">
     <thead><tr><th>Metric</th><th>Score</th></tr></thead>
     <tbody>
-      <tr><td>Onboarding</td><td>${scores.onboardingScore}/100</td></tr>
-      <tr><td>Clarity</td><td>${scores.clarityScore}/100</td></tr>
-      <tr><td>Information Architecture</td><td>${scores.iaScore}/100</td></tr>
-      <tr><td>Efficiency</td><td>${scores.efficiencyScore}/100</td></tr>
+      <tr><td>Onboarding</td><td>${scores.onboardingScore === null ? 'n/a' : `${scores.onboardingScore}/100`}</td></tr>
+      <tr><td>Clarity</td><td>${scores.clarityScore === null ? 'n/a' : `${scores.clarityScore}/100`}</td></tr>
+      <tr><td>Information Architecture</td><td>${scores.iaScore === null ? 'n/a' : `${scores.iaScore}/100`}</td></tr>
+      <tr><td>Efficiency</td><td>${scores.efficiencyScore === null ? 'n/a' : `${scores.efficiencyScore}/100`}</td></tr>
     </tbody>
   </table>
 

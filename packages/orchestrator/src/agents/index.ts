@@ -286,7 +286,12 @@ export class UXOrchestratorAgent extends BaseOrchestratedAgent {
     // "Run UX Diagnostics".
     const scored = await this.prisma.workflowSession.findUnique({
       where: { id: this.sessionId },
-      select: { status: true, uxFindings: { select: { severity: true } }, visualFindings: { select: { severity: true, findingType: true } } },
+      select: {
+        status: true,
+        uxFindings: { select: { severity: true } },
+        visualFindings: { select: { severity: true, findingType: true } },
+        _count: { select: { actions: true } },
+      },
     });
     if (scored) {
       const audit = scoreAudit({
@@ -294,6 +299,7 @@ export class UXOrchestratorAgent extends BaseOrchestratedAgent {
         outcome: scored.status,
         uxFindings: scored.uxFindings,
         visualFindings: scored.visualFindings,
+        actionCount: scored._count.actions,
       });
       await this.prisma.uXReport.updateMany({ where: { sessionId: this.sessionId }, data: { score: audit.overallScore } });
     }
