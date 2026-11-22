@@ -1,15 +1,33 @@
 # V1 finish — verification record
 
 Branch `fricta/v1-finish` (from `fricta/v1-frontend-completion` @ `489e803`).
-Run dates: 2026-11-22 (round 1 and round 2, same day), in a sandboxed cloud container with local PostgreSQL 16
-and Redis 7. **No live LLM was called.** No paid model or service was used, and
-no secret is in code, logs or commits.
+Run dates: 2026-11-22 (rounds 1–3, same day), in a sandboxed cloud container with local PostgreSQL 16
+and Redis 7. **No live LLM was called from inside this sandbox** (openrouter.ai
+is blocked here). The only real-provider evidence is the reviewer's own run
+outside the sandbox (§0). No paid model or service was used, and no secret is in
+code, logs or commits.
 
 Legend: **Verified** means exercised here and observed to work.
 **Stub-verified** means exercised for real, except that the LLM was the local
 stub. **Not verified** means not exercised; the reason is given.
 
 ---
+
+## 0. Real OpenRouter free-pool run (reviewer, outside this sandbox)
+
+Run by the reviewer against branch head `150bc79`, real OpenRouter free pool.
+Reported results, not reproduced here:
+
+| Model | Result |
+|---|---|
+| `google/gemma-4-31b-it:free` (agent + vision) | **FAIL.** The audit FAILED at step 2: all three planner attempts (1 s / 2 s backoff) got HTTP 429 (upstream rate limit). Vision calls also got 429. |
+| `openrouter/free` | **PASS** for the agent: audit COMPLETED in 3 steps (click "Pricing", `goal_complete`). **Partial** for vision: some calls returned 429 or an empty response. |
+
+Round 3 responds to this (bugs 18–22 in §2, rows "Rate limits", "Insufficient evidence" and "Vision 429 / empty"). **The round-3 code has not been re-run against
+the real provider.** Whether `google/gemma-4-31b-it:free` now completes under
+real rate limits (5 attempts honouring `Retry-After` / `X-RateLimit-Reset`,
+then one fallback to `openrouter/free`) is unproven until the reviewer re-runs
+it.
 
 ## 1. Provider config: free models only by default
 
@@ -38,8 +56,9 @@ Clerk part uses networkless mode: `CLERK_JWT_KEY` is a throwaway PEM generated
 per run, and tokens are signed with its private key. No middleware is mocked.
 
 Run: `npm run test:e2e:stub --workspace=@fricta/backend`
-Result: round 1 **42/42**; round 2 **75/75 checks passed** (the 42 plus 33 new
-ones). Full list from the final run: `e2e-stub-results.json`.
+Result: round 1 **42/42**; round 2 **75/75**; round 3 **83/83 checks passed**
+(8 new rate-limit / evidence / coverage checks). Full list from the final run:
+`e2e-stub-results.json`.
 
 | Step | Against the stub | Still needs a real LLM to trust |
 |---|---|---|
@@ -56,6 +75,9 @@ ones). Full list from the final run: `e2e-stub-results.json`.
 | Executive report → `/api/reports/exports*`: queue PDF, list, complete, download | Stub-verified (round 2): real `%PDF-` download, ~62 KB; `SNAPSHOT` (not implemented) ends FAILED with "not yet implemented"; other users get 403 on list, create and download | Only PDF is implemented; PRESENTATION / SNAPSHOT / CSV / ZIP are not |
 | Sharing: create, list, anonymous open (`GET /api/shared/:token`), unknown / revoked / expired / max-uses tokens, cross-user create, list and revoke | Verified (round 2) | — |
 | `dead_end` terminal signal → `LOOP_DETECTED` | Stub-verified (round 2): on a page with no links, buttons or inputs the stub sends `dead_end`; the run ends `LOOP_DETECTED` (actions `scroll`, `wait:dead_end`) and is graded F | Whether a real model emits `dead_end` when appropriate |
+| Rate limits (round 3): planner always 429 | Stub-verified: each planner call attempted 5× (15 stub 429s over 3 steps, `Retry-After: 0` honoured), run FAILED with 0 actions, report not scored (below) | Real 429 bursts, real `Retry-After` values, and the `openrouter/free` fallback (the stub is not OpenRouter, so fallback is covered only by fake-fetch unit tests) |
+| Insufficient evidence (round 3): FAILED with 0 actions | Stub-verified: report `scores.overallScore = null`, `evidence.status = insufficient`, executive grade `N/A`, reports list score `null`, Markdown "Not scored: insufficient evidence", PM summary "NOT SCORED", PDF renders | — |
+| Vision 429 / empty (round 3) | Stub-verified: 5 attempts per screenshot, `vision_unavailable` markers with the reason, `visualCoverage.complete = false` (status `failed`) in the report, executive summary, Markdown and PM summary; no vision summary presented as a clean result; coverage returns to `full` when the stub answers again | Real-model vision quality and real empty-response rates |
 | Concurrency: two audits launched at once, two backend/worker processes on the same Postgres + Redis | Stub-verified (round 2): each job ran on exactly one worker (one per process in the final run), both COMPLETED, screenshots and actions stayed on each audit's own site (`/alpha` vs `/beta`), exactly one report each, queue empty afterwards | Only 2 audits × 2 workers, once per run. Not a load test, not worker crash/stall recovery |
 | Cross-user isolation on 13 session-scoped routes + SSE + historical | Verified | — |
 
@@ -88,6 +110,14 @@ Round 2:
 15. **Share links couldn't be opened anonymously.** The only resolver required auth and returned the creator's user id and the recipient email. The new public `GET /api/shared/:token` returns just the shared report and its expiry.
 16. **Persona panel invented a second score.** "Overall Score 89" came from hard-coded per-persona constants. It now projects the audit score: Standard is the audit score itself; other personas subtract only findings tagged for them (frontend unit-tested).
 17. **Reports list showed stale scores.** The orchestrator ("Run UX Diagnostics") and report generation wrote the raw behavioural score back to `UXReport.score`, so the list said 100 while the report said 90. All writers now store the audit score, and visual/UX analysis refreshes it.
+
+Round 3:
+
+18. **Rate limits killed real audits** (the reviewer's run, §0): 3 attempts at 1 s / 2 s, no server-hint handling, no fallback, empty vision responses not retried, and vision gave up after one attempt with an 8 s timeout. Now a shared policy: honour `Retry-After` / `X-RateLimit-Reset`, else full-jitter exponential backoff, 5 attempts, ≤20 s per wait, 120 s budget. Then one fallback to `openrouter/free` on 429, empty content, 404 or a paid model's 402: never a paid id, OpenRouter only. Step timeout raised 60 s → 180 s so the budget fits.
+19. **Failed vision looked like a successful pass.** It was stored as a `vision_summary` ("AI Visual Analysis Fallback") with `aiUsed = true` and cached, so it was never retried. Now it's a `vision_unavailable` info marker, not cached, not counted as a defect.
+20. **A 0-action FAILED audit was graded 55/F** ("behavioural 100"). It's now unscored, with null scores and an "insufficient evidence" label in the report, exports, PDF, reports list and UI. `UXReport.score` is nullable (migration `20261122140000_uxreport_score_nullable`).
+21. **The reports list used different grade bands** (A ≥ 80) from the report (A ≥ 90). Unified.
+22. **The stored report summary contradicted the grade** ("Workflow completed with 0 actions … Overall UX is excellent"). It now states only what was recorded.
 
 ## 3. Landing/auth video and Clerk fallback
 - **Mux video:** the auth-shell background streamed `stream.mux.com/…m3u8` (reported 403). This sandbox can't reach Mux at all, so the 403 itself was not reproduced here. Replaced with the bundled, previously unused `Video_Fricta.mp4`, and `hls.js` removed. The landing page already used a bundled MP4. **Verified:** the video renders as the auth background (local probe screenshot).
@@ -131,19 +161,20 @@ the likely cause and a reload button. Verified in the second probe attempt.
 | `npm ci` | passes (after removing the browser-download postinstall) |
 | `npx turbo run build` (45 packages incl. frontend) | **pass** |
 | `npm run typecheck` (backend + frontend) | **pass** |
-| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 after round 1 → 2,583 after round 2 (+15 `any` casts in new backend code: Prisma tx and coordinator wiring) |
-| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76** (7 new `scoreAudit` tests, 2 new grade tests in `report.test.ts`) |
-| Backend integration (`vitest --config vitest.integration.config.ts`, real `fricta_test` DB) | **31/31 pass** (both rounds) |
-| `npm run test:security` | **8/8 + 19/19 pass** (both rounds) |
-| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75** |
-| Frontend unit (`npm test -w @fricta/frontend`, new in round 2) | **4/4 pass** (persona projection) |
+| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 (round 1) → 2,583 (round 2) → 2,593 (round 3; new `any` casts in test mocks and Prisma wiring) |
+| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76**; round 3 **106/106** (22 fake-fetch retry/fallback/vision tests, insufficient-evidence and coverage tests) |
+| Backend integration (`vitest --config vitest.integration.config.ts`, real `fricta_test` DB) | **31/31 pass** (all rounds) |
+| `npm run test:security` | **8/8 + 19/19 pass** (all rounds) |
+| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75**; round 3 **83/83** |
+| Frontend unit (`npm test -w @fricta/frontend`, new in round 2) | Round 2 **4/4**; round 3 **7/7** (grade bands, unscored projection) |
 
 ## 6. Screenshots (390 / 768 / 1440)
 `screenshots/<width>/`: `landing`, `dashboard`, `new-audit`, `audit-monitor`,
 `report` (UX Findings tab), `report-replay` (Timeline Replay tab),
 `report-dead-end`, and (round 2) `report-dead-end-persona` (Power
-Administrator selected). 24 images, all re-shot in round 2 from a fresh run;
-`layout-report.json` has per-shot overflow measurements.
+Administrator selected), and (round 3) `reports` (the reports list) and
+`report-insufficient-evidence`. 30 images, all re-shot in round 3 from a fresh
+run; `layout-report.json` has per-shot overflow measurements.
 
 How they were made: the dev-only harness in **live-API mode**
 (`FIXTURES_API_TARGET`) proxied `/api` to the real backend left running by
@@ -152,6 +183,15 @@ written by the stub-driven audits above, and the replay frames are the agent's
 real screenshots of the local target site. **Clerk is mocked** (no real session
 is possible here; see §4), so the user shows as "Fixture User". The amber badge
 on every shot says "Live API · stub LLM · Clerk mocked".
+
+Round 3 inspection: automated overflow check, 0 of 30 flagged. Visual review
+of the insufficient-evidence report (1440) shows the amber "Not scored:
+insufficient evidence" banner, grade N/A, "Not scored", n/a pillars, and the
+persona panel with no projection. The reports list (1440 and 390) shows the
+unscored audit as a dashed ring with one "Not scored" badge and an n/a bar.
+Two defects were found and fixed before the final shots: a duplicated "NOT
+SCORED" badge, and a summary reading "Overall UX is excellent" for the failed
+0-action run.
 
 Round 2 inspection: automated overflow check, 0 of 24 flagged. Visual review
 of the report pages at 1440, 768 and 390: the dead-end report shows grade F
@@ -168,7 +208,9 @@ heatmap overflow, broken replay images), both fixed before the final run. On
 phones the Timeline Replay tab intentionally shows a "best on desktop" notice.
 
 ## Remaining gaps (honest list)
-- **No live LLM call has ever been made.** Unknowns: free-model JSON reliability, latency against the 150-token cap and step timeouts, OpenRouter free-tier rate limits, vision quality, and whether `google/gemma-4-31b-it:free` is still listed when the key arrives.
+- **No live LLM call has been made from inside this sandbox.** The reviewer's real run (§0, on `150bc79`) showed `google/gemma-4-31b-it:free` failing on 429s and `openrouter/free` completing the agent flow with partial vision. The round-3 retry/fallback changes are verified only with fake fetch and the stub; they are **unproven against the real provider** until re-run. Still unknown: free-model JSON reliability, latency against the 150-token cap and the new 180 s step timeout, real free-tier rate-limit behaviour over a full audit, and vision quality.
+- **Concurrency under a real LLM is unproven.** Two parallel audits against the shared free pool will compete for the same rate limit; only stub concurrency was tested.
+- The default model is unchanged (`google/gemma-4-31b-it:free`) as instructed, even though the reviewer's run suggests `openrouter/free` is currently more reliable. With round 3, a rate-limited primary falls back to `openrouter/free` automatically.
 - **Real-Clerk sign-up not verified** (blocked hosts; see §4). Real sign-in was verified in an earlier session, not in this one.
 - Mux 403 not reproduced here (Mux unreachable), only removed.
 - ~~The report page shows two different scores~~. **Fixed in round 2** (bugs 13, 16, 17). Caveat: the penalty weights (−5/−10/−15 per UX finding, −1…−8 per visual finding, F-cap 55) are product judgement, not calibrated against real users or a real model's findings.

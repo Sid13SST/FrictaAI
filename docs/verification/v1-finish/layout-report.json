@@ -70,6 +70,26 @@
     "errors": []
   },
   {
+    "name": "reports",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-insufficient-evidence",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
     "name": "report-dead-end-persona",
     "width": 390,
     "imageWidth": 390,
@@ -150,6 +170,26 @@
     "errors": []
   },
   {
+    "name": "reports",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-insufficient-evidence",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
     "name": "report-dead-end-persona",
     "width": 768,
     "imageWidth": 768,
@@ -221,6 +261,26 @@
   },
   {
     "name": "report-dead-end",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "reports",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-insufficient-evidence",
     "width": 1440,
     "imageWidth": 1440,
     "viewport": 1440,
