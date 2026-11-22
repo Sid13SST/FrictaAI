@@ -60,6 +60,15 @@ alternatives if not. Exit codes: 0 ok, 1 changed, 2 unreachable. The backend
 also prints the active models and this hint at startup. Free variants are
 rate-limited by OpenRouter.
 
+**Rate limits.** Free models often answer HTTP 429 in bursts, or return empty
+content. Agent and vision calls retry up to 5 times, waiting as long as the
+server asks (`Retry-After` / `X-RateLimit-Reset`) or with jittered
+exponential backoff, at most 20 s per wait and 120 s per call. They then fall
+back once to `openrouter/free` (OpenRouter's free-only router; never a paid
+model). An audit that still records no actions is reported as **not scored
+(insufficient evidence)**, not given a grade. When vision fails or is skipped,
+the report marks visual coverage as incomplete.
+
 ### Optional
 - `CLERK_JWT_KEY`: Clerk JWT public key (PEM). The backend then verifies
   session tokens locally instead of fetching JWKS.
