@@ -205,6 +205,30 @@ describe('UX Findings and Intelligence Unit Tests', () => {
       expect(mockPrisma.workflowSession.update).toHaveBeenCalled();
     });
 
+    it('zero recorded actions: no cognitive signals or findings are invented', async () => {
+      mockPrisma.workflowSession.findUnique.mockResolvedValue({
+        ...mockWorkflow, actions: [], thoughts: [], interactions: [],
+        workflowScreenshots: [{ id: 's1', stepIndex: 1, pageUrl: 'https://x', metadata: '{}' }],
+      });
+      mockPrisma.personaProfile.count.mockResolvedValue(1);
+      mockPrisma.uXFinding.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.cognitiveSignal.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.uXFinding.findMany.mockResolvedValue([]);
+      mockPrisma.cognitiveSignal.findMany.mockResolvedValue([]);
+      mockPrisma.workflowSession.update.mockResolvedValue(mockWorkflow);
+
+      const res = await app.request('/analyze/workflow_123', { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.evidence).toBe('insufficient');
+      expect(json.findings).toEqual([]);
+      expect(json.cognitiveSignals).toEqual([]);
+      expect(mockPrisma.cognitiveSignal.createMany).not.toHaveBeenCalled();
+      expect(mockPrisma.uXFinding.createMany).not.toHaveBeenCalled();
+      // stale rows from an earlier analysis are cleared
+      expect(mockPrisma.cognitiveSignal.deleteMany).toHaveBeenCalled();
+    });
+
     it('should return 404 (and not touch the session) if the session is not found', async () => {
       mockPrisma.workflowSession.findUnique.mockResolvedValue(null);
 

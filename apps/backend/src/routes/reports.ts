@@ -345,7 +345,10 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
     },
     evidence,
     visualCoverage,
-    uxFindings: session.uxFindings.map(f => ({
+    // Zero-evidence report: behavioural findings/signals have no provenance
+    // (no recorded actions), so none are reported even if stale rows exist.
+    // Visual findings stay: they are observations of recorded screenshots.
+    uxFindings: (insufficient ? [] : session.uxFindings).map(f => ({
       id: f.id,
       workflowSessionId: f.workflowSessionId,
       findingType: f.findingType,
@@ -357,7 +360,7 @@ async function compileUnifiedReport(sessionId: string): Promise<UnifiedUXReportP
       recommendation: f.recommendation,
       timestamp: f.timestamp
     })),
-    cognitiveSignals: session.cognitiveSignals.map(s => ({
+    cognitiveSignals: (insufficient ? [] : session.cognitiveSignals).map(s => ({
       id: s.id,
       workflowSessionId: s.workflowSessionId,
       signalType: s.signalType,

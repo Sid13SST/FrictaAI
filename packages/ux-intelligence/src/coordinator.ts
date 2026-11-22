@@ -94,10 +94,15 @@ export class UXIntelligenceCoordinator {
     // 3. Seed persona profiles in the database if they do not exist
     await this.ensurePersonasSeeded();
 
-    // 4. Run Analysis Layers
-    const behavioralSignals = BehavioralAnalyzer.analyze(activityData);
-    const cognitiveSignals = CognitiveEngine.calculate(activityData, behavioralSignals);
-    const personaFindings = PersonaEngine.run(activityData, behavioralSignals);
+    // 4. Run Analysis Layers — only when there is behavioural evidence.
+    // With zero recorded actions the engines still emitted default
+    // "measurements" (e.g. cognitive overload 10%, decision fatigue 27%),
+    // which read as real diagnostics on a failed audit. No actions → no
+    // behavioural signals or findings (stale ones are cleared below).
+    const hasEvidence = actions.length > 0;
+    const behavioralSignals = hasEvidence ? BehavioralAnalyzer.analyze(activityData) : [];
+    const cognitiveSignals = hasEvidence ? CognitiveEngine.calculate(activityData, behavioralSignals) : [];
+    const personaFindings = hasEvidence ? PersonaEngine.run(activityData, behavioralSignals) : [];
 
     // If there are no findings, add a default informative finding if steps were high
     if (personaFindings.length === 0 && actions.length > 5) {
@@ -187,7 +192,8 @@ export class UXIntelligenceCoordinator {
     return {
       ...compiledReport,
       findings: persistedFindings as any,
-      cognitiveSignals: persistedSignals as any
+      cognitiveSignals: persistedSignals as any,
+      evidence: hasEvidence ? 'sufficient' : 'insufficient',
     };
   }
 

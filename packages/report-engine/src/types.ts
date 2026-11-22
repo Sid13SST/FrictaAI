@@ -34,6 +34,9 @@ export interface VisualCoverage {
   note: string;
 }
 
+/** Shown instead of any behavioural value on a zero-evidence report. */
+export const NO_EVIDENCE_LABEL = 'Unavailable: no evidence';
+
 export interface AuditEvidenceInfo {
   status: 'sufficient' | 'insufficient';
   /** Set when insufficient; shown wherever a score would be. */
@@ -72,7 +75,7 @@ export interface ExecutiveSummaryPayload {
   overallScore: number | null;
   evidenceStatus: 'sufficient' | 'insufficient';
   onboardingFrictionLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
-  discoverabilityRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  discoverabilityRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'UNKNOWN';
   majorFrictionStepIndices: number[];
   synthesizedInsights: string[];
   visualCoverageNote?: string;

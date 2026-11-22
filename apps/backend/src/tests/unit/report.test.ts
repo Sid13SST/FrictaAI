@@ -248,6 +248,18 @@ describe('Report Generation and Compilation Unit Tests', () => {
       expect(exp.textSheet).toContain('NOT SCORED');
     });
 
+    it('stale behavioural findings/signals are not reported on a zero-evidence audit', async () => {
+      mockSession({
+        uxFindings: [{ id: 'f1', workflowSessionId: 'workflow_123', findingType: 'COMPLEXITY', severity: 'LOW', personaType: 'STANDARD', title: 'stale', description: 'd', evidence: 'e', recommendation: 'r', timestamp: new Date() }],
+        cognitiveSignals: [{ id: 'c1', workflowSessionId: 'workflow_123', signalType: 'COGNITIVE_OVERLOAD', intensity: 0.1, metadata: {}, timestamp: new Date() }],
+      });
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.uxFindings).toEqual([]);
+      expect(rep.cognitiveSignals).toEqual([]);
+      const exp = await (await app.request('/workflow_123/export')).json();
+      expect(JSON.parse(exp.developerJson).availability.cognitiveSignals).toBe('Unavailable: no evidence');
+    });
+
     it('failed vision is reported as incomplete visual coverage', async () => {
       mockSession({
         status: 'COMPLETED',

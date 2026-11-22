@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { scoreAudit, calculateScores, GOAL_NOT_REACHED_CAP } from '@fricta/ux-engine';
-import { ExecutiveSummaryEngine, ExportEngine, computeVisualCoverage } from '@fricta/report-engine';
+import { ExecutiveSummaryEngine, ExportEngine, PDFRenderer, computeVisualCoverage, NO_EVIDENCE_LABEL } from '@fricta/report-engine';
 
 const perfect = { clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100 };
 
@@ -122,6 +122,59 @@ describe('insufficient evidence in the executive summary and exports', () => {
     expect(md).toContain('Insufficient evidence.');
     expect(pm).toContain('NOT SCORED - insufficient evidence (Grade: N/A)');
     expect(md + pm).not.toMatch(/null\/100|undefined\/100/);
+  });
+});
+
+describe('zero-evidence report: no diagnostic values anywhere in the exports', () => {
+  const payload: any = {
+    session: { id: 'sess-0', goal: 'Find pricing', persona: null, startedAt: new Date(), endedAt: new Date(), stepCount: 3, status: 'FAILED' },
+    scores: { clarityScore: null, onboardingScore: null, iaScore: null, efficiencyScore: null, overallScore: null },
+    evidence: { status: 'insufficient', reason: 'no actions' },
+    visualCoverage: computeVisualCoverage({ screenshots: 0, analyzed: false, visualFindings: [] }),
+    uxFindings: [], cognitiveSignals: [], visualFindings: [],
+    personaProfiles: [{ name: 'Beginner User', description: 'd', traits: { guidanceDependency: 'high', patience: 'low', comfortWithIA: 'low' }, behaviorModifiers: { idleHesitationThresholdMs: 1, maxActionCyclesAllowed: 1, excessiveStepsThreshold: 1 } }],
+  };
+  const exec = ExecutiveSummaryEngine.synthesize(payload);
+
+  it('executive summary: risk levels UNKNOWN, no friction steps', () => {
+    expect(exec.discoverabilityRiskLevel).toBe('UNKNOWN');
+    expect(exec.onboardingFrictionLevel).toBe('UNKNOWN');
+    expect(exec.majorFrictionStepIndices).toEqual([]);
+  });
+
+  it('Markdown: findings and persona projections say unavailable, no persona table, no "LOW" risk', () => {
+    const md = ExportEngine.toMarkdown(payload, exec);
+    expect(md).toContain(`*${NO_EVIDENCE_LABEL} (the audit recorded no agent actions).*`);
+    expect(md).toMatch(/Simulated Persona Performance Projections\n\*Unavailable: no evidence\.\*/);
+    expect(md).not.toContain('| **Beginner User** |');
+    expect(md).not.toMatch(/Discoverability Risk: LOW/);
+    expect(md).not.toMatch(/No major behavioral UX issues detected/);
+  });
+
+  it('PM summary: spikes unavailable, no "maintain routes" advice', () => {
+    const pm = ExportEngine.toTextSheet(payload, exec);
+    expect(pm).toContain(`Steps with Spikes: ${NO_EVIDENCE_LABEL}`);
+    expect(pm).toContain('Discoverability Risk: UNKNOWN');
+    expect(pm).not.toContain('Maintain existing workflow routes');
+  });
+
+  it('JSON: explicit availability block so empty arrays are not read as "no issues"', () => {
+    const json = JSON.parse(ExportEngine.toDeveloperJson(payload, exec));
+    expect(json.availability).toEqual({ behaviouralAnalysis: NO_EVIDENCE_LABEL, cognitiveSignals: NO_EVIDENCE_LABEL, personaProjections: NO_EVIDENCE_LABEL, uxFindings: NO_EVIDENCE_LABEL });
+  });
+
+  it('PDF: findings and personas unavailable, no persona table, no positive empty state', () => {
+    const html = PDFRenderer.renderHTML(payload, exec);
+    expect(html).toContain(`${NO_EVIDENCE_LABEL} (the audit recorded no agent actions).`);
+    expect(html).not.toContain('No major behavioral UX issues detected');
+    expect(html).not.toContain('<td>Beginner User</td>');
+  });
+
+  it('with evidence, the same exports still show real values', () => {
+    const ok: any = { ...payload, evidence: { status: 'sufficient' }, scores: { clarityScore: 90, onboardingScore: 90, iaScore: 90, efficiencyScore: 90, overallScore: 90 } };
+    const e = ExecutiveSummaryEngine.synthesize(ok);
+    expect(JSON.parse(ExportEngine.toDeveloperJson(ok, e)).availability.uxFindings).toBe('available');
+    expect(ExportEngine.toMarkdown(ok, e)).toContain('| **Beginner User** |');
   });
 });
 

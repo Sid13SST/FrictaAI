@@ -1,4 +1,4 @@
-import { UnifiedUXReportPayload, ExecutiveSummaryPayload } from './types';
+import { UnifiedUXReportPayload, ExecutiveSummaryPayload, NO_EVIDENCE_LABEL } from './types';
 
 /** "72/100", or "n/a" when the audit could not be scored. */
 const outOf100 = (n: number | null | undefined) => (n === null || n === undefined ? 'n/a' : `${n}/100`);
@@ -55,7 +55,7 @@ export class ExportEngine {
     md += `## Human-Centric UX Findings\n`;
     if (report.uxFindings.length === 0) {
       md += insufficient
-        ? `*No behavioural evidence: the audit recorded no agent actions.*\n\n`
+        ? `*${NO_EVIDENCE_LABEL} (the audit recorded no agent actions).*\n\n`
         : `*No major behavioral UX issues detected.*\n\n`;
     } else {
       const sortedFindings = [...report.uxFindings].sort((a, b) => {
@@ -74,6 +74,9 @@ export class ExportEngine {
     }
 
     md += `## Visual & Discoverability Findings\n`;
+    if (insufficient && report.visualFindings.length > 0) {
+      md += `*Layout observations from the screenshots that were recorded before the audit failed. Not a UX assessment.*\n\n`;
+    }
     if (report.visualFindings.length === 0) {
       md += `*No major visual anomalies detected.*\n\n`;
     } else {
@@ -92,7 +95,9 @@ export class ExportEngine {
     }
 
     md += `## Simulated Persona Performance Projections\n`;
-    if (report.personaProfiles.length === 0) {
+    if (insufficient) {
+      md += `*${NO_EVIDENCE_LABEL}.*\n`;
+    } else if (report.personaProfiles.length === 0) {
       md += `*No persona profiles simulated.*\n`;
     } else {
       md += `| Persona Name | Guidance Dependency | Patience | Comfort with IA | Idle Hesitation Limit | Action Cycles Limit | Max Steps Limit |\n`;
@@ -122,7 +127,7 @@ export class ExportEngine {
     }
     text += `Onboarding Friction: ${executive.onboardingFrictionLevel}\n`;
     text += `Discoverability Risk: ${executive.discoverabilityRiskLevel}\n`;
-    text += `Steps with Spikes: ${executive.majorFrictionStepIndices.join(', ') || 'None'}\n`;
+    text += `Steps with Spikes: ${executive.evidenceStatus === 'insufficient' ? NO_EVIDENCE_LABEL : (executive.majorFrictionStepIndices.join(', ') || 'None')}\n`;
     text += `--------------------------------------------------\n`;
     text += `PM INSIGHTS:\n`;
     executive.synthesizedInsights.forEach((ins, idx) => {
@@ -154,6 +159,10 @@ export class ExportEngine {
         timestamp: new Date().toISOString()
       },
       assessment: executive,
+      // Explicit availability so consumers do not read empty arrays as "no issues".
+      availability: executive.evidenceStatus === 'insufficient'
+        ? { behaviouralAnalysis: NO_EVIDENCE_LABEL, cognitiveSignals: NO_EVIDENCE_LABEL, personaProjections: NO_EVIDENCE_LABEL, uxFindings: NO_EVIDENCE_LABEL }
+        : { behaviouralAnalysis: 'available', cognitiveSignals: 'available', personaProjections: 'available', uxFindings: 'available' },
       data: report
     }, null, 2);
   }

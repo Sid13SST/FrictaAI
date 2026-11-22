@@ -114,4 +114,6 @@ export interface UXReportPayload {
   findings: UXFindingData[];
   cognitiveSignals: CognitiveSignalData[];
   personaProfiles: PersonaProfileData[];
+  /** 'insufficient' when the session recorded no actions: findings and signals are empty by design. */
+  evidence?: 'sufficient' | 'insufficient';
 }

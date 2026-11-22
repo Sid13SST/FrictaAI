@@ -30,7 +30,7 @@ export class ExecutiveSummaryEngine {
                        report.uxFindings.some(f => f.findingType === 'CTA_AMBIGUITY');
     const discoverabilityIntensity = report.cognitiveSignals.find(s => s.signalType === 'DISCOVERABILITY_FRICTION')?.intensity || 0;
     
-    let discoverabilityRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
+    let discoverabilityRiskLevel: ExecutiveSummaryPayload['discoverabilityRiskLevel'] = 'LOW';
     if (discoverabilityIntensity > 0.7 || (hasWeakCTA && discoverabilityIntensity > 0.5)) {
       discoverabilityRiskLevel = 'CRITICAL';
     } else if (discoverabilityIntensity > 0.4 || hasWeakCTA) {
@@ -67,6 +67,13 @@ export class ExecutiveSummaryEngine {
 
     // Sort step indices chronologically
     majorFrictionStepIndices.sort((a, b) => a - b);
+
+    // Without evidence these are not measurements: say so instead of "LOW".
+    if (insufficient) {
+      discoverabilityRiskLevel = 'UNKNOWN';
+      onboardingFrictionLevel = 'UNKNOWN';
+      majorFrictionStepIndices.length = 0;
+    }
 
     // 4. Synthesize Cross-Analysis Global Insights
     const synthesizedInsights: string[] = [];

@@ -1,4 +1,4 @@
-import { UnifiedUXReportPayload, ExecutiveSummaryPayload } from './types';
+import { UnifiedUXReportPayload, ExecutiveSummaryPayload, NO_EVIDENCE_LABEL } from './types';
 
 function escapeHtml(input: unknown): string {
   const s = String(input ?? '');
@@ -32,7 +32,10 @@ export class PDFRenderer {
       return (priority[a.severity] || 5) - (priority[b.severity] || 5);
     });
 
-    const findingsHtml = sortedFindings.length === 0
+    const noEvidence = executive.evidenceStatus === 'insufficient';
+    const findingsHtml = noEvidence
+      ? `<p class="muted">${NO_EVIDENCE_LABEL} (the audit recorded no agent actions).</p>`
+      : sortedFindings.length === 0
       ? '<p class="muted">No major behavioral UX issues detected.</p>'
       : sortedFindings.map((f, idx) => `
         <div class="finding" style="border-left-color:${SEVERITY_COLORS[f.severity] || '#7342e2'}">
@@ -48,7 +51,9 @@ export class PDFRenderer {
 
     const insightsHtml = executive.synthesizedInsights.map((i) => `<li>${escapeHtml(i)}</li>`).join('');
 
-    const personasHtml = report.personaProfiles.length === 0
+    const personasHtml = noEvidence
+      ? `<p class="muted">${NO_EVIDENCE_LABEL}.</p>`
+      : report.personaProfiles.length === 0
       ? '<p class="muted">No persona profiles simulated.</p>'
       : `<table class="table"><thead><tr><th>Persona</th><th>Guidance Dependency</th><th>Patience</th><th>Comfort w/ IA</th></tr></thead><tbody>${
           report.personaProfiles.map((p) => `<tr><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.traits.guidanceDependency)}</td><td>${escapeHtml(p.traits.patience)}</td><td>${escapeHtml(p.traits.comfortWithIA)}</td></tr>`).join('')
