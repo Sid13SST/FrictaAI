@@ -175,7 +175,7 @@ Please review the visual presentation and provide deep structural insights on ov
         if (visionResult) {
           aiUsed = true;
 
-          if (visionResult.rawResponse) {
+          if (visionResult.status === 'ok') {
             // Map AI annotated boxes into visual observations
             if (visionResult.annotatedBoxes && visionResult.annotatedBoxes.length > 0) {
               visionResult.annotatedBoxes.forEach((box: any, index: number) => {
@@ -208,15 +208,20 @@ Please review the visual presentation and provide deep structural insights on ov
               metadata: { explanation: visionResult.explanation }
             });
           } else {
-            // Cache the fallback/skipped analysis to avoid repeatedly hitting failing API calls
+            // Vision failed (429s, empty responses, timeouts…) or was skipped.
+            // Record that explicitly so the report can say visual coverage is
+            // incomplete. This used to be stored as a 'vision_summary' titled
+            // "AI Visual Analysis Fallback", which read as a successful vision
+            // pass and was cached, so the screenshot was never retried.
+            aiUsed = false;
             findings.push({
               screenshotId,
-              findingType: 'vision_summary',
-              severity: 'low',
-              title: 'AI Visual Analysis Fallback',
-              description: visionResult.clarityFeedback,
+              findingType: 'vision_unavailable',
+              severity: 'info',
+              title: visionResult.status === 'skipped' ? 'AI vision skipped for this screenshot' : 'AI vision unavailable for this screenshot',
+              description: `Visual review of this step used layout heuristics only (${visionResult.status}: ${visionResult.reason ?? 'unknown'}).`,
               boundingBoxes: [],
-              metadata: { explanation: visionResult.explanation, failed: true }
+              metadata: { status: visionResult.status, reason: visionResult.reason ?? null }
             });
           }
         }

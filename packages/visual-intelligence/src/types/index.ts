@@ -22,7 +22,8 @@ export interface LayoutRegion {
 export interface VisualObservation {
   screenshotId: string;
   findingType: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  /** 'info' marks coverage notes (e.g. vision_unavailable), never defects. */
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   title: string;
   description: string;
   boundingBoxes: Array<{ x: number; y: number; w: number; h: number; label: string }>;

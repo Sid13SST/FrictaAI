@@ -12,6 +12,8 @@ export class VisualScoringEngine {
 
     // Process observations and deduct points based on finding type and severity
     observations.forEach(obs => {
+      // Coverage notes are not defects and must not lower the score.
+      if (obs.severity === 'info') return;
       const deductionMap: Record<string, number> = {
         critical: 25,
         high: 15,
