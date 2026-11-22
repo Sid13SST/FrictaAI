@@ -1,25 +1,25 @@
 {
   "llm": "local-stub (not a live LLM)",
-  "at": "2026-11-22T15:29:20.464Z",
-  "projectId": "c85569b6-ec90-4f2c-87d9-40cb6ebba499",
-  "sessionId": "51a6279e-7135-4dce-b532-5d030e32c15d",
-  "deadEndSessionId": "cb7b43bd-493d-4126-866c-cabd721d3f04",
-  "noExitSessionId": "9fd532c0-268b-4c92-b9c0-08b5e8c437a0",
-  "insufficientEvidenceSessionId": "2f15ca8c-21cf-4d4a-8cc2-9b508c542b10",
+  "at": "2026-11-22T15:47:22.305Z",
+  "projectId": "9444c8a2-bfc5-443a-8a05-0344beeeb26a",
+  "sessionId": "5151a26b-3625-4d27-8249-1fa1be033604",
+  "deadEndSessionId": "e2b767d1-14b9-4956-ae13-8fee198a5a6c",
+  "noExitSessionId": "abd3700f-ae84-42c3-85c8-369a1221023a",
+  "insufficientEvidenceSessionId": "6d17a83e-6420-4aa8-bfff-a34042667a39",
   "concurrent": {
-    "alpha": "29231508-9e12-43a6-af58-3c070acf0958",
-    "beta": "cbb5b525-1ec7-452a-a2a9-32bc1064264d"
+    "alpha": "879eb3c6-6b35-4d97-929d-198c729d245a",
+    "beta": "eed7b6d9-c703-4854-abee-17594a06df12"
   },
   "results": [
     {
       "step": "stub LLM server up",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-Kii0vV/stub-llm.log"
+      "detail": "/tmp/fricta-e2e-oagmJT/stub-llm.log"
     },
     {
       "step": "backend boots (env validation, DB, Redis, migrations)",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-Kii0vV/backend.log"
+      "detail": "/tmp/fricta-e2e-oagmJT/backend.log"
     },
     {
       "step": "unauthenticated request rejected",
@@ -99,7 +99,7 @@
     {
       "step": "report generated + readable",
       "ok": true,
-      "detail": "keys=session,scores,evidence,visualCoverage,uxFindings,cognitiveSignals,visualFindings,personaProfiles"
+      "detail": "keys=session,scores,evidence,visualCoverage,analysis,uxFindings,cognitiveSignals,visualFindings"
     },
     {
       "step": "report in /api/reports list",
@@ -124,7 +124,7 @@
     {
       "step": "PDF export",
       "ok": true,
-      "detail": "HTTP 200 type=application/pdf bytes=86941 head=\"%PDF-\""
+      "detail": "HTTP 200 type=application/pdf bytes=86960 head=\"%PDF-\""
     },
     {
       "step": "visual replay timeline",
@@ -210,6 +210,16 @@
       "step": "dead-end audit still gets a diagnostic report",
       "ok": true,
       "detail": ""
+    },
+    {
+      "step": "report read during post-run analysis is marked pending, with no final-looking score",
+      "ok": true,
+      "detail": "analysis=pending score=null grade=N/A list=null/true coverage=not_analyzed"
+    },
+    {
+      "step": "post-run analysis finishes within the bounded wait and the report becomes ready",
+      "ok": true,
+      "detail": "ready after 3057 ms"
     },
     {
       "step": "dead-end audit produces UX friction findings",
@@ -344,12 +354,12 @@
     {
       "step": "second backend/worker process boots on the same DB + Redis",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-Kii0vV/backend-2.log"
+      "detail": "/tmp/fricta-e2e-oagmJT/backend-2.log"
     },
     {
       "step": "two audits launched concurrently",
       "ok": true,
-      "detail": "alpha=29231508-9e12-43a6-af58-3c070acf0958 beta=cbb5b525-1ec7-452a-a2a9-32bc1064264d"
+      "detail": "alpha=879eb3c6-6b35-4d97-929d-198c729d245a beta=eed7b6d9-c703-4854-abee-17594a06df12"
     },
     {
       "step": "both concurrent audits complete (no stuck jobs)",
@@ -369,7 +379,7 @@
     {
       "step": "exactly one report per concurrent audit (no duplicates)",
       "ok": true,
-      "detail": "{\"29231508-9e12-43a6-af58-3c070acf0958\":1,\"cbb5b525-1ec7-452a-a2a9-32bc1064264d\":1}"
+      "detail": "{\"879eb3c6-6b35-4d97-929d-198c729d245a\":1,\"eed7b6d9-c703-4854-abee-17594a06df12\":1}"
     },
     {
       "step": "each concurrent job processed by exactly one worker",
@@ -434,7 +444,7 @@
     {
       "step": "stub actually served planner + vision calls",
       "ok": true,
-      "detail": "{\"stub\":true,\"mode\":{\"planner\":\"ok\",\"vision\":\"ok\"},\"chat\":97,\"planner\":20,\"vision\":26,\"models\":0,\"malformed\":0,\"planner429\":15,\"plannerEmpty\":0,\"vision429\":15,\"visionEmpty\":15,\"visionTruncated\":6}"
+      "detail": "{\"stub\":true,\"mode\":{\"planner\":\"ok\",\"vision\":\"ok\"},\"chat\":97,\"planner\":20,\"vision\":26,\"models\":0,\"malformed\":0,\"planner429\":15,\"plannerEmpty\":0,\"vision429\":15,\"visionEmpty\":15,\"visionTruncated\":6,\"visionSlow\":6}"
     }
   ]
 }

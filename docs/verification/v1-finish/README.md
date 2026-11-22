@@ -41,6 +41,17 @@ Separate stub-only evidence: the reviewer also ran the round-3 stub harness
 independently on `6cde80e`: 83/83 PASS in about 45 s. That is stub evidence,
 not real-provider proof.
 
+**Reviewer evidence on round-4 head `f8c4a7d` (reported, not reproduced here):**
+
+| Area | Result |
+|---|---|
+| Stub E2E (independent) | **84/85.** Only the dead-end "visual findings at report time" check failed (0 found). Cause and fix: bug 30. |
+| Real short audit via `openrouter/free` (real key, Postgres, Redis, Chromium) | **COMPLETED** in 2 steps (click Pricing, `goal_complete`); 27/27 flow / auth / SSE / replay / report / PDF checks. **But** the first readable report showed scores 100 with `visualCoverage` `not_analyzed`, 2 screenshots and no findings, while the completion hook's analysis was still running: a provisional score presented as final (bug 30). The script stopped right after report/PDF/replay, so background vision was not awaited; this is not a vision failure. |
+| Compiled `VisualAIAnalyzer` called directly on a real report screenshot via `openrouter/free` | **status ok**, routed to `particle-ai/particle-1:free`, 5 boxes, 1,043 characters, parsed cleanly, no truncation. This proves the round-4 vision path against a live provider, separately from full-audit finalization. Provider key usage 0; no paid calls. |
+
+Not yet real-provider tested: a full audit whose post-run vision analysis is
+awaited to completion, and the round-5 pending-state fix (stub-verified only).
+
 ## 1. Provider config: free models only by default
 
 | Item | Status |
@@ -139,6 +150,7 @@ Round 4:
 26. **Retry compliance.** Round 3 clamped every wait to 20 s, so `Retry-After: 60` was retried after 20 s, inside the provider's cooldown. Now server-requested waits are honoured in full; only our own jittered backoff is capped at 20 s. If the server asks for longer than the call's remaining 120 s budget, the call stops with a "rate-limit cooldown" reason and does **not** fall back to `openrouter/free` (that would evade the same account-wide cooldown).
 27. **Zero-evidence reports showed fake diagnostics.** With 0 recorded actions the UX engines still emitted default values (cognitive overload 10%, decision fatigue 27%…). There was also a heatmap "STEP 1 15% Good", a green "No friction findings detected", persona projections, "Discoverability risk: LOW", and persona tables in the exports. Now no behavioural signals or findings are produced or reported without actions. Every report panel, the Persona Simulations / UX Insights tabs, the reports-list card, and Markdown / PM / PDF / JSON (an explicit `availability` block) say "Unavailable: no evidence"; risk levels are UNKNOWN. Visual observations of recorded screenshots are kept and labelled as such.
 28. **The production backend could never start.** `node apps/backend/dist/index.js` (the Docker `CMD`) failed: ESM output without file extensions (`ERR_MODULE_NOT_FOUND`) and deep imports of TypeScript source (`@fricta/optimization-intelligence/src/*`). Dev hid it via `tsx`. Backend and packages now compile to CommonJS; the deep imports are gone.
+30. **Provisional reports looked final** (round 5). The session reaches a terminal status before the worker's completion hook runs visual/UX analysis, and `GET /api/reports/:id` auto-generates a report on first read. In that window the report showed a final-looking score (100) with `not_analyzed` coverage and no findings. That's what the reviewer's real run hit, and the cause of the reviewer's 84/85 stub run (it did not reproduce on this faster machine until the analyzer was slowed). Now a Redis marker (`fricta:analysis-pending:<id>`, TTL 30 min) is set when the worker starts a job and cleared when finalization ends. While it exists (or the session is still running) the report has `analysis.state = pending`, every score is null and nothing is persisted as final; executive / exports / PDF / reports list / UI say "analysis in progress". The page auto-refreshes. The E2E reproduces the window with a slow stub analyzer and waits (bounded, 90 s) for readiness before asserting findings.
 29. **Docker compose could not reach its own database.** `DATABASE_URL` / `REDIS_URL` were taken from `.env` (localhost for dev = the backend container itself). Also: Prisma OpenSSL detection on `node:20-slim`, ports exposed on all interfaces. See §7.
 
 ## 3. Landing/auth video and Clerk fallback
@@ -183,11 +195,11 @@ the likely cause and a reload button. Verified in the second probe attempt.
 | `npm ci` | passes (after removing the browser-download postinstall) |
 | `npx turbo run build` (45 packages incl. frontend) | **pass** |
 | `npm run typecheck` (backend + frontend) | **pass** |
-| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 (round 1) → 2,583 (round 2) → 2,593 (round 3) → 2,604 (round 4; `any` in test helpers and parsing) |
-| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76**; round 3 **106/106**; round 4 **137/137** (truncated JSON / length / empty fake responses, Retry-After 60, far-future reset, budget exhaustion, zero-evidence exports) |
+| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 (round 1) → 2,583 (round 2) → 2,593 (round 3) → 2,604 (round 4) → 2,609 (round 5) |
+| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76**; round 3 **106/106**; round 4 **137/137**; round 5 **140/140** (pending vs ready, running session, list) (truncated JSON / length / empty fake responses, Retry-After 60, far-future reset, budget exhaustion, zero-evidence exports) |
 | Backend integration (`vitest --config vitest.integration.config.ts`, real `fricta_test` DB) | **31/31 pass** (all rounds) |
 | `npm run test:security` | **8/8 + 19/19 pass** (all rounds) |
-| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75**; round 3 **83/83**; round 4 **85/85** in 33 s (truncated vision JSON, zero-evidence diagnostics) |
+| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75**; round 3 **83/83**; round 4 **85/85** in 33 s here (reviewer: 84/85, bug 30); round 5 **87/87** on two consecutive runs (36 s, 34 s), including the slow-analyzer pending-report reproduction |
 | Frontend unit (`npm test -w @fricta/frontend`, new in round 2) | Round 2 **4/4**; round 3 **7/7**; round 4 **8/8** (no-evidence note) |
 | Compiled backend with plain `node` (round 4) | **pass**: boots, health 200, auth 401, migrations validated (node 22 host; node 24 in the Playwright runtime image) |
 
