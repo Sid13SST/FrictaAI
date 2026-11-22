@@ -17,7 +17,9 @@
  *   POST /v1/chat/completions     — scripted planner / vision replies
  *   GET  /__stub/stats            — request counters (for test assertions)
  *   POST /__stub/mode             — failure injection, e.g. {"vision":"429"}:
- *                                   planner / vision ∈ ok | 429 | empty.
+ *                                   planner / vision ∈ ok | 429 | empty;
+ *                                   vision also ∈ truncated (JSON cut off
+ *                                   mid-string, finish_reason "length").
  *                                   429s carry "Retry-After: 0" so retries are
  *                                   instant (and the header path is exercised).
  *
@@ -40,7 +42,7 @@
 import http from 'node:http';
 
 const port = Number(process.argv[2] || process.env.STUB_LLM_PORT || 4010);
-const stats = { chat: 0, planner: 0, vision: 0, models: 0, malformed: 0, planner429: 0, plannerEmpty: 0, vision429: 0, visionEmpty: 0 };
+const stats = { chat: 0, planner: 0, vision: 0, models: 0, malformed: 0, planner429: 0, plannerEmpty: 0, vision429: 0, visionEmpty: 0, visionTruncated: 0 };
 const mode = { planner: 'ok', vision: 'ok' };
 
 function send(res, status, body, extraHeaders = {}) {
@@ -98,7 +100,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const next = JSON.parse(raw || '{}');
-        for (const k of ['planner', 'vision']) if (['ok', '429', 'empty'].includes(next[k])) mode[k] = next[k];
+        for (const k of ['planner', 'vision']) if (['ok', '429', 'empty', 'truncated'].includes(next[k])) mode[k] = next[k];
         return send(res, 200, { stub: true, mode });
       } catch { return send(res, 400, { error: { message: 'invalid JSON' } }); }
     });
@@ -132,6 +134,15 @@ const server = http.createServer((req, res) => {
         stats[`${kind}Empty`]++;
         return send(res, 200, { id: 'stub-empty', object: 'chat.completion', model: body.model, system_fingerprint: 'fricta-llm-stub',
           choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: '' } }] });
+      }
+
+      if (kind === 'vision' && mode.vision === 'truncated') {
+        // One complete box, then the answer stops mid-way through the second
+        // box's label — like a real model hitting max_tokens.
+        stats.visionTruncated++;
+        const cut = '{"explanation":"[STUB] Truncated answer test.","clarityFeedback":"[STUB]","annotatedBoxes":[{"x":40,"y":40,"w":200,"h":60,"label":"[STUB] complete box"},{"x":300,"y":40,"w":120,"h":40,"label":"[STUB] this label is cut';
+        return send(res, 200, { id: 'stub-trunc', object: 'chat.completion', model: body.model, system_fingerprint: 'fricta-llm-stub',
+          choices: [{ index: 0, finish_reason: 'length', message: { role: 'assistant', content: cut } }] });
       }
 
       let content;

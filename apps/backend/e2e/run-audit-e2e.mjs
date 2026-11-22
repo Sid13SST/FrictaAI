@@ -556,6 +556,16 @@ async function main() {
       ieRep?.json?.scores?.overallScore === null && ieRep?.json?.evidence?.status === 'insufficient'
         && ieExec.json?.overallUXGrade === 'N/A' && ieExec.json?.overallScore === null && ieList && ieList.score === null,
       `report=${ieRep?.json?.scores?.overallScore} evidence=${ieRep?.json?.evidence?.status} grade=${ieExec.json?.overallUXGrade} list=${ieList?.score}`);
+    const ieUx = await api('POST', `/api/ux/analyze/${ieId}`, { body: {} });
+    const ieRep2 = await api('GET', `/api/reports/${ieId}`);
+    const ieJson = JSON.parse(ieExp.json?.developerJson || '{}');
+    record('0-action audit: no behavioural diagnostics invented (UX analysis, report, JSON, Markdown)',
+      ieUx.status === 200 && ieUx.json?.evidence === 'insufficient' && (ieUx.json?.cognitiveSignals || []).length === 0 && (ieUx.json?.findings || []).length === 0
+        && (ieRep2.json?.cognitiveSignals || []).length === 0 && (ieRep2.json?.uxFindings || []).length === 0
+        && ieJson.availability?.cognitiveSignals === 'Unavailable: no evidence'
+        && /Simulated Persona Performance Projections\n\*Unavailable: no evidence\.\*/.test(ieExp.json?.markdown || '')
+        && (ieExec.json?.discoverabilityRiskLevel === 'UNKNOWN'),
+      `ux.evidence=${ieUx.json?.evidence} signals=${(ieUx.json?.cognitiveSignals || []).length} reportSignals=${(ieRep2.json?.cognitiveSignals || []).length} risk=${ieExec.json?.discoverabilityRiskLevel} json=${ieJson.availability?.cognitiveSignals}`);
     record('0-action FAILED audit: exports say "not scored", PDF still renders',
       (ieExp.json?.markdown || '').includes('Not scored: insufficient evidence') && (ieExp.json?.textSheet || '').includes('NOT SCORED')
         && !/null\/100/.test(ieExp.json?.markdown || '') && iePdf.status === 200 && iePdfHead === '%PDF-',
@@ -591,6 +601,14 @@ async function main() {
   record('vision empty responses are retried, then coverage incomplete',
     vEmpty.dEmpty > 0 && vEmpty.dEmpty % 5 === 0 && vEmpty.rep.json?.visualCoverage?.complete === false,
     `stubEmpty=${vEmpty.dEmpty} coverage=${vEmpty.rep.json?.visualCoverage?.status}`);
+  const vTrunc = await visionRun('truncated');
+  const truncFindings = (vTrunc.rep.json?.visualFindings || []);
+  const keptBoxes = truncFindings.filter((f) => f.findingType === 'vision_finding');
+  const partialSummaries = truncFindings.filter((f) => f.findingType === 'vision_summary' && f.metadata?.truncated === true);
+  record('truncated vision JSON: complete findings kept, cut-off ones dropped, coverage partial',
+    vTrunc.an.status === 200 && keptBoxes.length > 0 && keptBoxes.every((f) => f.title === '[STUB] complete box')
+      && partialSummaries.length > 0 && vTrunc.rep.json?.visualCoverage?.status === 'partial' && vTrunc.rep.json?.visualCoverage?.complete === false,
+    `kept=${keptBoxes.map((f) => f.title).join('|')} partialSummaries=${partialSummaries.length} coverage=${vTrunc.rep.json?.visualCoverage?.status} truncated=${vTrunc.rep.json?.visualCoverage?.visionTruncated}`);
   const vOk = await visionRun('ok');
   record('vision recovers: coverage complete again once the model answers',
     vOk.rep.json?.visualCoverage?.complete === true && vOk.rep.json?.visualCoverage?.status === 'full',
