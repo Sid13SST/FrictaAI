@@ -16,6 +16,10 @@
  *   GET  /v1/models               — lists the requested model ids, labelled stub
  *   POST /v1/chat/completions     — scripted planner / vision replies
  *   GET  /__stub/stats            — request counters (for test assertions)
+ *   POST /__stub/mode             — failure injection, e.g. {"vision":"429"}:
+ *                                   planner / vision ∈ ok | 429 | empty.
+ *                                   429s carry "Retry-After: 0" so retries are
+ *                                   instant (and the header path is exercised).
  *
  * Every response carries `X-Fricta-Stub: true` and
  * `system_fingerprint: "fricta-llm-stub"`.
@@ -36,14 +40,16 @@
 import http from 'node:http';
 
 const port = Number(process.argv[2] || process.env.STUB_LLM_PORT || 4010);
-const stats = { chat: 0, planner: 0, vision: 0, models: 0, malformed: 0 };
+const stats = { chat: 0, planner: 0, vision: 0, models: 0, malformed: 0, planner429: 0, plannerEmpty: 0, vision429: 0, visionEmpty: 0 };
+const mode = { planner: 'ok', vision: 'ok' };
 
-function send(res, status, body) {
+function send(res, status, body, extraHeaders = {}) {
   const json = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(json),
     'X-Fricta-Stub': 'true',
+    ...extraHeaders,
   });
   res.end(json);
 }
@@ -85,7 +91,19 @@ export function visionReply() {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
-  if (req.method === 'GET' && url.pathname === '/__stub/stats') return send(res, 200, { stub: true, ...stats });
+  if (req.method === 'GET' && url.pathname === '/__stub/stats') return send(res, 200, { stub: true, mode, ...stats });
+  if (req.method === 'POST' && url.pathname === '/__stub/mode') {
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', () => {
+      try {
+        const next = JSON.parse(raw || '{}');
+        for (const k of ['planner', 'vision']) if (['ok', '429', 'empty'].includes(next[k])) mode[k] = next[k];
+        return send(res, 200, { stub: true, mode });
+      } catch { return send(res, 400, { error: { message: 'invalid JSON' } }); }
+    });
+    return;
+  }
 
   if (req.method === 'GET' && url.pathname === '/v1/models') {
     stats.models++;
@@ -104,6 +122,17 @@ const server = http.createServer((req, res) => {
       const messages = Array.isArray(body.messages) ? body.messages : [];
       if (!body.model || messages.length === 0) { stats.malformed++; return send(res, 400, { error: { message: 'model and messages are required' } }); }
       stats.chat++;
+
+      const kind = hasImage(messages) ? 'vision' : 'planner';
+      if (mode[kind] === '429') {
+        stats[`${kind}429`]++;
+        return send(res, 429, { error: { message: '[STUB] Rate limit exceeded: upstream' } }, { 'Retry-After': '0' });
+      }
+      if (mode[kind] === 'empty') {
+        stats[`${kind}Empty`]++;
+        return send(res, 200, { id: 'stub-empty', object: 'chat.completion', model: body.model, system_fingerprint: 'fricta-llm-stub',
+          choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: '' } }] });
+      }
 
       let content;
       if (hasImage(messages)) {

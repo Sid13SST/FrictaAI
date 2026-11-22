@@ -524,10 +524,82 @@ async function main() {
   const qWait = await queueDepth();
   record('queue drained (no waiting/active/delayed jobs left)', qWait.wait === 0 && qWait.active === 0 && qWait.delayed === 0, JSON.stringify(qWait));
 
+  // ── Rate limits: insufficient evidence + incomplete visual coverage ───────
+  const stubMode = async (m) => (await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/mode`, { method: 'POST', body: JSON.stringify(m) })).json();
+  const stubStats = async () => (await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/stats`)).json();
+
+  // (a) Every planner call is rate-limited → the run fails with no actions.
+  const before429 = (await stubStats()).planner429;
+  await stubMode({ planner: '429' });
+  const ie = await api('POST', '/api/agent/workflow/run', {
+    body: { projectId, url: `http://127.0.0.1:${SITE_PORT}/`, goal: 'Find the pricing page', persona: 'Tech-Savvy User' },
+  });
+  const ieId = ie.json?.sessionId;
+  const ieEnd = ieId && await waitFor(async () => {
+    const st = (await api('GET', `/api/agent/workflow/${ieId}/status`)).json?.session;
+    return st && ['COMPLETED', 'FAILED', 'TIMEOUT', 'LOOP_DETECTED'].includes(st.status) ? st : null;
+  }, 180_000, 1000);
+  await stubMode({ planner: 'ok' });
+  const ieActs = ieId ? ((await api('GET', `/api/agent/workflow/${ieId}/actions`)).json?.actions || []) : [];
+  const planner429 = (await stubStats()).planner429 - before429;
+  record('planner 429s are retried 5× per call, then the run fails with 0 actions',
+    ieEnd?.status === 'FAILED' && ieActs.length === 0 && planner429 > 0 && planner429 % 5 === 0,
+    `final=${ieEnd?.status} actions=${ieActs.length} stub429=${planner429}`);
+  if (ieId) {
+    const ieRep = await waitFor(async () => { const r = await api('GET', `/api/reports/${ieId}`); return r.status === 200 ? r : null; }, 60_000, 1500);
+    const ieExec = await api('GET', `/api/reports/${ieId}/executive`);
+    const ieExp = await api('GET', `/api/reports/${ieId}/export`);
+    const ieList = ((await api('GET', '/api/reports')).json?.reports || []).find((r) => r.sessionId === ieId);
+    const iePdf = await api('GET', `/api/reports/${ieId}/export/pdf`, { raw: true });
+    const iePdfHead = Buffer.from(await iePdf.arrayBuffer()).subarray(0, 5).toString();
+    record('0-action FAILED audit: no numeric score anywhere (report, grade, list)',
+      ieRep?.json?.scores?.overallScore === null && ieRep?.json?.evidence?.status === 'insufficient'
+        && ieExec.json?.overallUXGrade === 'N/A' && ieExec.json?.overallScore === null && ieList && ieList.score === null,
+      `report=${ieRep?.json?.scores?.overallScore} evidence=${ieRep?.json?.evidence?.status} grade=${ieExec.json?.overallUXGrade} list=${ieList?.score}`);
+    record('0-action FAILED audit: exports say "not scored", PDF still renders',
+      (ieExp.json?.markdown || '').includes('Not scored: insufficient evidence') && (ieExp.json?.textSheet || '').includes('NOT SCORED')
+        && !/null\/100/.test(ieExp.json?.markdown || '') && iePdf.status === 200 && iePdfHead === '%PDF-',
+      `pdf=${iePdf.status} ${JSON.stringify(iePdfHead)}`);
+  }
+
+  // (b) Vision rate-limited / empty → coverage reported as incomplete.
+  async function visionRun(m) {
+    const b = await stubStats();
+    await stubMode({ vision: m });
+    const an = await api('POST', `/api/visual/analyze/${sessionId}`, { body: { forceAIVision: true } });
+    await stubMode({ vision: 'ok' });
+    const a = await stubStats();
+    const rep = await api('GET', `/api/reports/${sessionId}`);
+    const ex = await api('GET', `/api/reports/${sessionId}/executive`);
+    const xp = await api('GET', `/api/reports/${sessionId}/export`);
+    return { an, rep, ex, xp, d429: a.vision429 - b.vision429, dEmpty: a.visionEmpty - b.visionEmpty };
+  }
+  const v429 = await visionRun('429');
+  const cov429 = v429.rep.json?.visualCoverage;
+  const unavailable = (v429.rep.json?.visualFindings || []).filter((f) => f.findingType === 'vision_unavailable');
+  record('vision 429s are retried 5× per screenshot, then marked unavailable',
+    v429.an.status === 200 && v429.an.json?.aiAnalysisUsed === false && v429.d429 > 0 && v429.d429 % 5 === 0 && unavailable.length > 0,
+    `analyze=${v429.an.status} aiUsed=${v429.an.json?.aiAnalysisUsed} stub429=${v429.d429} unavailable=${unavailable.length} reason=${unavailable[0]?.metadata?.reason}`);
+  record('vision 429: report says visual coverage incomplete (field, executive, exports)',
+    cov429?.complete === false && cov429?.status === 'failed' && !!v429.ex.json?.visualCoverageNote
+      && (v429.xp.json?.markdown || '').includes('Visual coverage incomplete') && (v429.xp.json?.textSheet || '').includes('Visual Coverage: INCOMPLETE'),
+    `coverage=${JSON.stringify(cov429)}`);
+  record('a coverage note does not change the grade into a clean result',
+    !(v429.rep.json?.visualFindings || []).some((f) => f.findingType === 'vision_summary'),
+    `types=${[...new Set((v429.rep.json?.visualFindings || []).map((f) => f.findingType))].join(',')}`);
+  const vEmpty = await visionRun('empty');
+  record('vision empty responses are retried, then coverage incomplete',
+    vEmpty.dEmpty > 0 && vEmpty.dEmpty % 5 === 0 && vEmpty.rep.json?.visualCoverage?.complete === false,
+    `stubEmpty=${vEmpty.dEmpty} coverage=${vEmpty.rep.json?.visualCoverage?.status}`);
+  const vOk = await visionRun('ok');
+  record('vision recovers: coverage complete again once the model answers',
+    vOk.rep.json?.visualCoverage?.complete === true && vOk.rep.json?.visualCoverage?.status === 'full',
+    `coverage=${vOk.rep.json?.visualCoverage?.status} succeeded=${vOk.rep.json?.visualCoverage?.visionSucceeded}`);
+
   const stats = await (await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/stats`)).json();
   record('stub actually served planner + vision calls', stats.planner > 0 && stats.vision > 0, JSON.stringify(stats));
 
-  return finish({ projectId, sessionId, deadEndSessionId: deadId, noExitSessionId: noExitId, concurrent: conc, logDir });
+  return finish({ projectId, sessionId, deadEndSessionId: deadId, noExitSessionId: noExitId, insufficientEvidenceSessionId: ieId, concurrent: conc, logDir });
 }
 
 function finish(extra = {}) {
