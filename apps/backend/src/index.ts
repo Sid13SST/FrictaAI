@@ -136,7 +136,7 @@ app.use('*', secureHeaders({
 
 // CORS is scoped to known frontend origins. FRONTEND_URL supports a
 // comma-separated list for previews/staging; falls back to local dev.
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);

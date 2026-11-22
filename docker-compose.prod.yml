@@ -3,12 +3,15 @@ version: '3.8'
 # Full production stack: Postgres, Redis, backend API, and the frontend
 # (served by nginx, which also proxies /api to the backend container).
 #
-# Usage:
+# Local use (see docs/LOCAL_RUN.md):
+#   scripts/local-preflight.sh
 #   docker compose -f docker-compose.prod.yml --env-file .env up --build -d
+#   open http://localhost:8080   (FRONTEND_PORT, default 8080)
 #
-# Required env vars (see .env.example): DATABASE_URL, CLERK_SECRET_KEY,
-# CLERK_PUBLISHABLE_KEY, VITE_CLERK_PUBLISHABLE_KEY, and any provider keys
-# consumed by apps/backend.
+# Required in .env (see .env.example): POSTGRES_PASSWORD, TOKEN_ENCRYPTION_KEY,
+# CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY, VITE_CLERK_PUBLISHABLE_KEY and
+# OPENROUTER_API_KEY (or AGENT_BASE_URL). Ports bind to 127.0.0.1 only: this
+# file is for running on your own machine, not for public exposure.
 
 services:
   postgres:
@@ -53,15 +56,17 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # Always the compose services. A DATABASE_URL / REDIS_URL in .env written
+      # for local dev (localhost) would point at the backend container itself.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fricta}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fricta}?schema=public
+      REDIS_URL: redis://redis:6379
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
       CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?TOKEN_ENCRYPTION_KEY is required in production}
     env_file:
       - .env
     ports:
-      - '3001:3001'
+      - '127.0.0.1:3001:3001'
     volumes:
       - fricta_storage:/app/storage
 
@@ -77,7 +82,7 @@ services:
     depends_on:
       - backend
     ports:
-      - '80:80'
+      - '127.0.0.1:${FRONTEND_PORT:-8080}:80'
 
 volumes:
   fricta_pgdata:
