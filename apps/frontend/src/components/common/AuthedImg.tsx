@@ -21,7 +21,8 @@ export function AuthedImg({ src, alt, ...rest }: ImgHTMLAttributes<HTMLImageElem
     setObjectUrl(null);
     setFailed(false);
 
-    apiFetch(src)
+    // apiFetch prepends API_BASE itself; pass the API-relative path.
+    apiFetch(src.slice(API_BASE.length))
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
