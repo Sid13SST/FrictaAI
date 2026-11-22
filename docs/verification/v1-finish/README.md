@@ -219,6 +219,18 @@ real screenshots of the local target site. **Clerk is mocked** (no real session
 is possible here; see §4), so the user shows as "Fixture User". The amber badge
 on every shot says "Live API · stub LLM · Clerk mocked".
 
+Round 5 (pending state): `screenshots/1440/report-analysis-pending.png` and
+`screenshots/390/report-analysis-pending.png` show the real current UI for a
+report whose post-run analysis is still running. A fresh audit was run with a
+slow stub analyzer (`STUB_SLOW_MS=10000`), and each shot was taken while the
+backend returned `analysis.state = pending`, score null, grade N/A, coverage
+`not_analyzed`; for the 390 shot this was confirmed immediately before and
+after the capture. An earlier 390 attempt that landed after the report
+became ready (A 90) was discarded. Both show the "Analysis in progress"
+banner, a "…" grade, n/a pillars and the in-progress panel on the UX Findings
+tab. No clipping or horizontal overflow (automated check 0 flagged; visual
+review at both widths).
+
 Round 4 inspection: automated overflow check, 0 of 30 flagged. Visual review
 of `report-insufficient-evidence` at 1440 and 390: persona projections,
 cognitive load, friction heatmap (legend hidden), heuristic findings and

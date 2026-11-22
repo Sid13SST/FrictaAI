@@ -28,7 +28,8 @@ const BASE = process.env.FIXTURES_URL ?? 'http://127.0.0.1:3100';
 const LIVE = process.env.LIVE_STATE ? JSON.parse(fs.readFileSync(process.env.LIVE_STATE, 'utf8')) : null;
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
   LIVE ? '../../../docs/verification/v1-finish/screenshots' : '../../../docs/verification/v1-frontend/screenshots');
-const WIDTHS = [390, 768, 1440];
+// WIDTHS=1440,390 limits the run (e.g. for a time-boxed live state).
+const WIDTHS = process.env.WIDTHS ? process.env.WIDTHS.split(',').map(Number) : [390, 768, 1440];
 const HEIGHTS = { 390: 844, 768: 1024, 1440: 900 };
 
 const DONE = 'fx-session-completed-0001';
@@ -87,6 +88,11 @@ const LIVE_SHOTS = LIVE ? [
   { name: 'report-replay', path: `/app/reports/${LIVE.sessionId}`, after: p => p.getByRole('button', { name: 'Timeline Replay' }).click() },
   { name: 'report-dead-end', path: `/app/reports/${LIVE.deadEndSessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() },
   { name: 'reports', path: '/app/reports' },
+  // PENDING_SESSION_ID: an audit whose post-run analysis is still running
+  // (slow stub analyzer), captured while the backend reports analysis.state=pending.
+  ...(process.env.PENDING_SESSION_ID ? [
+    { name: 'report-analysis-pending', path: `/app/reports/${process.env.PENDING_SESSION_ID}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() },
+  ] : []),
   ...(LIVE.insufficientEvidenceSessionId ? [{ name: 'report-insufficient-evidence', path: `/app/reports/${LIVE.insufficientEvidenceSessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() }] : []),
   { name: 'report-dead-end-persona', path: `/app/reports/${LIVE.deadEndSessionId}`, after: async p => { await p.getByRole('button', { name: 'UX Findings' }).click(); await p.waitForTimeout(1500); await p.getByRole('button', { name: /Power Administrator/ }).click(); } },
 ] : null;
