@@ -22,11 +22,19 @@ describe('repairTruncatedJson (bounded)', () => {
     expect(extractJsonText('Here you go: ' + full)).toBe(full);
   });
 
-  it('closes an unterminated top-level string (the "Unterminated string in JSON" case)', () => {
+  it('never keeps a cut string: a truncated explanation is dropped, not closed', () => {
     expect(() => JSON.parse(cutMidExplanation)).toThrow(/Unterminated string/);
-    const r = repairTruncatedJson(cutMidExplanation)!;
+    // Only the cut explanation exists, so nothing complete is left to keep.
+    expect(repairTruncatedJson(cutMidExplanation)).toBeNull();
+    const afterBoxes = JSON.stringify({ annotatedBoxes: [box(1)], clarityFeedback: 'ok' }).slice(0, -1) + ',"explanation":"The hero is den';
+    const r = repairTruncatedJson(afterBoxes)!;
     expect(r.repaired).toBe(true);
-    expect((r.value as any).explanation.length).toBeGreaterThan(1000);
+    expect(r.value).toEqual({ annotatedBoxes: [box(1)], clarityFeedback: 'ok' }); // explanation dropped
+  });
+
+  it('never keeps a cut number either', () => {
+    const cutNumber = '{"annotatedBoxes":[' + JSON.stringify(box(1)) + ',{"x":30,"y":20,"w":10';
+    expect(parseVisionAnswer(cutNumber, 'length')!.annotatedBoxes).toEqual([box(1)]);
   });
 
   it('cuts a half-written nested string back to the last complete element', () => {
@@ -71,6 +79,7 @@ describe('parseVisionAnswer', () => {
 
   it('returns null when nothing usable can be recovered', () => {
     expect(parseVisionAnswer('{"explan', 'length')).toBeNull();
+    expect(parseVisionAnswer(cutMidExplanation, 'length')).toBeNull();
     expect(parseVisionAnswer('not json at all', 'stop')).toBeNull();
   });
 });

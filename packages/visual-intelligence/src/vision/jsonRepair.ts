@@ -5,12 +5,15 @@
  * leaving e.g. `{"explanation":"The CTA is hid` → "Unterminated string in
  * JSON". repairTruncatedJson() tries, in order:
  *   1. the text as-is (after stripping ``` fences);
- *   2. closing an open top-level string, then the open arrays/objects;
- *   3. cutting back to the last complete element (before a `,`, or after a
- *      closing `}` / `]` / string) and closing what is still open.
+ *   2. cutting back to the last element the model actually completed (before
+ *      a `,`, or after a closing `}` / `]` / string) and closing the brackets
+ *      that are still open.
  * The first candidate that parses wins. The work is bounded: at most
  * MAX_CANDIDATES cut points are tried, and input over MAX_INPUT_CHARS is not
- * repaired. It never invents values; it only drops the incomplete tail.
+ * repaired. It never invents or completes a value: a string or number that
+ * was cut is dropped together with its field, never closed artificially.
+ * Callers must still treat a repaired result as partial (incomplete coverage)
+ * and validate that each kept item has all its required fields.
  */
 
 const MAX_CANDIDATES = 400;
@@ -82,16 +85,7 @@ export function repairTruncatedJson(raw: string): RepairResult | null {
   }
   if (text.length > MAX_INPUT_CHARS) return null;
 
-  const { inString, cutPoints, stack } = scan(text);
-
-  // Close an unterminated top-level string (keeps a partially written
-  // explanation). Inside nested values (e.g. an annotated box's label) a
-  // half-written string would be an incomplete finding, so those are cut
-  // back to the last complete element instead.
-  if (inString && stack.length === 1) {
-    const closed = closeAndParse(text.replace(/\\$/, '') + '"');
-    if (closed !== undefined) return { value: closed, repaired: true };
-  }
+  const { cutPoints } = scan(text);
 
   // Cut back to the last complete element, newest first.
   const candidates = cutPoints.slice(-MAX_CANDIDATES).reverse();
