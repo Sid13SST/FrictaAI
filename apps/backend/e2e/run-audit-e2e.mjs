@@ -149,6 +149,16 @@ async function queueDepth() {
   } finally { r.disconnect(); }
 }
 
+// ─── Report readiness (bounded) ─────────────────────────────────────────────
+async function waitReady(id, timeoutMs) {
+  const t0 = Date.now();
+  const r = await waitFor(async () => {
+    const rep = await api('GET', `/api/reports/${id}`);
+    return rep.status === 200 && rep.json?.analysis?.state === 'ready' ? rep : null;
+  }, timeoutMs, 1000);
+  return r ? { report: r, waitedMs: Date.now() - t0 } : null;
+}
+
 // ─── SSE helper ────────────────────────────────────────────────────────────
 async function readSse(p, token, ms) {
   const controller = new AbortController();
@@ -345,6 +355,10 @@ async function main() {
 
   // Second scenario: the goal is unreachable, so the run must end without
   // success and still produce a diagnostic report with friction findings.
+  // Slow vision for this run: post-run analysis takes several seconds, so the
+  // report is readable while still provisional (the reviewer saw a
+  // final-looking 100 in that window on a real provider).
+  await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/mode`, { method: 'POST', body: JSON.stringify({ vision: 'slow' }) });
   const dead = await api('POST', '/api/agent/workflow/run', {
     body: { projectId, url: `http://127.0.0.1:${SITE_PORT}/dead-end`, goal: 'Find the pricing page', persona: 'Tech-Savvy User' },
   });
@@ -359,6 +373,19 @@ async function main() {
     return r.status === 200 ? r : null;
   }, 60_000, 1500);
   record('dead-end audit still gets a diagnostic report', !!deadReport);
+  if (deadReport) {
+    const listEntry = ((await api('GET', '/api/reports')).json?.reports || []).find((r) => r.sessionId === deadId);
+    const ex0 = await api('GET', `/api/reports/${deadId}/executive`);
+    record('report read during post-run analysis is marked pending, with no final-looking score',
+      deadReport.json?.analysis?.state === 'pending' && deadReport.json?.scores?.overallScore === null
+        && ex0.json?.analysisState === 'pending' && ex0.json?.overallUXGrade === 'N/A'
+        && listEntry?.analysisPending === true && listEntry?.score === null,
+      `analysis=${deadReport.json?.analysis?.state} score=${deadReport.json?.scores?.overallScore} grade=${ex0.json?.overallUXGrade} list=${listEntry?.score}/${listEntry?.analysisPending} coverage=${deadReport.json?.visualCoverage?.status}`);
+  }
+  const deadReady = deadId && await waitReady(deadId, 90_000);
+  await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/mode`, { method: 'POST', body: JSON.stringify({ vision: 'ok' }) });
+  record('post-run analysis finishes within the bounded wait and the report becomes ready', !!deadReady,
+    deadReady ? `ready after ${deadReady.waitedMs} ms` : 'still pending after 90 s');
   if (deadId) {
     await api('POST', `/api/ux/analyze/${deadId}`, { body: {} });
     const df = await api('GET', `/api/ux/findings/${deadId}`);
@@ -368,6 +395,7 @@ async function main() {
   // ── Score: one source of truth across report, grade, exports, list ──────
   const gradeOf = (n) => (n >= 90 ? 'A' : n >= 80 ? 'B' : n >= 70 ? 'C' : n >= 60 ? 'D' : 'F');
   async function scoreView(id) {
+    await waitReady(id, 90_000);
     // Sequential on purpose: the list is read after the report is compiled.
     const rep = await api('GET', `/api/reports/${id}`);
     const ex = await api('GET', `/api/reports/${id}/executive`);
@@ -546,7 +574,7 @@ async function main() {
     ieEnd?.status === 'FAILED' && ieActs.length === 0 && planner429 > 0 && planner429 % 5 === 0,
     `final=${ieEnd?.status} actions=${ieActs.length} stub429=${planner429}`);
   if (ieId) {
-    const ieRep = await waitFor(async () => { const r = await api('GET', `/api/reports/${ieId}`); return r.status === 200 ? r : null; }, 60_000, 1500);
+    const ieRep = (await waitReady(ieId, 90_000))?.report;
     const ieExec = await api('GET', `/api/reports/${ieId}/executive`);
     const ieExp = await api('GET', `/api/reports/${ieId}/export`);
     const ieList = ((await api('GET', '/api/reports')).json?.reports || []).find((r) => r.sessionId === ieId);

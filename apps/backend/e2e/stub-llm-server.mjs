@@ -19,7 +19,9 @@
  *   POST /__stub/mode             — failure injection, e.g. {"vision":"429"}:
  *                                   planner / vision ∈ ok | 429 | empty;
  *                                   vision also ∈ truncated (JSON cut off
- *                                   mid-string, finish_reason "length").
+ *                                   mid-string, finish_reason "length") and
+ *                                   slow (normal answer after STUB_SLOW_MS,
+ *                                   default 2500 ms: a slow model).
  *                                   429s carry "Retry-After: 0" so retries are
  *                                   instant (and the header path is exercised).
  *
@@ -100,7 +102,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const next = JSON.parse(raw || '{}');
-        for (const k of ['planner', 'vision']) if (['ok', '429', 'empty', 'truncated'].includes(next[k])) mode[k] = next[k];
+        for (const k of ['planner', 'vision']) if (['ok', '429', 'empty', 'truncated', 'slow'].includes(next[k])) mode[k] = next[k];
         return send(res, 200, { stub: true, mode });
       } catch { return send(res, 400, { error: { message: 'invalid JSON' } }); }
     });
@@ -118,7 +120,7 @@ const server = http.createServer((req, res) => {
   if (req.method === 'POST' && url.pathname === '/v1/chat/completions') {
     let raw = '';
     req.on('data', (c) => { raw += c; });
-    req.on('end', () => {
+    req.on('end', async () => {
       let body;
       try { body = JSON.parse(raw); } catch { stats.malformed++; return send(res, 400, { error: { message: 'invalid JSON body' } }); }
       const messages = Array.isArray(body.messages) ? body.messages : [];
@@ -136,6 +138,10 @@ const server = http.createServer((req, res) => {
           choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: '' } }] });
       }
 
+      if (kind === 'vision' && mode.vision === 'slow') {
+        stats.visionSlow = (stats.visionSlow || 0) + 1;
+        await new Promise((r) => setTimeout(r, Number(process.env.STUB_SLOW_MS || 2500)));
+      }
       if (kind === 'vision' && mode.vision === 'truncated') {
         // One complete box, then the answer stops mid-way through the second
         // box's label — like a real model hitting max_tokens.
