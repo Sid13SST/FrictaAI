@@ -2,7 +2,12 @@ import { Suspense, lazy } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { ClerkProvider, ClerkLoading, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_bGlrZWQtbW91c2UtOTUuY2xlcmsuYWNjb3VudHMuZGV2JA';
+// Read from env only (repo-root .env / build arg VITE_CLERK_PUBLISHABLE_KEY).
+// There is deliberately no hardcoded fallback: the old one pointed at an
+// orphaned Clerk instance, so a missing env var silently sent users to the
+// wrong auth tenant instead of failing visibly.
+const PUBLISHABLE_KEY = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? '').trim();
+const HAS_VALID_CLERK_KEY = /^pk_(test|live)_[A-Za-z0-9+/=_-]+$/.test(PUBLISHABLE_KEY);
 
 // Landing/Login/Register are the first thing anonymous visitors see — keep eager
 // so there's no extra network round-trip before anything renders.
@@ -73,7 +78,30 @@ const NotFound = () => (
   </div>
 );
 
+// Rendered instead of the app when the Clerk publishable key is missing or
+// malformed, so a misconfigured build fails loudly and legibly.
+const AuthNotConfigured = () => (
+  <div
+    role="alert"
+    className="min-h-screen w-full flex flex-col items-center justify-center gap-3 bg-[#070b0a] text-center px-6"
+  >
+    <h1 className="text-xl font-bold text-white">Sign-in is not configured</h1>
+    <p className="text-sm text-white/60 max-w-md">
+      This build has no valid <code className="text-white/80">VITE_CLERK_PUBLISHABLE_KEY</code>.
+      Set it to your Clerk application's publishable key (pk_test_… or pk_live_…) in the
+      repo-root <code className="text-white/80">.env</code> or as a build argument, then rebuild.
+    </p>
+  </div>
+);
+
 function App() {
+  if (!HAS_VALID_CLERK_KEY) {
+    if (import.meta.env.DEV) {
+      console.error('[Fricta] VITE_CLERK_PUBLISHABLE_KEY is missing or malformed; auth is disabled.');
+    }
+    return <AuthNotConfigured />;
+  }
+
   return (
     <ClerkProvider
       publishableKey={PUBLISHABLE_KEY}

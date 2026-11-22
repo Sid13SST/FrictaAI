@@ -19,15 +19,25 @@ const FIXTURE_USER = {
 
 type WithChildren = { children?: ReactNode };
 
+// Live-API mode: lib/api.ts reads window.Clerk.session.getToken(). Expose a
+// stand-in that returns a test token injected by the screenshot script
+// (window.__FRICTA_TEST_TOKEN__), which the local backend verifies via
+// CLERK_JWT_KEY. Without an injected token this returns null, as before.
+const testToken = () => (window as unknown as { __FRICTA_TEST_TOKEN__?: string }).__FRICTA_TEST_TOKEN__ ?? null;
+if (import.meta.env.VITE_FIXTURES_LIVE_API === 'true') {
+  (window as unknown as { Clerk: unknown }).Clerk = { session: { getToken: async () => testToken() } };
+}
+
 export const ClerkProvider = ({ children }: WithChildren) => <>{children}</>;
 export const ClerkLoading = ({ children }: WithChildren) => (authLoading ? <>{children}</> : null);
 export const ClerkLoaded = ({ children }: WithChildren) => (authLoading ? null : <>{children}</>);
 export const SignedIn = ({ children }: WithChildren) => (authLoading ? null : <>{children}</>);
 export const SignedOut = (_props: WithChildren) => null;
+export const ClerkFailed = (_props: WithChildren) => null;
 export const RedirectToSignIn = () => null;
 
 export const useUser = () => ({ isLoaded: !authLoading, isSignedIn: !authLoading, user: authLoading ? null : FIXTURE_USER });
-export const useAuth = () => ({ isLoaded: !authLoading, isSignedIn: !authLoading, userId: FIXTURE_USER.id, getToken: async () => null });
+export const useAuth = () => ({ isLoaded: !authLoading, isSignedIn: !authLoading, userId: FIXTURE_USER.id, getToken: async () => testToken() });
 export const useClerk = () => ({ loaded: !authLoading, signOut: async () => undefined });
 
 export const UserButton = () => (

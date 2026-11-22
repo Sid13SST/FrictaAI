@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
 
+const liveApiTarget = process.env.FIXTURES_API_TARGET?.trim() || '';
+
 /**
  * DEV-ONLY config for the fixture harness (`npm run fixtures`).
  *
@@ -11,6 +13,15 @@ import fs from 'fs';
  *  - aliases @clerk/clerk-react to a local mock (the Clerk SDK is never loaded)
  *  - no /api proxy: API calls are answered in the browser by src/fixtures/mockApi.ts
  *  - refuses to build
+ *  - defines a well-formed but fake VITE_CLERK_PUBLISHABLE_KEY (App refuses to
+ *    render without one; the mocked Clerk never contacts any instance)
+ *
+ * Live-API mode (FIXTURES_API_TARGET=http://127.0.0.1:3101): the mock API is
+ * NOT installed and /api is proxied to that real backend instead. Clerk is
+ * still mocked; requests carry the bearer token placed in
+ * window.__FRICTA_TEST_TOKEN__ (see apps/backend/e2e/run-audit-e2e.mjs, which
+ * mints tokens the backend verifies via CLERK_JWT_KEY). Used to screenshot
+ * pages populated from a real (stub-LLM) audit.
  */
 const fixtureHarness = (): Plugin => ({
   name: 'fricta-fixture-harness',
@@ -22,7 +33,7 @@ const fixtureHarness = (): Plugin => ({
     server.middlewares.use((req, res, next) => {
       const url = req.url ?? '/';
       // Placeholder for audit screenshots, which the app loads via <img>.
-      if (url.startsWith('/api/workflows/screenshots/raw/')) {
+      if (!liveApiTarget && url.startsWith('/api/workflows/screenshots/raw/')) {
         const step = url.match(/step-(\d+)/)?.[1] ?? '?';
         res.setHeader('Content-Type', 'image/svg+xml');
         res.end(
@@ -59,6 +70,16 @@ export default defineConfig({
       '@clerk/clerk-react': path.resolve(__dirname, './src/fixtures/mockClerk.tsx'),
     },
   },
+  define: {
+    // base64("fixture-harness.invalid$") — format-valid, points nowhere.
+    'import.meta.env.VITE_CLERK_PUBLISHABLE_KEY': JSON.stringify('pk_test_Zml4dHVyZS1oYXJuZXNzLmludmFsaWQk'),
+    'import.meta.env.VITE_FIXTURES_LIVE_API': JSON.stringify(liveApiTarget ? 'true' : ''),
+  },
   cacheDir: 'node_modules/.vite-fixtures',
-  server: { port: 3100, strictPort: true, host: '127.0.0.1' },
+  server: {
+    port: 3100,
+    strictPort: true,
+    host: '127.0.0.1',
+    ...(liveApiTarget ? { proxy: { '/api': { target: liveApiTarget, changeOrigin: true } } } : {}),
+  },
 });
