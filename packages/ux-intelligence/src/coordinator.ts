@@ -121,43 +121,49 @@ export class UXIntelligenceCoordinator {
       SEED_PERSONAS
     );
 
-    // 6. Persist results in the database
-    // Clear stale findings/signals first
-    await this.prisma.uXFinding.deleteMany({
-      where: { workflowSessionId: sessionId }
-    });
-    await this.prisma.cognitiveSignal.deleteMany({
-      where: { workflowSessionId: sessionId }
-    });
-
-    // Create many records
-    if (compiledReport.findings.length > 0) {
-      await this.prisma.uXFinding.createMany({
-        data: compiledReport.findings.map(f => ({
-          workflowSessionId: f.workflowSessionId,
-          findingType: f.findingType,
-          severity: f.severity,
-          personaType: f.personaType,
-          title: f.title,
-          description: f.description,
-          evidence: f.evidence,
-          recommendation: f.recommendation,
-          timestamp: f.timestamp || new Date()
-        }))
+    // 6. Persist results in the database: replace this session's findings and
+    // signals atomically. The report tab triggers analysis on mount, so two
+    // runs can overlap (React StrictMode double-mounts in dev, two open tabs);
+    // with separate delete/create calls both runs inserted and every signal
+    // appeared twice. A per-session advisory lock serialises the replace.
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${sessionId}))`;
+      await tx.uXFinding.deleteMany({
+        where: { workflowSessionId: sessionId }
       });
-    }
-
-    if (compiledReport.cognitiveSignals.length > 0) {
-      await this.prisma.cognitiveSignal.createMany({
-        data: compiledReport.cognitiveSignals.map(s => ({
-          workflowSessionId: s.workflowSessionId,
-          signalType: s.signalType,
-          intensity: s.intensity,
-          metadata: s.metadata,
-          timestamp: s.timestamp || new Date()
-        }))
+      await tx.cognitiveSignal.deleteMany({
+        where: { workflowSessionId: sessionId }
       });
-    }
+
+      // Create many records
+      if (compiledReport.findings.length > 0) {
+        await tx.uXFinding.createMany({
+          data: compiledReport.findings.map(f => ({
+            workflowSessionId: f.workflowSessionId,
+            findingType: f.findingType,
+            severity: f.severity,
+            personaType: f.personaType,
+            title: f.title,
+            description: f.description,
+            evidence: f.evidence,
+            recommendation: f.recommendation,
+            timestamp: f.timestamp || new Date()
+          }))
+        });
+      }
+
+      if (compiledReport.cognitiveSignals.length > 0) {
+        await tx.cognitiveSignal.createMany({
+          data: compiledReport.cognitiveSignals.map(s => ({
+            workflowSessionId: s.workflowSessionId,
+            signalType: s.signalType,
+            intensity: s.intensity,
+            metadata: s.metadata,
+            timestamp: s.timestamp || new Date()
+          }))
+        });
+      }
+    });
 
     // Update the WorkflowSession status/stepCount if needed (optional)
     await this.prisma.workflowSession.update({

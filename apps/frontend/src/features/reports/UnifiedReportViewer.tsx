@@ -427,7 +427,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         )}
 
         {activeTab === 'findings' && (
-          <UXIntelligenceTab sessionId={sessionId} />
+          <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} />
         )}
 
         {activeTab === 'timeline' && timeline.length === 0 && (

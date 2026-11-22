@@ -48,7 +48,7 @@ interface Recommendation {
   remedySteps: string[];
 }
 
-export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
+export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount }: { sessionId: string; stepCount?: number | null }) {
   const [activePersona, setActivePersona] = useState<'STANDARD' | 'BEGINNER' | 'POWER_USER' | 'FIRST_TIME_USER'>('STANDARD');
   const [findings, setFindings] = useState<UXFinding[]>([]);
   const [cognitiveSignals, setCognitiveSignals] = useState<CognitiveSignal[]>([]);
@@ -188,10 +188,15 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
   const scores = getSimulatedScores();
 
   // Create Step Heatmap based on cognitive load
-  const stepCount = Math.max(5, Math.max(...findings.map(f => {
+  // One cell per step the agent actually took. This used to be
+  // max(5, …, cognitiveSignals.length), which counted signals as steps and
+  // padded short audits (a 3-step run rendered 10 cells). Findings that cite a
+  // later step still extend the strip.
+  const referencedStep = Math.max(0, ...findings.map(f => {
     const match = f.evidence.match(/step (\d+)/i);
-    return match ? parseInt(match[1]) : 1;
-  }), cognitiveSignals.length));
+    return match ? parseInt(match[1]) : 0;
+  }));
+  const stepCount = Math.max(1, sessionStepCount ?? 0, referencedStep);
 
   const getStepFriction = (step: number) => {
     // Generate a simulated step friction value between 0.0 and 1.0 based on finding step references
@@ -419,7 +424,8 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap md:flex-nowrap gap-2 items-center">
+        {/* Wraps at every width: forcing one row from md up overflowed the panel at 768px. */}
+        <div className="flex flex-wrap gap-2 items-center">
           {Array.from({ length: stepCount }).map((_, i) => {
             const step = i + 1;
             const friction = getStepFriction(step);
