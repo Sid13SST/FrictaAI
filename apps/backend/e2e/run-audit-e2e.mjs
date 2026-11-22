@@ -98,12 +98,19 @@ const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8">
 .overlap span{position:absolute;top:4px;left:8px}</style></head><body>${body}</body></html>`;
 const site = http.createServer((req, res) => {
   const p = (req.url || '/').split('?')[0];
-  const html = p.startsWith('/dead-end')
+  // /alpha and /beta are two distinct sites used to detect cross-session
+  // mixing when audits run concurrently; their pricing pages carry the prefix.
+  const tenant = (p.match(/^\/(alpha|beta)(\/|$)/) || [])[1] || '';
+  const prefix = tenant ? `/${tenant}` : '';
+  const html = p.startsWith('/no-exit')
+    // No links, buttons or inputs at all: the stub declares dead_end.
+    ? page('Acme — No exit', `<main class="hero"><h1>Nothing to do here</h1><p>${'Static text only. '.repeat(60)}</p></main>`)
+    : p.startsWith('/dead-end')
     ? page('Acme — Nowhere', `<header><nav><a href="/dead-end">Home</a></nav></header><main class="hero"><h1>Welcome</h1><p>${'No way forward. '.repeat(120)}</p></main>`)
-    : p.startsWith('/pricing')
-    ? page('Acme — Pricing', '<header><nav><a href="/">Home</a></nav></header><main class="hero"><h1>Pricing</h1><p>Starter: free. Team: contact us.</p><button>Start free</button></main>')
-    : page('Acme — Home', `<header><nav><a href="/">Home</a><a href="/pricing">Pricing</a><a href="/about">About</a></nav></header>
-<main class="hero"><h1>Acme ships faster</h1><p>${'Long marketing copy. '.repeat(80)}</p>
+    : p.includes('/pricing')
+    ? page(`Acme${tenant ? ' ' + tenant : ''} — Pricing`, `<header><nav><a href="${prefix || '/'}">Home</a></nav></header><main class="hero"><h1>Pricing ${tenant}</h1><p>Starter: free. Team: contact us.</p><button>Start free</button></main>`)
+    : page(`Acme${tenant ? ' ' + tenant : ''} — Home`, `<header><nav><a href="${prefix || '/'}">Home</a><a href="${prefix}/pricing">Pricing</a><a href="${prefix}/about">About</a></nav></header>
+<main class="hero"><h1>Acme ${tenant || ''} ships faster</h1><p>${'Long marketing copy. '.repeat(80)}</p>
 <div class="overlap"><button>Get started</button><span>Overlapping label</span></div><input placeholder="Email address"></main>`);
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(html);
@@ -111,6 +118,7 @@ const site = http.createServer((req, res) => {
 
 // ─── Process management ────────────────────────────────────────────────────
 const children = [];
+let backendEnv = null;
 function startChild(name, cmd, args, opts) {
   const child = spawn(cmd, args, { ...opts, stdio: ['ignore', 'pipe', 'pipe'] });
   const logPath = path.join(opts.logDir, `${name}.log`);
@@ -129,6 +137,17 @@ async function waitFor(fn, timeoutMs, intervalMs = 500) {
 }
 function cleanup() { for (const c of children) { try { c.kill('SIGTERM'); } catch {} } site.close(); }
 process.on('exit', cleanup);
+
+// ─── BullMQ queue depth (direct Redis read) ───────────────────────────────
+async function queueDepth() {
+  const { Redis } = await import(path.join(repoRoot, 'node_modules/ioredis/built/index.js'));
+  const r = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  try {
+    const q = 'bull:workflow-execution';
+    const [wait, active, delayed] = await Promise.all([r.llen(`${q}:wait`), r.llen(`${q}:active`), r.zcard(`${q}:delayed`)]);
+    return { wait, active, delayed };
+  } finally { r.disconnect(); }
+}
 
 // ─── SSE helper ────────────────────────────────────────────────────────────
 async function readSse(p, token, ms) {
@@ -186,6 +205,7 @@ async function main() {
     ALLOW_PAID_MODELS: '',
     WORKER_CONCURRENCY: '1',
   };
+  backendEnv = env;
   const backend = startChild('backend', path.join(repoRoot, 'node_modules/.bin/tsx'), ['src/index.ts'], { logDir, cwd: backendDir, env });
   const healthy = await waitFor(async () => (await fetch(`${API}/health`)).ok, 90_000, 1000);
   record('backend boots (env validation, DB, Redis, migrations)', !!healthy, backend.logPath);
@@ -345,10 +365,169 @@ async function main() {
     record('dead-end audit produces UX friction findings', (df.json?.findings || []).length > 0, `count=${(df.json?.findings || []).length} ${(df.json?.findings || []).slice(0, 3).map((f) => f.title).join(' | ')}`);
   }
 
+  // ── Score: one source of truth across report, grade, exports, list ──────
+  const gradeOf = (n) => (n >= 90 ? 'A' : n >= 80 ? 'B' : n >= 70 ? 'C' : n >= 60 ? 'D' : 'F');
+  async function scoreView(id) {
+    // Sequential on purpose: the list is read after the report is compiled.
+    const rep = await api('GET', `/api/reports/${id}`);
+    const ex = await api('GET', `/api/reports/${id}/executive`);
+    const xp = await api('GET', `/api/reports/${id}/export`);
+    const list = await api('GET', '/api/reports');
+    return {
+      report: rep.json?.scores?.overallScore, basis: rep.json?.scores?.basis,
+      exec: ex.json?.overallScore, grade: ex.json?.overallUXGrade,
+      markdown: xp.json?.markdown || '', pm: xp.json?.textSheet || '',
+      listed: (list.json?.reports || []).find((r) => r.sessionId === id)?.score,
+      visualFindings: (rep.json?.visualFindings || []).length, uxFindings: (rep.json?.uxFindings || []).length,
+    };
+  }
+  const listAfterAnalysis = ((await api('GET', '/api/reports')).json?.reports || []).find((r) => r.sessionId === sessionId)?.score;
+  const happy = await scoreView(sessionId);
+  record('reports list is refreshed by analysis (not only when the report is opened)', listAfterAnalysis === happy.report,
+    `list-before-open=${listAfterAnalysis} report=${happy.report}`);
+  record('score: report, executive grade and reports list agree (happy path)',
+    happy.report === happy.exec && happy.listed === happy.report && happy.grade === gradeOf(happy.report),
+    `report=${happy.report} exec=${happy.exec} list=${happy.listed} grade=${happy.grade} basis=${JSON.stringify(happy.basis)}`);
+  record('score: findings lower the happy-path score below 100',
+    happy.visualFindings + happy.uxFindings === 0 || happy.report < 100,
+    `visualFindings=${happy.visualFindings} uxFindings=${happy.uxFindings} score=${happy.report}`);
+  record('Markdown export carries the same score + grade',
+    happy.markdown.includes(`**${happy.exec}/100** | **Grade: ${happy.grade}**`) && happy.markdown.includes('Find the pricing page'),
+    `${happy.markdown.length} chars`);
+  record('PM summary export carries the same score + grade',
+    happy.pm.includes(`Overall Score: ${happy.exec}/100 (Grade: ${happy.grade})`), `${happy.pm.length} chars`);
+  if (deadId) {
+    const dead = await scoreView(deadId);
+    record('score: dead-end audit (goal not reached) is graded F, not A 100/100',
+      dead.grade === 'F' && dead.report <= 55 && dead.basis?.goalReached === false && dead.report === dead.exec && dead.listed === dead.report,
+      `report=${dead.report} exec=${dead.exec} list=${dead.listed} grade=${dead.grade} visualFindings=${dead.visualFindings} basis=${JSON.stringify(dead.basis)}`);
+    record('dead-end audit has visual findings at report time (auto-analysis on completion)', dead.visualFindings > 0, `visualFindings=${dead.visualFindings}`);
+  }
+
+  // ── Executive report → exports ─────────────────────────────────────────────
+  const execRep = await api('POST', '/api/reports/executive', { body: { projectId, title: 'E2E executive report' } });
+  const execId = execRep.json?.report?.id;
+  record('create executive report', execRep.status === 200 && !!execId, `HTTP ${execRep.status} ${execRep.json?.error || ''}`);
+  if (execId) {
+    const pdfExp = await api('POST', '/api/reports/exports', { body: { reportId: execId, format: 'PDF' } });
+    const pdfExportId = pdfExp.json?.export?.id;
+    record('POST /api/reports/exports (PDF) queues an export', pdfExp.status === 200 && pdfExp.json?.export?.status === 'PENDING', `HTTP ${pdfExp.status}`);
+    const done = await waitFor(async () => {
+      const l = await api('GET', `/api/reports/exports?reportId=${execId}`);
+      const e = (l.json?.exports || []).find((x) => x.id === pdfExportId);
+      return e && ['COMPLETED', 'FAILED'].includes(e.status) ? { l, e } : null;
+    }, 60_000, 1000);
+    record('GET /api/reports/exports lists it and it completes', done?.e?.status === 'COMPLETED', `list HTTP ${done?.l?.status} status=${done?.e?.status}`);
+    const dl = await api('GET', `/api/reports/exports/${pdfExportId}/download`, { raw: true });
+    const dlBuf = Buffer.from(await dl.arrayBuffer());
+    record('GET /api/reports/exports/:id/download returns the PDF', dl.status === 200 && dlBuf.subarray(0, 5).toString() === '%PDF-', `HTTP ${dl.status} bytes=${dlBuf.length}`);
+    const dlForeign = await api('GET', `/api/reports/exports/${pdfExportId}/download`, { token: intruderToken });
+    const listForeign = await api('GET', `/api/reports/exports?reportId=${execId}`, { token: intruderToken });
+    const createForeign = await api('POST', '/api/reports/exports', { token: intruderToken, body: { reportId: execId, format: 'PDF' } });
+    record('exports deny other users (list, create, download)', [dlForeign.status, listForeign.status, createForeign.status].every((x) => x === 403),
+      `download=${dlForeign.status} list=${listForeign.status} create=${createForeign.status}`);
+    const snap = await api('POST', '/api/reports/exports', { body: { reportId: execId, format: 'SNAPSHOT' } });
+    const snapDone = await waitFor(async () => {
+      const e = ((await api('GET', `/api/reports/exports?reportId=${execId}`)).json?.exports || []).find((x) => x.id === snap.json?.export?.id);
+      return e && e.status !== 'PENDING' && e.status !== 'GENERATING' ? e : null;
+    }, 30_000, 1000);
+    record('unimplemented export formats fail honestly (no fake success)', snapDone?.status === 'FAILED', `status=${snapDone?.status} reason=${snapDone?.metadata?.reason}`);
+
+    // ── Sharing ──────────────────────────────────────────────────────────────
+    const share = await api('POST', '/api/reports/sharing', { body: { reportId: execId, expiresHours: 1 } });
+    const token = share.json?.share?.token;
+    record('create share link', share.status === 200 && !!token, `HTTP ${share.status}`);
+    const listed = await api('GET', `/api/reports/sharing?reportId=${execId}`);
+    record('GET /api/reports/sharing lists it', (listed.json?.shares || []).some((x) => x.token === token), `HTTP ${listed.status}`);
+    const anon = await api('GET', `/api/shared/${token}`, { token: null });
+    const anonKeys = Object.keys(anon.json?.report || {});
+    record('anonymous visitor opens the share link', anon.status === 200 && anon.json?.report?.id === execId, `HTTP ${anon.status}`);
+    record('public share response exposes no creator/recipient data',
+      !JSON.stringify(anon.json || {}).includes(OWNER) && !('createdById' in (anon.json?.report || {})) && !('share' in (anon.json || {})),
+      `keys=${anonKeys.join(',')}`);
+    const bogus = await api('GET', `/api/shared/${'0'.repeat(48)}`, { token: null });
+    record('unknown share token rejected', bogus.status === 403, `HTTP ${bogus.status}`);
+    const shareForeign = await api('POST', '/api/reports/sharing', { token: intruderToken, body: { reportId: execId } });
+    const listShareForeign = await api('GET', `/api/reports/sharing?reportId=${execId}`, { token: intruderToken });
+    const revokeForeign = await api('POST', '/api/reports/sharing/revoke', { token: intruderToken, body: { shareId: share.json?.share?.id } });
+    record('sharing denies other users (create, list, revoke)', [shareForeign.status, listShareForeign.status, revokeForeign.status].every((x) => x === 403),
+      `create=${shareForeign.status} list=${listShareForeign.status} revoke=${revokeForeign.status}`);
+    const stillOpen = await api('GET', `/api/shared/${token}`, { token: null });
+    record('foreign revoke attempt did not revoke', stillOpen.status === 200, `HTTP ${stillOpen.status}`);
+    const revoke = await api('POST', '/api/reports/sharing/revoke', { body: { shareId: share.json?.share?.id } });
+    const afterRevoke = await api('GET', `/api/shared/${token}`, { token: null });
+    record('revoked token stops working', revoke.status === 200 && afterRevoke.status === 403, `revoke=${revoke.status} open=${afterRevoke.status}`);
+    const short = await api('POST', '/api/reports/sharing', { body: { reportId: execId, expiresHours: 1 / 3600 } }); // ~1 s
+    await sleep(2500);
+    const expired = await api('GET', `/api/shared/${short.json?.share?.token}`, { token: null });
+    record('expired token rejected', short.status === 200 && expired.status === 403, `create=${short.status} open=${expired.status}`);
+    const once = await api('POST', '/api/reports/sharing', { body: { reportId: execId, maxUses: 1 } });
+    const use1 = await api('GET', `/api/shared/${once.json?.share?.token}`, { token: null });
+    const use2 = await api('GET', `/api/shared/${once.json?.share?.token}`, { token: null });
+    record('max-uses limit enforced', use1.status === 200 && use2.status === 403, `first=${use1.status} second=${use2.status}`);
+  }
+
+  // ── dead_end terminal path → LOOP_DETECTED ─────────────────────────────────
+  const noExit = await api('POST', '/api/agent/workflow/run', {
+    body: { projectId, url: `http://127.0.0.1:${SITE_PORT}/no-exit`, goal: 'Find the pricing page', persona: 'Tech-Savvy User' },
+  });
+  const noExitId = noExit.json?.sessionId;
+  const noExitEnd = noExitId && await waitFor(async () => {
+    const st = (await api('GET', `/api/agent/workflow/${noExitId}/status`)).json?.session;
+    return st && ['COMPLETED', 'FAILED', 'TIMEOUT', 'LOOP_DETECTED'].includes(st.status) ? st : null;
+  }, 120_000, 1000);
+  const noExitActs = noExitId ? ((await api('GET', `/api/agent/workflow/${noExitId}/actions`)).json?.actions || []) : [];
+  record('dead_end terminal signal ends the run as LOOP_DETECTED',
+    noExitEnd?.status === 'LOOP_DETECTED' && noExitActs.some((a) => a.action === 'wait' && a.target === 'dead_end'),
+    `final=${noExitEnd?.status} actions=${noExitActs.map((a) => `${a.action}:${a.target}`).join(',')}`);
+  if (noExitId) {
+    const ne = await waitFor(async () => { const v = await scoreView(noExitId); return v.exec !== undefined ? v : null; }, 60_000, 1500);
+    record('LOOP_DETECTED audit gets a report graded F', ne?.grade === 'F', `score=${ne?.report} grade=${ne?.grade}`);
+  }
+
+  // ── Concurrency: two audits at once, two worker processes ──────────────────
+  const API2_PORT = API_PORT + 1;
+  const backend2 = startChild('backend-2', path.join(repoRoot, 'node_modules/.bin/tsx'), ['src/index.ts'],
+    { logDir, cwd: backendDir, env: { ...backendEnv, PORT: String(API2_PORT) } });
+  const healthy2 = await waitFor(async () => (await fetch(`http://127.0.0.1:${API2_PORT}/health`)).ok, 90_000, 1000);
+  record('second backend/worker process boots on the same DB + Redis', !!healthy2, backend2.logPath);
+  const [ra, rb] = await Promise.all(['alpha', 'beta'].map((t) => api('POST', '/api/agent/workflow/run', {
+    body: { projectId, url: `http://127.0.0.1:${SITE_PORT}/${t}`, goal: 'Find the pricing page', persona: 'Tech-Savvy User' },
+  })));
+  const conc = { alpha: ra.json?.sessionId, beta: rb.json?.sessionId };
+  record('two audits launched concurrently', !!conc.alpha && !!conc.beta && conc.alpha !== conc.beta, `alpha=${conc.alpha} beta=${conc.beta}`);
+  const ends = await Promise.all(Object.values(conc).map((id) => waitFor(async () => {
+    const st = (await api('GET', `/api/agent/workflow/${id}/status`)).json?.session;
+    return st && ['COMPLETED', 'FAILED', 'TIMEOUT', 'LOOP_DETECTED'].includes(st.status) ? st : null;
+  }, 180_000, 1000)));
+  record('both concurrent audits complete (no stuck jobs)', ends.every((e) => e?.status === 'COMPLETED'), ends.map((e) => `${e?.status}/${e?.stepCount}`).join(' '));
+  for (const [tenant, id] of Object.entries(conc)) {
+    const other = tenant === 'alpha' ? 'beta' : 'alpha';
+    const rp = (await api('GET', `/api/workflows/${id}/visual-replay`)).json || {};
+    const urls = (rp.screenshots || []).map((x) => x.pageUrl);
+    const acts = (await api('GET', `/api/agent/workflow/${id}/actions`)).json?.actions || [];
+    record(`no cross-session mixing (${tenant})`,
+      urls.length > 0 && urls.every((u) => u.includes(`/${tenant}`) && !u.includes(`/${other}`)) && acts.length === 3 && new Set(acts.map((a) => a.stepNumber)).size === acts.length,
+      `screenshots=${urls.map((u) => new URL(u).pathname).join(',')} actions=${acts.map((a) => `${a.stepNumber}:${a.action}`).join(',')}`);
+  }
+  await sleep(4000); // let both completion listeners finish
+  const reportCounts = {};
+  for (const id of Object.values(conc)) {
+    reportCounts[id] = ((await api('GET', '/api/reports')).json?.reports || []).filter((r) => r.sessionId === id).length;
+  }
+  record('exactly one report per concurrent audit (no duplicates)', Object.values(reportCounts).every((n) => n === 1), JSON.stringify(reportCounts));
+  const logs = [backend.logPath, backend2.logPath].map((f) => fs.readFileSync(f, 'utf8'));
+  // The 'completed' listener runs only in the process whose worker ran the job.
+  const workerOf = Object.fromEntries(Object.entries(conc).map(([t, id]) => [t,
+    logs.flatMap((l, i) => Array(l.split(`Job completed. Auto-generating report for session ${id}`).length - 1).fill(`backend-${i + 1}`))]));
+  record('each concurrent job processed by exactly one worker', Object.values(workerOf).every((w) => w.length === 1), JSON.stringify(workerOf));
+  const qWait = await queueDepth();
+  record('queue drained (no waiting/active/delayed jobs left)', qWait.wait === 0 && qWait.active === 0 && qWait.delayed === 0, JSON.stringify(qWait));
+
   const stats = await (await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/stats`)).json();
   record('stub actually served planner + vision calls', stats.planner > 0 && stats.vision > 0, JSON.stringify(stats));
 
-  return finish({ projectId, sessionId, deadEndSessionId: deadId, logDir });
+  return finish({ projectId, sessionId, deadEndSessionId: deadId, noExitSessionId: noExitId, concurrent: conc, logDir });
 }
 
 function finish(extra = {}) {

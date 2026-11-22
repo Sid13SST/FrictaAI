@@ -23,6 +23,8 @@
  * Planner script (text requests), driven by the prompt the agent sends:
  *   - no actions yet               → scroll down
  *   - URL contains "/pricing"      → wait goal_complete
+ *   - page lists no links, buttons
+ *     or inputs at all             → wait dead_end
  *   - a "Pricing" link is listed   → click "Pricing"
  *   - 4+ actions taken             → wait dead_end
  *   - otherwise                    → scroll down
@@ -64,6 +66,9 @@ export function plannerReply(prompt) {
 
   if (steps === 0) return { thought: 'Scan the page before acting.', action: 'scroll', target: 'down' };
   if (/\/pricing/i.test(url)) return { thought: 'Pricing page reached; goal met.', action: 'wait', target: 'goal_complete' };
+  if (/Buttons: none/.test(prompt) && /Links: none/.test(prompt) && /Input Fields: none/.test(prompt)) {
+    return { thought: 'Cannot proceed — page has no interactive elements.', action: 'wait', target: 'dead_end' };
+  }
   if (steps >= 4) return { thought: 'Cannot proceed — no pricing entry point found.', action: 'wait', target: 'dead_end' };
   if (/^\s*- Pricing\b/m.test(linksBlock)) return { thought: 'Pricing link visible; open it.', action: 'click', target: 'Pricing' };
   return { thought: 'Keep looking for pricing.', action: 'scroll', target: 'down' };
