@@ -8,7 +8,7 @@ import {
   DEFAULT_LLM_RETRY_POLICY,
   RetryPolicy,
   isRetryableStatus,
-  retryDelayMs,
+  planRetry,
 } from '@fricta/shared';
 
 export interface VisionAnalysisOptions {
@@ -71,7 +71,7 @@ export const VISION_LIMITS = { maxBoxes: 5, explanationChars: 400, feedbackChars
 const SHORT_RETRY_LIMITS = { maxBoxes: 3, explanationChars: 200, feedbackChars: 120, labelChars: 40 };
 const REQUEST_TIMEOUT_MS = 30_000;
 
-type Attempt = { ok: true; content: string; model: string; finishReason: string | null } | { ok: false; reason: 'rate_limited' | 'empty' | 'server_error' | 'network' | 'not_found' | 'client_error'; detail: string };
+type Attempt = { ok: true; content: string; model: string; finishReason: string | null } | { ok: false; reason: 'rate_limited' | 'cooldown' | 'empty' | 'server_error' | 'network' | 'not_found' | 'client_error'; detail: string };
 
 export class VisualAIAnalyzer {
   private apiKey: string;
@@ -93,10 +93,12 @@ export class VisualAIAnalyzer {
    * planner. The model must accept image input; the default is a free one.
    * A non-free model throws PaidModelNotAllowedError unless ALLOW_PAID_MODELS=true.
    *
-   * Retries: same policy as the planner (Retry-After / X-RateLimit-Reset,
-   * else jittered exponential backoff, ≤5 attempts, ≤20 s per wait). Empty
-   * content is retryable. After retries on 429 / empty (or 404), one fallback
-   * to openrouter/free (OpenRouter only; never a paid id).
+   * Retries: same policy as the planner (Retry-After / X-RateLimit-Reset
+   * honoured exactly, else jittered exponential backoff ≤20 s, ≤5 attempts,
+   * 120 s budget). Empty content is retryable. After retries on 429 / empty
+   * (or 404), one fallback to openrouter/free (OpenRouter only; never a paid
+   * id). A provider cooldown longer than the budget stops the call with no
+   * fallback.
    */
   constructor(options: VisionAnalysisOptions = {}, deps: VisionDeps = {}) {
     const endpoint = resolveLLMEndpoint();
@@ -276,11 +278,16 @@ Coordinates are pixels in the screenshot (assume 1280x720 if unsure). Use [] if 
       }
 
       if (attempt >= this.policy.maxAttempts) break;
-      const delay = retryDelayMs(attempt, headers, this.policy, this.random, this.now());
-      if (budget.waitedMs + delay > this.policy.maxTotalWaitMs) break;
-      console.warn(`[VisualAIAnalyzer] ${model} attempt ${attempt}/${this.policy.maxAttempts} failed (${(last as any).detail}); retrying in ${delay}ms.`);
-      budget.waitedMs += delay;
-      await this.sleep(delay);
+      const plan = planRetry(attempt, headers, budget.waitedMs, this.policy, this.random, this.now());
+      if (plan.action === 'defer') {
+        console.warn(`[VisualAIAnalyzer] ${model}: ${plan.reason}; not retrying this call.`);
+        // Cooldown: stop and do not fall back (that would evade the provider's cooldown).
+        if (plan.cause === 'cooldown') return { ok: false, reason: 'cooldown', detail: plan.reason };
+        break;
+      }
+      console.warn(`[VisualAIAnalyzer] ${model} attempt ${attempt}/${this.policy.maxAttempts} failed (${(last as any).detail}); retrying in ${plan.delayMs}ms (${plan.source}).`);
+      budget.waitedMs += plan.delayMs;
+      await this.sleep(plan.delayMs);
     }
     return last;
   }

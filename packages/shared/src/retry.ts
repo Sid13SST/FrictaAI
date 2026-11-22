@@ -5,10 +5,15 @@
  * (upstream rate limit) in bursts, and sometimes 200 with empty content. Three
  * attempts at 1 s / 2 s were not enough. Policy:
  *   - honour the server's wait when it gives one: `Retry-After` (seconds or an
- *     HTTP date) or `X-RateLimit-Reset` (epoch ms, epoch s, or seconds);
- *   - otherwise exponential backoff with full jitter;
- *   - every wait is capped (default 20 s), and so is the total wait budget, so
- *     a call always finishes inside the agent's step timeout.
+ *     HTTP date) or `X-RateLimit-Reset` (epoch ms, epoch s, or seconds). That
+ *     wait is NEVER shortened: retrying inside the provider's cooldown is
+ *     non-compliant and just earns another 429;
+ *   - otherwise exponential backoff with full jitter, capped at maxDelayMs
+ *     (the cap applies only to waits we calculate ourselves);
+ *   - a call never waits more than maxTotalWaitMs in total. If the server asks
+ *     for longer than the remaining budget, the call is DEFERRED (it stops with
+ *     a "rate-limit cooldown" reason) instead of retrying early, and callers
+ *     must not evade that cooldown by switching to a fallback model.
  */
 
 export interface RetryPolicy {
@@ -65,17 +70,47 @@ export function backoffDelayMs(attempt: number, policy: RetryPolicy = DEFAULT_LL
   return Math.round(random() * ceiling);
 }
 
-/** Delay before retry number `attempt` (1 = the wait after the first failure). Always capped. */
-export function retryDelayMs(
+export type RetryPlan =
+  | { action: 'wait'; delayMs: number; source: 'server' | 'backoff' }
+  | {
+      action: 'defer';
+      /** 'cooldown': the server asked for longer than the remaining budget. 'budget': our own backoff would exceed it. */
+      cause: 'cooldown' | 'budget';
+      /** Server-requested wait, when there was one. */
+      requestedMs: number | null;
+      reason: string;
+    };
+
+/**
+ * Decide what to do before retry number `attempt` (1 = after the first
+ * failure), given how long this call has already waited.
+ */
+export function planRetry(
   attempt: number,
   headers: HeaderBag,
+  waitedMs: number,
   policy: RetryPolicy = DEFAULT_LLM_RETRY_POLICY,
   random: () => number = Math.random,
   now: number = Date.now(),
-): number {
+): RetryPlan {
+  const remaining = Math.max(0, policy.maxTotalWaitMs - waitedMs);
   const requested = serverRequestedDelayMs(headers, now);
-  const delay = requested ?? backoffDelayMs(attempt, policy, random);
-  return Math.min(policy.maxDelayMs, delay);
+  if (requested !== null) {
+    if (requested > remaining) {
+      return {
+        action: 'defer',
+        cause: 'cooldown',
+        requestedMs: requested,
+        reason: `rate-limit cooldown: provider asked to wait ${Math.ceil(requested / 1000)}s, more than the ${Math.floor(remaining / 1000)}s left in this call's retry budget`,
+      };
+    }
+    return { action: 'wait', delayMs: requested, source: 'server' };
+  }
+  const delay = backoffDelayMs(attempt, policy, random); // capped at maxDelayMs
+  if (delay > remaining) {
+    return { action: 'defer', cause: 'budget', requestedMs: null, reason: `retry budget of ${Math.floor(policy.maxTotalWaitMs / 1000)}s exhausted` };
+  }
+  return { action: 'wait', delayMs: delay, source: 'backoff' };
 }
 
 /** Statuses worth retrying: rate limit and transient upstream errors. */

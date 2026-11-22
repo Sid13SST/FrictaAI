@@ -5,7 +5,7 @@ import * as path from 'path';
 import {
   serverRequestedDelayMs,
   backoffDelayMs,
-  retryDelayMs,
+  planRetry,
   DEFAULT_LLM_RETRY_POLICY,
   OPENROUTER_FREE_ROUTER,
   isFreeModelId,
@@ -80,9 +80,22 @@ describe('retry timing', () => {
     expect(backoffDelayMs(3, DEFAULT_LLM_RETRY_POLICY, () => 0.25)).toBe(1000);
   });
 
-  it('caps a server-requested wait at 20 s too', () => {
-    expect(retryDelayMs(1, { 'Retry-After': '3600' }, DEFAULT_LLM_RETRY_POLICY, () => 0.5, now)).toBe(20_000);
-    expect(retryDelayMs(1, { 'Retry-After': '0' }, DEFAULT_LLM_RETRY_POLICY, () => 0.5, now)).toBe(0);
+  it('never shortens a server-requested wait (Retry-After: 60 → 60 s, not 20 s)', () => {
+    expect(planRetry(1, { 'Retry-After': '60' }, 0, DEFAULT_LLM_RETRY_POLICY, () => 0.5, now)).toEqual({ action: 'wait', delayMs: 60_000, source: 'server' });
+    expect(planRetry(1, { 'Retry-After': '0' }, 0, DEFAULT_LLM_RETRY_POLICY, () => 0.5, now)).toEqual({ action: 'wait', delayMs: 0, source: 'server' });
+  });
+
+  it('defers (does not retry early) when the server asks for longer than the remaining budget', () => {
+    const far = planRetry(1, { 'X-RateLimit-Reset': String(now + 10 * 60_000) }, 0, DEFAULT_LLM_RETRY_POLICY, () => 0.5, now);
+    expect(far).toMatchObject({ action: 'defer', cause: 'cooldown', requestedMs: 600_000 });
+    expect((far as any).reason).toMatch(/rate-limit cooldown: provider asked to wait 600s/);
+    // 60 s fits a fresh budget but not after 90 s have already been spent.
+    expect(planRetry(2, { 'Retry-After': '60' }, 90_000, DEFAULT_LLM_RETRY_POLICY, () => 0.5, now)).toMatchObject({ action: 'defer', cause: 'cooldown' });
+  });
+
+  it('caps only calculated jitter at 20 s, and defers when our own backoff exceeds the budget', () => {
+    expect(planRetry(6, null, 0, DEFAULT_LLM_RETRY_POLICY, () => 1, now)).toEqual({ action: 'wait', delayMs: 20_000, source: 'backoff' });
+    expect(planRetry(6, null, 110_000, DEFAULT_LLM_RETRY_POLICY, () => 1, now)).toMatchObject({ action: 'defer', cause: 'budget' });
   });
 
   it('uses 5 attempts by default', () => {
@@ -167,13 +180,37 @@ describe('OpenRouterProvider retries (fake fetch)', () => {
     expect((await new OpenRouterProvider({ apiKey: 'k', model: MODEL, baseUrl: OR }, deps(f).deps).chat(msgs)).content).toBe('back');
   });
 
-  it('stops waiting once the total wait budget is spent', async () => {
+  it('honours Retry-After: 60 in full (does not retry after 20 s)', async () => {
+    const f = fakeFetch((_m, n) => (n === 1 ? rateLimited({ 'Retry-After': '60' }) : ok('x')));
+    const d = deps(f);
+    await new OpenRouterProvider({ apiKey: 'k', model: MODEL, baseUrl: OR }, d.deps).chat(msgs);
+    expect(d.sleeps).toEqual([60_000]);
+  });
+
+  it('a cooldown beyond the budget stops the call: no early retry and no fallback to evade it', async () => {
+    const f = fakeFetch(() => rateLimited({ 'Retry-After': '3600' }));
+    const d = deps(f);
+    const p = new OpenRouterProvider({ apiKey: 'k', model: MODEL, baseUrl: OR }, d.deps);
+    await expect(p.chat(msgs)).rejects.toThrow(/cooldown/);
+    expect(f.calls.map((c) => c.model)).toEqual([MODEL]); // one call, no fallback
+    expect(d.sleeps).toEqual([]);
+    expect(p.getModel()).toBe(MODEL);
+  });
+
+  it('X-RateLimit-Reset far in the future is treated the same way', async () => {
+    const f = fakeFetch(() => rateLimited({ 'X-RateLimit-Reset': String(1_700_000_000_000 + 30 * 60_000) }));
+    await expect(new OpenRouterProvider({ apiKey: 'k', model: MODEL, baseUrl: OR }, deps(f).deps).chat(msgs)).rejects.toThrow(/cooldown/);
+    expect(f.calls).toHaveLength(1);
+  });
+
+  it('budget exhaustion with server-paced waits stops the call (bounded runtime, no fallback)', async () => {
     const f = fakeFetch((m) => (m === MODEL ? rateLimited({ 'Retry-After': '20' }) : ok('x')));
     const d = deps(f);
     const p = new OpenRouterProvider({ apiKey: 'k', model: MODEL, baseUrl: OR }, { ...d.deps, retryPolicy: { ...DEFAULT_LLM_RETRY_POLICY, maxTotalWaitMs: 45_000 } });
-    await p.chat(msgs);
-    expect(d.sleeps).toEqual([20_000, 20_000]); // third 20 s wait would exceed 45 s → fall back
-    expect(f.calls.map((c) => c.model)).toEqual([MODEL, MODEL, MODEL, OPENROUTER_FREE_ROUTER]);
+    await expect(p.chat(msgs)).rejects.toThrow(/cooldown/);
+    expect(d.sleeps).toEqual([20_000, 20_000]); // a third 20 s wait would pass 45 s
+    expect(f.calls.map((c) => c.model)).toEqual([MODEL, MODEL, MODEL]);
+    expect(d.sleeps.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(45_000);
   });
 });
 
@@ -218,6 +255,25 @@ describe('VisualAIAnalyzer retries (fake fetch)', () => {
     expect(r.reason).toMatch(/rate_limited|empty/);
     expect(f.calls).toHaveLength(10);
     expect(f.calls.every((c) => isFreeModelId(c.model))).toBe(true);
+  });
+
+  it('vision: a provider cooldown beyond the budget fails the call without fallback', async () => {
+    const f = fakeFetch(() => rateLimited({ 'Retry-After': '900' }));
+    const d = deps(f);
+    const r = await new VisualAIAnalyzer({ apiKey: 'k', model: MODEL, baseUrl: OR }, d.deps).analyzeScreenshot(img, 'ctx');
+    expect(r.status).toBe('failed');
+    expect(r.reason).toMatch(/cooldown/);
+    expect(f.calls.map((c) => c.model)).toEqual([MODEL]);
+    expect(d.sleeps).toEqual([]);
+  });
+
+  it('vision: Retry-After: 60 is honoured in full', async () => {
+    const visionJson2 = JSON.stringify({ explanation: 'e', clarityFeedback: 'c', annotatedBoxes: [] });
+    const f = fakeFetch((_m, n) => (n === 1 ? rateLimited({ 'Retry-After': '60' }) : ok(visionJson2)));
+    const d = deps(f);
+    const r = await new VisualAIAnalyzer({ apiKey: 'k', model: MODEL, baseUrl: OR }, d.deps).analyzeScreenshot(img, 'ctx');
+    expect(r.status).toBe('ok');
+    expect(d.sleeps).toEqual([60_000]);
   });
 
   it('reports status skipped when no OpenRouter key is configured', async () => {

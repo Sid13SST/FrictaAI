@@ -9,8 +9,11 @@
  * retry loop and the audit failed at step 2):
  *   - up to 5 attempts per model on 429 / 408 / 5xx / network errors / timeouts
  *     / empty content;
- *   - waits honour Retry-After / X-RateLimit-Reset, otherwise exponential
- *     backoff with full jitter, each capped at 20 s, total budget 120 s;
+ *   - waits honour Retry-After / X-RateLimit-Reset exactly (never shortened);
+ *     otherwise exponential backoff with full jitter capped at 20 s; total
+ *     wait budget 120 s per call. If the provider asks to wait longer than the
+ *     remaining budget, the call stops with a 'cooldown' reason instead of
+ *     retrying early, and does NOT fall back (that would evade the cooldown);
  *   - after a model's retries are exhausted on 429 or empty content (or it is
  *     gone: 404, or out of credit: 402 on a paid model), fall back ONCE to
  *     openrouter/free, OpenRouter's free-only router. Never to a paid id.
@@ -27,7 +30,7 @@ import {
   isFreeModelId,
   assertModelAllowed,
   isRetryableStatus,
-  retryDelayMs,
+  planRetry,
 } from '@fricta/shared';
 
 const DEFAULT_MODEL = DEFAULT_FREE_AGENT_MODEL;
@@ -71,13 +74,13 @@ function updateRateLimitState(): void {
 }
 
 /** Why the last attempt on a model failed. */
-type FailureReason = 'rate_limited' | 'empty' | 'server_error' | 'network' | 'not_found' | 'payment_required';
+type FailureReason = 'rate_limited' | 'cooldown' | 'empty' | 'server_error' | 'network' | 'not_found' | 'payment_required';
 
 type ModelOutcome =
   | { ok: true; response: AIProviderResponse }
   | { ok: false; reason: FailureReason; detail: string; attempts: number };
 
-/** Reasons after which falling back to openrouter/free is worthwhile. */
+/** Reasons after which falling back to openrouter/free is worthwhile. Never 'cooldown'. */
 const FALLBACK_REASONS: FailureReason[] = ['rate_limited', 'empty', 'not_found', 'payment_required'];
 
 // ─── OpenRouter Provider ──────────────────────────────────────────────────────
@@ -239,14 +242,16 @@ export class OpenRouterProvider {
       }
 
       if (attempt >= this.policy.maxAttempts) break;
-      const delay = retryDelayMs(attempt, headers, this.policy, this.random, this.now());
-      if (budget.waitedMs + delay > this.policy.maxTotalWaitMs) {
-        console.warn(`[OpenRouter] Retry wait budget (${this.policy.maxTotalWaitMs}ms) exhausted on ${model}.`);
-        return { ok: false, ...last, attempts: attempt };
+      const plan = planRetry(attempt, headers, budget.waitedMs, this.policy, this.random, this.now());
+      if (plan.action === 'defer') {
+        console.warn(`[OpenRouter] ${model}: ${plan.reason}; not retrying this call.`);
+        return plan.cause === 'cooldown'
+          ? { ok: false, reason: 'cooldown', detail: plan.reason, attempts: attempt }
+          : { ok: false, ...last, detail: `${last.detail}; ${plan.reason}`, attempts: attempt };
       }
-      console.warn(`[OpenRouter] ${model} attempt ${attempt}/${this.policy.maxAttempts} failed (${last.detail}); retrying in ${delay}ms.`);
-      budget.waitedMs += delay;
-      await this.sleep(delay);
+      console.warn(`[OpenRouter] ${model} attempt ${attempt}/${this.policy.maxAttempts} failed (${last.detail}); retrying in ${plan.delayMs}ms (${plan.source}).`);
+      budget.waitedMs += plan.delayMs;
+      await this.sleep(plan.delayMs);
     }
 
     return { ok: false, ...last, attempts: this.policy.maxAttempts };
