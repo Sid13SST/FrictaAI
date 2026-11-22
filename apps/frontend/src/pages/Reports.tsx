@@ -10,12 +10,22 @@ import { useReports, type ReportSummary } from '../hooks/api/useReports';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Skeleton, SkeletonGroup } from '../components/common/Skeleton';
+import { gradeForScore } from '../lib/grade';
 
 // ─── Score Ring ───────────────────────────────────────────────────────────────
 
-const ScoreRing = ({ score }: { score: number }) => {
+const ScoreRing = ({ score }: { score: number | null }) => {
   const radius = 26;
   const circumference = 2 * Math.PI * radius;
+  if (score === null) {
+    // Not scored (insufficient evidence): an empty grey ring with a dash.
+    return (
+      <svg width="68" height="68" viewBox="0 0 68 68" className="flex-shrink-0" role="img" aria-label="Not scored">
+        <circle cx="34" cy="34" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" strokeDasharray="4 4" />
+        <text x="34" y="39" textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="14" fontWeight="800" fontFamily="monospace">—</text>
+      </svg>
+    );
+  }
   const progress = Math.min(Math.max(score, 0), 100);
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
@@ -60,16 +70,6 @@ const severityStyle = (sev: string) => {
   }
 };
 
-// ─── Grade helper ─────────────────────────────────────────────────────────────
-
-const gradeFromScore = (score: number) => {
-  if (score >= 90) return 'A+';
-  if (score >= 80) return 'A';
-  if (score >= 70) return 'B';
-  if (score >= 60) return 'C';
-  if (score >= 45) return 'D';
-  return 'F';
-};
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -78,30 +78,33 @@ export const Reports = () => {
   const reports: ReportSummary[] = data ?? [];
   const [search, setSearch]     = useState('');
   const [sortBy, setSortBy]     = useState<'newest' | 'score_high' | 'score_low'>('newest');
-  const [filterGrade, setFilterGrade] = useState<'ALL' | 'A' | 'B' | 'C' | 'D' | 'F'>('ALL');
+  const [filterGrade, setFilterGrade] = useState<'ALL' | 'A' | 'B' | 'C' | 'D' | 'F' | 'N/A'>('ALL');
 
   const fetchReports = () => { void refetch(); };
 
-  const gradeOf = (r: ReportSummary) => gradeFromScore(r.score ?? 0);
+  const gradeOf = (r: ReportSummary) => gradeForScore(r.score);
 
   const filtered = reports
     .filter(r => {
       if (search && !r.sessionId?.toLowerCase().includes(search.toLowerCase()) &&
           !r.summary?.toLowerCase().includes(search.toLowerCase())) return false;
       // The "A" pill covers both A and A+.
-      if (filterGrade !== 'ALL' && gradeOf(r).charAt(0) !== filterGrade) return false;
+      if (filterGrade !== 'ALL' && gradeOf(r) !== filterGrade) return false;
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === 'score_high') return (b.score ?? 0) - (a.score ?? 0);
-      if (sortBy === 'score_low')  return (a.score ?? 0) - (b.score ?? 0);
+      // Unscored reports sort last either way.
+      if (sortBy === 'score_high') return (b.score ?? -1) - (a.score ?? -1);
+      if (sortBy === 'score_low')  return (a.score ?? 101) - (b.score ?? 101);
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   // Summary stats
-  const avgScore   = reports.length ? Math.round(reports.reduce((s, r) => s + (r.score ?? 0), 0) / reports.length) : 0;
-  const critical   = reports.filter(r => (r.score ?? 100) < 50).length;
-  const excellent  = reports.filter(r => (r.score ?? 0) >= 80).length;
+  // Unscored (insufficient-evidence) reports are excluded from score stats.
+  const scored     = reports.filter(r => r.score !== null && r.score !== undefined);
+  const avgScore   = scored.length ? Math.round(scored.reduce((s, r) => s + (r.score as number), 0) / scored.length) : null;
+  const critical   = scored.filter(r => (r.score as number) < 50).length;
+  const excellent  = scored.filter(r => gradeForScore(r.score) === 'A').length;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
@@ -146,7 +149,7 @@ export const Reports = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Total Reports', value: String(reports.length), icon: Layers,       color: '#7342E2',  glow: 'rgba(115, 66, 226,0.15)'  },
-            { label: 'Avg UX Score',  value: `${avgScore}/100`,      icon: TrendingUp,   color: '#7342E2',  glow: 'rgba(115, 66, 226,0.12)'  },
+            { label: 'Avg UX Score',  value: avgScore === null ? '—' : `${avgScore}/100`,      icon: TrendingUp,   color: '#7342E2',  glow: 'rgba(115, 66, 226,0.12)'  },
             { label: 'Excellent (A)', value: String(excellent),       icon: CheckCircle2, color: '#34d399',  glow: 'rgba(52,211,153,0.12)'  },
             { label: 'Critical Issues',value: String(critical),       icon: AlertTriangle,color: '#fb923c',  glow: 'rgba(251,146,60,0.12)'  },
           ].map((stat, i) => (
@@ -194,7 +197,7 @@ export const Reports = () => {
 
           {/* Grade filter pills */}
           <div className="flex gap-1 p-1 rounded-xl self-start sm:self-auto" style={{ background: 'rgba(9,9,11,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            {(['ALL', 'A', 'B', 'C', 'D', 'F'] as const).map(g => (
+            {(['ALL', 'A', 'B', 'C', 'D', 'F', 'N/A'] as const).map(g => (
               <button
                 key={g}
                 onClick={() => setFilterGrade(g)}
@@ -284,8 +287,8 @@ export const Reports = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {filtered.map((report) => {
             const grade = gradeOf(report);
-            const score = report.score ?? 0;
-            const sev = score >= 80 ? 'LOW' : score >= 60 ? 'MEDIUM' : score >= 40 ? 'HIGH' : 'CRITICAL';
+            const score = report.score ?? null;
+            const sev = score === null ? 'NOT SCORED' : score >= 80 ? 'LOW' : score >= 60 ? 'MEDIUM' : score >= 40 ? 'HIGH' : 'CRITICAL';
             const sevStyle = severityStyle(sev);
             const date = new Date(report.createdAt);
             const timeAgo = (() => {
@@ -323,7 +326,7 @@ export const Reports = () => {
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <ScoreRing score={report.score ?? 0} />
+                    <ScoreRing score={score} />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
@@ -336,7 +339,7 @@ export const Reports = () => {
                           className="text-[9px] px-2 py-0.5 rounded-full font-black font-mono uppercase"
                           style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
                         >
-                          Grade {grade}
+                          {grade === 'N/A' ? 'Not scored' : `Grade ${grade}`}
                         </span>
                       </div>
                       <h3 className="text-sm font-bold text-white mt-1.5">
