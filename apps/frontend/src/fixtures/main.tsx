@@ -54,7 +54,7 @@ const FixtureBadge = () => (
     style={{ background: '#f59e0b', color: '#1a1205' }}
   >
     {liveApi
-      ? 'Real backend data · stub-LLM audit · Clerk mocked · not a live session'
+      ? 'Live API · stub LLM · Clerk mocked'
       : <>Fixture data · {scenario}{authLoading ? ' · auth loading' : ''} · not a live session</>}
   </div>
 );

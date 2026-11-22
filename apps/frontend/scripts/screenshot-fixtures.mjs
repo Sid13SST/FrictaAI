@@ -12,6 +12,12 @@
  *
  * Env: FIXTURES_URL (default http://127.0.0.1:3100), CHROMIUM_PATH (optional
  * browser binary), ONLY (comma-separated shot names to re-take).
+ *
+ * LIVE mode (LIVE_STATE=<state.json from `run-audit-e2e.mjs --keep-alive`):
+ * the harness must run with FIXTURES_API_TARGET=<state.api>, so pages are
+ * populated by the REAL backend from an audit driven by the local LLM stub.
+ * Clerk stays mocked; the state's test token is injected for API calls.
+ * Output: docs/verification/v1-finish/screenshots/<width>/<name>.png.
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -19,7 +25,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BASE = process.env.FIXTURES_URL ?? 'http://127.0.0.1:3100';
-const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/verification/v1-frontend/screenshots');
+const LIVE = process.env.LIVE_STATE ? JSON.parse(fs.readFileSync(process.env.LIVE_STATE, 'utf8')) : null;
+const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
+  LIVE ? '../../../docs/verification/v1-finish/screenshots' : '../../../docs/verification/v1-frontend/screenshots');
 const WIDTHS = [390, 768, 1440];
 const HEIGHTS = { 390: 844, 768: 1024, 1440: 900 };
 
@@ -70,6 +78,16 @@ const SHOTS = [
   { name: 'runtime-observability--error', path: '/app/runtime', fx: 'error' },
 ];
 
+const LIVE_SHOTS = LIVE ? [
+  { name: 'landing', path: '/', scrollThrough: true },
+  { name: 'dashboard', path: '/app' },
+  { name: 'new-audit', path: '/app/workflow' },
+  { name: 'audit-monitor', path: `/app/monitor/${LIVE.sessionId}` },
+  { name: 'report', path: `/app/reports/${LIVE.sessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() },
+  { name: 'report-replay', path: `/app/reports/${LIVE.sessionId}`, after: p => p.getByRole('button', { name: 'Timeline Replay' }).click() },
+  { name: 'report-dead-end', path: `/app/reports/${LIVE.deadEndSessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() },
+] : null;
+
 const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -77,7 +95,7 @@ const report = [];
 
 for (const width of WIDTHS) {
   fs.mkdirSync(path.join(OUT, String(width)), { recursive: true });
-  for (const shot of SHOTS) {
+  for (const shot of LIVE_SHOTS ?? SHOTS) {
     if (only && !only.has(shot.name)) continue;
     if (shot.desktopOnly && width < 1024) continue;
 
@@ -95,14 +113,17 @@ for (const width of WIDTHS) {
       errors.push(`console: ${t.slice(0, 300)}`);
     });
 
+    if (LIVE) {
+      await page.addInitScript((t) => { window.__FRICTA_TEST_TOKEN__ = t; }, LIVE.token);
+    }
     if (shot.noAudits) {
       await page.addInitScript(() => { window.__FX_NO_AUDITS__ = true; });
     }
-    const qs = [`fx=${shot.fx ?? 'populated'}`, `fxAuth=${shot.query?.includes('fxAuth') ? 'loading' : 'ready'}`, shot.query].filter(Boolean).join('&');
-    await page.goto(`${BASE}${shot.path}?${qs}`, { waitUntil: 'load' });
+    const qs = LIVE ? '' : [`fx=${shot.fx ?? 'populated'}`, `fxAuth=${shot.query?.includes('fxAuth') ? 'loading' : 'ready'}`, shot.query].filter(Boolean).join('&');
+    await page.goto(`${BASE}${shot.path}${qs ? `?${qs}` : ''}`, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(1200);
-    if (shot.after) { await shot.after(page); await page.waitForTimeout(900); }
+    await page.waitForTimeout(LIVE ? 2500 : 1200);
+    if (shot.after) { await shot.after(page); await page.waitForTimeout(LIVE ? 2000 : 900); }
 
     if (shot.scrollThrough) {
       // Trigger scroll-into-view animations, then return to the top.
@@ -156,6 +177,10 @@ for (const width of WIDTHS) {
       await page.waitForTimeout(300);
     }
 
+    // Park the pointer so hover-only UI (tooltips) is not caught mid-fade
+    // after the capture CSS above re-flows content under it.
+    await page.mouse.move(width - 2, HEIGHTS[width] - 2);
+    await page.waitForTimeout(350);
     const file = path.join(OUT, String(width), `${shot.name}.png`);
     const png = await page.screenshot({ path: file, fullPage: true });
     // Belt and braces: the PNG's own width (bytes 16-19 of the IHDR chunk) must

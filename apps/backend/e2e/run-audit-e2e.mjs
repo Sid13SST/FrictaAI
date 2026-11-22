@@ -36,6 +36,12 @@ const backendDir = path.resolve(here, '..');
 const repoRoot = path.resolve(backendDir, '../..');
 const outArg = process.argv.indexOf('--out');
 const outFile = outArg > -1 ? process.argv[outArg + 1] : null;
+// --keep-alive <state.json>: after the checks, leave the backend, stub and
+// target site running and write {api, token, ids} there (for screenshotting
+// pages against real data). Stop with Ctrl-C / SIGTERM. The token is an
+// ephemeral test JWT for this run's throwaway keypair; keep the file out of git.
+const keepArg = process.argv.indexOf('--keep-alive');
+const keepAliveFile = keepArg > -1 ? process.argv[keepArg + 1] : null;
 
 const API_PORT = Number(process.env.E2E_API_PORT || 3101);
 const STUB_PORT = Number(process.env.E2E_STUB_PORT || 4010);
@@ -262,6 +268,14 @@ async function main() {
   const replay = await api('GET', `/api/workflows/${sessionId}/visual-replay`);
   const frames = replay.json?.timeline || replay.json?.events || replay.json?.frames || [];
   record('visual replay timeline', replay.status === 200, `HTTP ${replay.status} keys=${Object.keys(replay.json || {}).join(',')} items=${Array.isArray(frames) ? frames.length : '?'}`);
+  const shotPath = replay.json?.screenshots?.[0]?.filePath;
+  if (shotPath) {
+    const anon = await api('GET', `/api/workflows/screenshots/raw/${shotPath}`, { token: null, raw: true });
+    const own = await api('GET', `/api/workflows/screenshots/raw/${shotPath}`, { raw: true });
+    const bytes = (await own.arrayBuffer()).byteLength;
+    record('replay screenshot served only with auth', anon.status === 401 && own.status === 200 && bytes > 1000,
+      `anon=${anon.status} owner=${own.status} type=${own.headers.get('content-type')} bytes=${bytes}`);
+  } else record('replay screenshot served only with auth', false, 'no screenshot in replay');
   const vt = await api('GET', `/api/workflows/${sessionId}/visual-timeline`);
   record('screenshot timeline events', (vt.json?.timelineEvents || []).length > 0, `${(vt.json?.timelineEvents || []).length} events`);
 
@@ -334,13 +348,20 @@ async function main() {
   const stats = await (await fetch(`http://127.0.0.1:${STUB_PORT}/__stub/stats`)).json();
   record('stub actually served planner + vision calls', stats.planner > 0 && stats.vision > 0, JSON.stringify(stats));
 
-  return finish({ projectId, sessionId, logDir });
+  return finish({ projectId, sessionId, deadEndSessionId: deadId, logDir });
 }
 
 function finish(extra = {}) {
   const passed = results.filter((r) => r.ok).length;
   console.log(`\n[e2e] ${passed}/${results.length} checks passed (LLM = local stub, not a live model)`);
   if (outFile) fs.writeFileSync(outFile, JSON.stringify({ llm: 'local-stub (not a live LLM)', at: new Date().toISOString(), ...extra, results }, null, 2));
+  if (keepAliveFile && extra.sessionId) {
+    fs.writeFileSync(keepAliveFile, JSON.stringify({ api: API, token: ownerToken, ...extra }, null, 2), { mode: 0o600 });
+    console.log(`[e2e] keep-alive: backend on ${API}, state in ${keepAliveFile}. Ctrl-C to stop.`);
+    const stop = () => { cleanup(); process.exit(0); };
+    process.on('SIGINT', stop); process.on('SIGTERM', stop);
+    return;
+  }
   cleanup();
   process.exit(passed === results.length ? 0 : 1);
 }
