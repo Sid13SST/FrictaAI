@@ -11,7 +11,7 @@
  *   - requireAuth       — route-level: blocks unauthenticated requests with 401
  */
 
-import { clerkMiddleware, getAuth } from '@hono/clerk-auth';
+import { clerkMiddleware as honoClerkMiddleware, getAuth } from '@hono/clerk-auth';
 import type { MiddlewareHandler } from 'hono';
 import { ApiErrors } from '../utils/errors';
 
@@ -19,7 +19,24 @@ import { ApiErrors } from '../utils/errors';
 // Apply this globally. It decodes the JWT from the Authorization header
 // and attaches claims to the Hono context, but does NOT reject requests.
 // This allows public routes to work without tokens.
-export { clerkMiddleware, getAuth };
+//
+// Options are passed explicitly (instead of letting @hono/clerk-auth read
+// env on its own) so CLERK_JWT_KEY is honoured: with it set, Clerk verifies
+// session JWTs against that PEM public key locally ("networkless" verification,
+// Clerk Dashboard → API Keys → JWT public key) instead of fetching JWKS.
+// Unset, behaviour is unchanged: JWKS is fetched using CLERK_SECRET_KEY.
+export function clerkMiddleware(): MiddlewareHandler {
+  const jwtKey = process.env.CLERK_JWT_KEY?.trim();
+  return honoClerkMiddleware({
+    secretKey: process.env.CLERK_SECRET_KEY || '',
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY || '',
+    apiUrl: process.env.CLERK_API_URL,
+    apiVersion: process.env.CLERK_API_VERSION,
+    ...(jwtKey ? { jwtKey } : {}),
+  } as Parameters<typeof honoClerkMiddleware>[0]);
+}
+
+export { getAuth };
 
 // ─── requireAuth Middleware ───────────────────────────────────────────────────
 // Apply to protected route groups. Checks that clerkMiddleware() produced

@@ -40,7 +40,12 @@ class DiskExportStorage implements ExportStorage {
 async function renderHtmlToPdf(html: string): Promise<Buffer> {
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({
+      headless: true,
+      // Same optional override as the agent's BrowserManager.
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim() || undefined,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20px', bottom: '20px' } });
@@ -391,12 +396,8 @@ reportRoutes.get('/:id/export/pdf', requireWorkflowOwner('id'), async (c) => {
   const executiveSummary = ExecutiveSummaryEngine.synthesize(payload);
   const html = PDFRenderer.renderHTML(payload, executiveSummary);
 
-  let browser;
   try {
-    browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle' });
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20px', bottom: '20px' } });
+    const pdfBuffer = await renderHtmlToPdf(html);
     return new Response(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
@@ -407,8 +408,6 @@ reportRoutes.get('/:id/export/pdf', requireWorkflowOwner('id'), async (c) => {
   } catch (error: any) {
     console.error(`[Backend] Failed to render PDF for report ${id}:`, error.message);
     return c.json({ error: 'Failed to generate PDF export' }, 500);
-  } finally {
-    if (browser) await browser.close();
   }
 });
 

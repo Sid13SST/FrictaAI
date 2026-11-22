@@ -8,7 +8,8 @@
     "test:security": "tsx src/tests/test-security-hardening.ts && tsx src/tests/test-authorization.ts",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e:stub": "node e2e/run-audit-e2e.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.14",

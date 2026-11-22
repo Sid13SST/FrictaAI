@@ -6,8 +6,12 @@ export class BrowserManager {
 
   async launch(headless: boolean = true): Promise<void> {
     if (!this.browser) {
+      // Optional: use a preinstalled Chromium instead of Playwright's managed
+      // download (e.g. CI images or sandboxes that block the browser CDN).
+      const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim() || undefined;
       this.browser = await chromium.launch({
         headless,
+        executablePath,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
     }
@@ -21,6 +25,17 @@ export class BrowserManager {
     const context = await this.browser.newContext({
       viewport: { width: 1280, height: 800 },
       deviceScaleFactor: 1,
+    });
+
+    // When the backend runs under tsx (npm run dev), esbuild's keepNames wraps
+    // named functions in `__name(fn, "name")`. Functions handed to
+    // page.evaluate() are serialised into the page, where that helper does not
+    // exist, so every evaluate with a named inner function threw
+    // "ReferenceError: __name is not defined" (e.g. screenshot metadata).
+    // A no-op shim in each document makes those calls harmless. Passed as a
+    // string so the shim itself is never transformed.
+    await context.addInitScript({
+      content: 'if (typeof globalThis.__name !== "function") { globalThis.__name = function (fn) { return fn; }; }',
     });
 
     this.contexts.set(sessionId, context);
