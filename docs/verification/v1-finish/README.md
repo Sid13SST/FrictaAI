@@ -1,7 +1,7 @@
 # V1 finish — verification record
 
 Branch `fricta/v1-finish` (from `fricta/v1-frontend-completion` @ `489e803`).
-Run date: 2026-11-22, in a sandboxed cloud container with local PostgreSQL 16
+Run dates: 2026-11-22 (round 1 and round 2, same day), in a sandboxed cloud container with local PostgreSQL 16
 and Redis 7. **No live LLM was called.** No paid model or service was used, and
 no secret is in code, logs or commits.
 
@@ -19,7 +19,9 @@ stub. **Not verified** means not exercised; the reason is given.
 | Non-free id → `PaidModelNotAllowedError` at startup, in the factory and in direct provider/vision construction | Verified (unit tests) |
 | Only `ALLOW_PAID_MODELS=true` (exact) opts in | Verified (unit tests) |
 | `AGENT_BASE_URL` (+ optional `AGENT_API_KEY`) used by the planner **and** the vision analyzer | Verified (unit test against the stub; E2E runs entirely through it) |
-| `google/gemma-4-31b-it:free` really is free and accepts images on OpenRouter today | **Not verified from here.** openrouter.ai is blocked by this sandbox's egress proxy. The choice is based on OpenRouter's public model page as indexed by web search on 2026-11-22: text+image+video input, 262k context, $0, rate-limited, single provider (Google AI Studio). Re-check at <https://openrouter.ai/models?max_price=0> before relying on it. |
+| `google/gemma-4-31b-it:free` really is free and accepts images on OpenRouter today | **Not verified from this sandbox** (openrouter.ai is blocked by its egress proxy). Round 1 picked it from OpenRouter's public model page as indexed by web search: text+image+video input, 262k context, $0, rate-limited, single provider (Google AI Studio). Round 2: the project owner reports it was confirmed free and image-capable from OpenRouter's public models API on 2026-11-22; the default is unchanged. Free variants rotate, so re-check with `npm run check:models --workspace=@fricta/backend` (public API, no key, no cost). |
+| `check:models` re-check script | Logic verified offline against a **synthetic** saved response (`OPENROUTER_MODELS_FILE`): exit 0 when listed at $0 with image input, 1 when delisted or the vision model lacks image input. The live run from here exits 2 (unreachable), as expected. Not yet run against the real API. |
+| Startup note | Verified: the backend logs the active agent/vision model and endpoint, plus the re-check hint, at boot. |
 
 The free rule is a naming rule (`:free` suffix or the `openrouter/free`
 router). It cannot prove that an arbitrary `AGENT_BASE_URL` endpoint is free,
@@ -36,23 +38,34 @@ Clerk part uses networkless mode: `CLERK_JWT_KEY` is a throwaway PEM generated
 per run, and tokens are signed with its private key. No middleware is mocked.
 
 Run: `npm run test:e2e:stub --workspace=@fricta/backend`
-Result: **42/42 checks passed.** Full list: `e2e-stub-results.json`.
+Result: round 1 **42/42**; round 2 **75/75 checks passed** (the 42 plus 33 new
+ones). Full list from the final run: `e2e-stub-results.json`.
 
 | Step | Against the stub | Still needs a real LLM to trust |
 |---|---|---|
 | Launch (`POST /api/agent/workflow/run`) | Stub-verified | — |
-| BullMQ worker picks up job, Playwright browses a local target site | Stub-verified (RUNNING → COMPLETED, 3 steps; dead-end scenario → FAILED, 6 steps) | Whether a free model returns valid action JSON reliably, within the 150-token cap and the step timeout |
+| BullMQ worker picks up job, Playwright browses a local target site | Stub-verified (RUNNING → COMPLETED, 3 steps; dead-end scenario → FAILED: three scrolls succeed, then the validator rejects a fourth identical scroll and the planner's retry repeats it. Round 1 counted 6 steps for the same path, round 2's final run 3) | Whether a free model returns valid action JSON reliably, within the 150-token cap and the step timeout |
 | Status / thoughts / actions persisted and readable | Stub-verified | Quality of thoughts |
 | SSE (`/api/realtime/{replay,timeline,orchestration}`) connects + hydrates, rejects other users | Stub-verified (`system.connected`, `system.hydrated`) | Live event cadence during a long real run was not observed |
-| Report auto-generated on job completion, listed, executive summary, timeline | Stub-verified | Meaningfulness of scores |
+| Report auto-generated on job completion, listed, executive summary, timeline | Stub-verified. Round 2: on completion the worker first runs heuristic visual analysis and UX analysis, so findings exist when the grade is computed | Meaningfulness of scores |
+| One audit score (report = executive grade = reports list = Markdown = PM summary) | Stub-verified (round 2): happy path 90/A, dead-end 55/F, no-exit 55/F; list matches right after analysis | The happy path's 90 includes −24 for visual findings, part of which are the **stub's** scripted `[STUB]` vision boxes. A real model will produce different findings and so different scores |
 | Findings: visual heuristics + vision call, UX analysis, recommendations, orchestrator, agent findings, shared memory, historical analysis | Stub-verified (vision request reached the stub with a real screenshot; 9 visual findings; dead-end run yields a UX friction finding) | **Vision accuracy:** the stub returns a fixed `[STUB]` box. A real image-capable free model has never been called. |
 | Replay: 3 screenshots + 3 timeline events, raw image served only with auth (401 anon / 200 owner, real WebP) | Stub-verified | — |
 | Exports: JSON, PDF (real `%PDF-`, ~85 KB) | Stub-verified | — |
+| Markdown + PM-summary exports (server-generated in `GET /api/reports/:id/export`) | Stub-verified (round 2): both contain the same score and grade as the report; Markdown includes the goal | Content quality |
+| Executive report → `/api/reports/exports*`: queue PDF, list, complete, download | Stub-verified (round 2): real `%PDF-` download, ~62 KB; `SNAPSHOT` (not implemented) ends FAILED with "not yet implemented"; other users get 403 on list, create and download | Only PDF is implemented; PRESENTATION / SNAPSHOT / CSV / ZIP are not |
+| Sharing: create, list, anonymous open (`GET /api/shared/:token`), unknown / revoked / expired / max-uses tokens, cross-user create, list and revoke | Verified (round 2) | — |
+| `dead_end` terminal signal → `LOOP_DETECTED` | Stub-verified (round 2): on a page with no links, buttons or inputs the stub sends `dead_end`; the run ends `LOOP_DETECTED` (actions `scroll`, `wait:dead_end`) and is graded F | Whether a real model emits `dead_end` when appropriate |
+| Concurrency: two audits launched at once, two backend/worker processes on the same Postgres + Redis | Stub-verified (round 2): each job ran on exactly one worker (one per process in the final run), both COMPLETED, screenshots and actions stayed on each audit's own site (`/alpha` vs `/beta`), exactly one report each, queue empty afterwards | Only 2 audits × 2 workers, once per run. Not a load test, not worker crash/stall recovery |
 | Cross-user isolation on 13 session-scoped routes + SSE + historical | Verified | — |
 
-Not exercised: Markdown / PM-summary exports (client-side), the
-`/api/reports/exports*` and sharing endpoints, real OpenRouter
-rate-limit/402/404 handling, multi-worker concurrency.
+Round 1 listed as not exercised: Markdown / PM-summary exports (wrongly
+described as client-side; they are server-generated), the
+`/api/reports/exports*` and sharing endpoints, and multi-worker concurrency.
+All are exercised in round 2 (rows above). Still not exercised: real
+OpenRouter rate-limit/402/404 handling, export templates / evidence /
+distribution endpoints (now reachable, see bug 14, but not driven), and load
+beyond two concurrent audits.
 
 ### Real bugs this exposed (all fixed on this branch)
 1. `page.evaluate` threw `__name is not defined` under tsx (`npm run dev`), so screenshot metadata was always empty. Fixed with a shim per browser context.
@@ -67,6 +80,14 @@ rate-limit/402/404 handling, multi-worker concurrency.
 10. The step-friction strip overflowed its panel by 53 px at exactly 768 px (`md:flex-nowrap`).
 11. `npm ci` ran `npx playwright install` via a `postinstall` and failed wherever the browser CDN is blocked (this also affected the frontend Docker build).
 12. Clerk middleware ignored `CLERK_JWT_KEY` (`@hono/clerk-auth` drops it when reading env itself).
+
+Round 2:
+
+13. **Grade ignored outcome and findings.** Every pillar started at 100 and only action-log signals were subtracted, and the grade was computed before any visual/UX analysis ran. So a failed dead-end audit with visual warnings was "A 100/100". Now `scoreAudit()` (ux-engine) is the single source of truth: behavioural pillars, minus UX findings (smoothness, capped −40), minus visual defect findings (clarity, capped −25; `vision_summary` commentary ignored), and capped at 55 (grade F) when the goal was not reached. The formula has no hard-coded 100 once findings exist (unit-tested).
+14. **Route shadowing.** `GET /api/reports/:id` was registered before the static `GET /exports`, `/sharing`, `/templates`, `/evidence` and `/distribution`, so those handlers never ran (Hono answered 404 from `requireWorkflowOwner('exports')`; reproduced with a minimal Hono app). Session-scoped routes now register last.
+15. **Share links couldn't be opened anonymously.** The only resolver required auth and returned the creator's user id and the recipient email. The new public `GET /api/shared/:token` returns just the shared report and its expiry.
+16. **Persona panel invented a second score.** "Overall Score 89" came from hard-coded per-persona constants. It now projects the audit score: Standard is the audit score itself; other personas subtract only findings tagged for them (frontend unit-tested).
+17. **Reports list showed stale scores.** The orchestrator ("Run UX Diagnostics") and report generation wrote the raw behavioural score back to `UXReport.score`, so the list said 100 while the report said 90. All writers now store the audit score, and visual/UX analysis refreshes it.
 
 ## 3. Landing/auth video and Clerk fallback
 - **Mux video:** the auth-shell background streamed `stream.mux.com/…m3u8` (reported 403). This sandbox can't reach Mux at all, so the 403 itself was not reproduced here. Replaced with the bundled, previously unused `Video_Fricta.mp4`, and `hls.js` removed. The landing page already used a bundled MP4. **Verified:** the video renders as the auth background (local probe screenshot).
@@ -110,18 +131,19 @@ the likely cause and a reload button. Verified in the second probe attempt.
 | `npm ci` | passes (after removing the browser-download postinstall) |
 | `npx turbo run build` (45 packages incl. frontend) | **pass** |
 | `npm run typecheck` (backend + frontend) | **pass** |
-| `npm run lint` | **0 errors**, 2,568 warnings (2,567 before this branch; the +1 is a `tx: any` in the UX coordinator) |
-| Backend unit (`vitest run`) | **67/67 pass** (10 new for the LLM policy, 4 new 403 cases) |
-| Backend integration (`vitest --config vitest.integration.config.ts`, real `fricta_test` DB) | **31/31 pass** |
-| `npm run test:security` | **8/8 + 19/19 pass** |
-| E2E vs stub (`test:e2e:stub`) | **42/42 pass** |
-| Frontend unit tests | none exist |
+| `npm run lint` | **0 errors**. Warnings: 2,567 before this branch → 2,568 after round 1 → 2,583 after round 2 (+15 `any` casts in new backend code: Prisma tx and coordinator wiring) |
+| Backend unit (`vitest run`) | Round 1 **67/67**; round 2 **76/76** (7 new `scoreAudit` tests, 2 new grade tests in `report.test.ts`) |
+| Backend integration (`vitest --config vitest.integration.config.ts`, real `fricta_test` DB) | **31/31 pass** (both rounds) |
+| `npm run test:security` | **8/8 + 19/19 pass** (both rounds) |
+| E2E vs stub (`test:e2e:stub`) | Round 1 **42/42**; round 2 **75/75** |
+| Frontend unit (`npm test -w @fricta/frontend`, new in round 2) | **4/4 pass** (persona projection) |
 
 ## 6. Screenshots (390 / 768 / 1440)
 `screenshots/<width>/`: `landing`, `dashboard`, `new-audit`, `audit-monitor`,
 `report` (UX Findings tab), `report-replay` (Timeline Replay tab),
-`report-dead-end`. 21 images; `layout-report.json` has per-shot overflow
-measurements.
+`report-dead-end`, and (round 2) `report-dead-end-persona` (Power
+Administrator selected). 24 images, all re-shot in round 2 from a fresh run;
+`layout-report.json` has per-shot overflow measurements.
 
 How they were made: the dev-only harness in **live-API mode**
 (`FIXTURES_API_TARGET`) proxied `/api` to the real backend left running by
@@ -131,7 +153,15 @@ real screenshots of the local target site. **Clerk is mocked** (no real session
 is possible here; see §4), so the user shows as "Fixture User". The amber badge
 on every shot says "Live API · stub LLM · Clerk mocked".
 
-Inspection: automated overflow check, 0 flagged on the final run. Visual
+Round 2 inspection: automated overflow check, 0 of 24 flagged. Visual review
+of the report pages at 1440, 768 and 390: the dead-end report shows grade F
+55/100 with "Audit score 55, same score as the report grade" beside it, and the
+persona shot shows "Projected for persona 51" (55 − 4). One cramped layout was
+found and fixed before the final shots: the big heading wrapped to three lines
+with its caption squeezed into a narrow column at 1440. The caption is now
+full width under the gauge.
+
+Round 1 inspection: automated overflow check, 0 flagged on the final run. Visual
 review of the replay (1440, 390), report (768), dashboard, new audit and
 monitor (390) found no clipping, except the two defects already listed (768
 heatmap overflow, broken replay images), both fixed before the final run. On
@@ -141,7 +171,9 @@ phones the Timeline Replay tab intentionally shows a "best on desktop" notice.
 - **No live LLM call has ever been made.** Unknowns: free-model JSON reliability, latency against the 150-token cap and step timeouts, OpenRouter free-tier rate limits, vision quality, and whether `google/gemma-4-31b-it:free` is still listed when the key arrives.
 - **Real-Clerk sign-up not verified** (blocked hosts; see §4). Real sign-in was verified in an earlier session, not in this one.
 - Mux 403 not reproduced here (Mux unreachable), only removed.
-- The report page shows two different scores (grade "A 100/100" from report scores vs "Overall Score 89" from the persona simulation). It's a product-copy/scoring inconsistency, not fixed.
-- The dead-end scenario ends `FAILED`, not `LOOP_DETECTED`: the action validator rejects the stub's third identical scroll. That is correct validator behaviour given the stub's script, but it means the `dead_end` terminal path was not exercised.
+- ~~The report page shows two different scores~~. **Fixed in round 2** (bugs 13, 16, 17). Caveat: the penalty weights (−5/−10/−15 per UX finding, −1…−8 per visual finding, F-cap 55) are product judgement, not calibrated against real users or a real model's findings.
+- ~~The `dead_end` terminal path was not exercised~~. **Exercised in round 2** via the no-exit page (`LOOP_DETECTED`). The original dead-end scenario still ends `FAILED` through the validator-rejection path, which is also exercised.
+- Concurrency covers 2 audits × 2 workers in one run. Not covered: worker crash mid-job, BullMQ stalled-job recovery, more than 2 parallel browsers, multiple Node processes hitting the per-process in-memory fallbacks (`memoryDb`) when the DB is down.
+- Export formats other than PDF are not implemented (they fail honestly).
 - BullMQ retries a job up to 3× only when `runWorkflow` throws (e.g. provider setup failure); a failed agent loop is not retried. Not changed.
 - Lint warnings (2.5k, pre-existing) not addressed.

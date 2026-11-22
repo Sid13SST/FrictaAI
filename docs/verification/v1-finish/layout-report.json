@@ -70,6 +70,16 @@
     "errors": []
   },
   {
+    "name": "report-dead-end-persona",
+    "width": 390,
+    "imageWidth": 390,
+    "viewport": 390,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
     "name": "landing",
     "width": 768,
     "imageWidth": 768,
@@ -140,6 +150,16 @@
     "errors": []
   },
   {
+    "name": "report-dead-end-persona",
+    "width": 768,
+    "imageWidth": 768,
+    "viewport": 768,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
     "name": "landing",
     "width": 1440,
     "imageWidth": 1440,
@@ -201,6 +221,16 @@
   },
   {
     "name": "report-dead-end",
+    "width": 1440,
+    "imageWidth": 1440,
+    "viewport": 1440,
+    "documentOverflowPx": 0,
+    "contentOverflowPx": 0,
+    "offenders": [],
+    "errors": []
+  },
+  {
+    "name": "report-dead-end-persona",
     "width": 1440,
     "imageWidth": 1440,
     "viewport": 1440,

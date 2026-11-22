@@ -1,19 +1,24 @@
 {
   "llm": "local-stub (not a live LLM)",
-  "at": "2026-11-22T12:07:56.982Z",
-  "projectId": "f6d7e1bd-b18e-489a-93e4-c6568f108880",
-  "sessionId": "8b60b4e6-a280-475e-a67e-ca47730a4bba",
-  "deadEndSessionId": "2c86a517-cf42-42c9-a8cf-3a70328399c2",
+  "at": "2026-11-22T12:37:37.983Z",
+  "projectId": "fa58df2d-27ca-42ff-8e0e-ca45e7b97f4c",
+  "sessionId": "572c3abd-50d5-4174-9791-eaed20623fda",
+  "deadEndSessionId": "d9366ec0-cd77-453f-a481-1bc4b3466833",
+  "noExitSessionId": "b32d38d4-7b8b-4a59-91c3-5eed16d8c163",
+  "concurrent": {
+    "alpha": "96fe7a33-7e86-426b-8e3f-f79ef6a3d241",
+    "beta": "378ef6bc-4aed-45ad-960f-be42ebfbbd49"
+  },
   "results": [
     {
       "step": "stub LLM server up",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-ycwt1U/stub-llm.log"
+      "detail": "/tmp/fricta-e2e-AOMxsY/stub-llm.log"
     },
     {
       "step": "backend boots (env validation, DB, Redis, migrations)",
       "ok": true,
-      "detail": "/tmp/fricta-e2e-ycwt1U/backend.log"
+      "detail": "/tmp/fricta-e2e-AOMxsY/backend.log"
     },
     {
       "step": "unauthenticated request rejected",
@@ -118,7 +123,7 @@
     {
       "step": "PDF export",
       "ok": true,
-      "detail": "HTTP 200 type=application/pdf bytes=85239 head=\"%PDF-\""
+      "detail": "HTTP 200 type=application/pdf bytes=86969 head=\"%PDF-\""
     },
     {
       "step": "visual replay timeline",
@@ -198,7 +203,7 @@
     {
       "step": "dead-end audit ends unsuccessfully",
       "ok": true,
-      "detail": "final=FAILED steps=6"
+      "detail": "final=FAILED steps=3"
     },
     {
       "step": "dead-end audit still gets a diagnostic report",
@@ -211,9 +216,174 @@
       "detail": "count=1 Friction Loops Interrupting Expert Speed"
     },
     {
+      "step": "reports list is refreshed by analysis (not only when the report is opened)",
+      "ok": true,
+      "detail": "list-before-open=90 report=90"
+    },
+    {
+      "step": "score: report, executive grade and reports list agree (happy path)",
+      "ok": true,
+      "detail": "report=90 exec=90 list=90 grade=A basis={\"goalReached\":true,\"behaviouralOverall\":100,\"uxFindingsPenalty\":0,\"visualFindingsPenalty\":24,\"outcomeCap\":null}"
+    },
+    {
+      "step": "score: findings lower the happy-path score below 100",
+      "ok": true,
+      "detail": "visualFindings=9 uxFindings=0 score=90"
+    },
+    {
+      "step": "Markdown export carries the same score + grade",
+      "ok": true,
+      "detail": "3459 chars"
+    },
+    {
+      "step": "PM summary export carries the same score + grade",
+      "ok": true,
+      "detail": "644 chars"
+    },
+    {
+      "step": "score: dead-end audit (goal not reached) is graded F, not A 100/100",
+      "ok": true,
+      "detail": "report=55 exec=55 list=55 grade=F visualFindings=24 basis={\"goalReached\":false,\"behaviouralOverall\":100,\"uxFindingsPenalty\":5,\"visualFindingsPenalty\":25,\"outcomeCap\":55}"
+    },
+    {
+      "step": "dead-end audit has visual findings at report time (auto-analysis on completion)",
+      "ok": true,
+      "detail": "visualFindings=24"
+    },
+    {
+      "step": "create executive report",
+      "ok": true,
+      "detail": "HTTP 200 "
+    },
+    {
+      "step": "POST /api/reports/exports (PDF) queues an export",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "GET /api/reports/exports lists it and it completes",
+      "ok": true,
+      "detail": "list HTTP 200 status=COMPLETED"
+    },
+    {
+      "step": "GET /api/reports/exports/:id/download returns the PDF",
+      "ok": true,
+      "detail": "HTTP 200 bytes=62753"
+    },
+    {
+      "step": "exports deny other users (list, create, download)",
+      "ok": true,
+      "detail": "download=403 list=403 create=403"
+    },
+    {
+      "step": "unimplemented export formats fail honestly (no fake success)",
+      "ok": true,
+      "detail": "status=FAILED reason=SNAPSHOT export is not yet implemented"
+    },
+    {
+      "step": "create share link",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "GET /api/reports/sharing lists it",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "anonymous visitor opens the share link",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "public share response exposes no creator/recipient data",
+      "ok": true,
+      "detail": "keys=id,title,summary,stabilityScore,completionRate,riskLevel,sections,createdAt,updatedAt,project"
+    },
+    {
+      "step": "unknown share token rejected",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "sharing denies other users (create, list, revoke)",
+      "ok": true,
+      "detail": "create=403 list=403 revoke=403"
+    },
+    {
+      "step": "foreign revoke attempt did not revoke",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "revoked token stops working",
+      "ok": true,
+      "detail": "revoke=200 open=403"
+    },
+    {
+      "step": "expired token rejected",
+      "ok": true,
+      "detail": "create=200 open=403"
+    },
+    {
+      "step": "max-uses limit enforced",
+      "ok": true,
+      "detail": "first=200 second=403"
+    },
+    {
+      "step": "dead_end terminal signal ends the run as LOOP_DETECTED",
+      "ok": true,
+      "detail": "final=LOOP_DETECTED actions=scroll:down,wait:dead_end"
+    },
+    {
+      "step": "LOOP_DETECTED audit gets a report graded F",
+      "ok": true,
+      "detail": "score=55 grade=F"
+    },
+    {
+      "step": "second backend/worker process boots on the same DB + Redis",
+      "ok": true,
+      "detail": "/tmp/fricta-e2e-AOMxsY/backend-2.log"
+    },
+    {
+      "step": "two audits launched concurrently",
+      "ok": true,
+      "detail": "alpha=96fe7a33-7e86-426b-8e3f-f79ef6a3d241 beta=378ef6bc-4aed-45ad-960f-be42ebfbbd49"
+    },
+    {
+      "step": "both concurrent audits complete (no stuck jobs)",
+      "ok": true,
+      "detail": "COMPLETED/3 COMPLETED/3"
+    },
+    {
+      "step": "no cross-session mixing (alpha)",
+      "ok": true,
+      "detail": "screenshots=/alpha,/alpha/pricing,/alpha/pricing actions=1:scroll,2:click,3:wait"
+    },
+    {
+      "step": "no cross-session mixing (beta)",
+      "ok": true,
+      "detail": "screenshots=/beta,/beta/pricing,/beta/pricing actions=1:scroll,2:click,3:wait"
+    },
+    {
+      "step": "exactly one report per concurrent audit (no duplicates)",
+      "ok": true,
+      "detail": "{\"96fe7a33-7e86-426b-8e3f-f79ef6a3d241\":1,\"378ef6bc-4aed-45ad-960f-be42ebfbbd49\":1}"
+    },
+    {
+      "step": "each concurrent job processed by exactly one worker",
+      "ok": true,
+      "detail": "{\"alpha\":[\"backend-2\"],\"beta\":[\"backend-1\"]}"
+    },
+    {
+      "step": "queue drained (no waiting/active/delayed jobs left)",
+      "ok": true,
+      "detail": "{\"wait\":0,\"active\":0,\"delayed\":0}"
+    },
+    {
       "step": "stub actually served planner + vision calls",
       "ok": true,
-      "detail": "{\"stub\":true,\"chat\":15,\"planner\":12,\"vision\":3,\"models\":0,\"malformed\":0}"
+      "detail": "{\"stub\":true,\"chat\":40,\"planner\":20,\"vision\":20,\"models\":0,\"malformed\":0}"
     }
   ]
 }
