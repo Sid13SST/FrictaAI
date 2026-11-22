@@ -46,10 +46,18 @@ provider factory throws if it is changed at runtime, unless
 model id cannot prove that a third-party endpoint is free. So a self-hosted
 endpoint whose ids lack `:free` needs `ALLOW_PAID_MODELS=true`, set on purpose.
 
-OpenRouter rotates its free variants. If audits start failing with
-`404 No endpoints found`, pick a current one at
-<https://openrouter.ai/models?max_price=0> (for vision, filter input modality
-"image") and set `AGENT_MODEL` / `AGENT_VISION_MODEL`. Free variants are
+The default `google/gemma-4-31b-it:free` was confirmed free and image-capable
+from OpenRouter's public models API on 2026-11-22. OpenRouter rotates its free
+variants, so re-check before a release, or whenever audits start failing with
+`404 No endpoints found`:
+```bash
+npm run check:models --workspace=@fricta/backend
+```
+It reads the public `GET https://openrouter.ai/api/v1/models` (no key, no
+cost), checks that `AGENT_MODEL` / `AGENT_VISION_MODEL` are listed at $0 (and
+that the vision model takes image input), and lists free image-capable
+alternatives if not. Exit codes: 0 ok, 1 changed, 2 unreachable. The backend
+also prints the active models and this hint at startup. Free variants are
 rate-limited by OpenRouter.
 
 ### Optional

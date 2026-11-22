@@ -27,10 +27,12 @@ export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 /**
  * Gemma 4 31B (free) on OpenRouter: text + image input, 262k context, $0.
- * One model for both paths keeps the free setup to a single id. Checked
- * against OpenRouter's public model listing on 2026-11-22; free variants are
- * rotated by OpenRouter, so re-check https://openrouter.ai/models?max_price=0
- * if requests start returning 404 "No endpoints found".
+ * One model for both paths keeps the free setup to a single id. Confirmed
+ * free and image-capable from OpenRouter's public models API
+ * (GET https://openrouter.ai/api/v1/models) on 2026-11-22. Free variants are
+ * rotated by OpenRouter; re-check with
+ * `npm run check:models --workspace=@fricta/backend` (no key, no cost),
+ * especially if requests start returning 404 "No endpoints found".
  */
 export const DEFAULT_FREE_AGENT_MODEL = 'google/gemma-4-31b-it:free';
 export const DEFAULT_FREE_VISION_MODEL = 'google/gemma-4-31b-it:free';

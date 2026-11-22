@@ -9,7 +9,8 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:e2e:stub": "node e2e/run-audit-e2e.mjs"
+    "test:e2e:stub": "node e2e/run-audit-e2e.mjs",
+    "check:models": "node scripts/check-free-models.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.4.14",
