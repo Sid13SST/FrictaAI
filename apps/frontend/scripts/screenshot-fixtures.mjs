@@ -86,6 +86,8 @@ const LIVE_SHOTS = LIVE ? [
   { name: 'report', path: `/app/reports/${LIVE.sessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() },
   { name: 'report-replay', path: `/app/reports/${LIVE.sessionId}`, after: p => p.getByRole('button', { name: 'Timeline Replay' }).click() },
   { name: 'report-dead-end', path: `/app/reports/${LIVE.deadEndSessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() },
+  { name: 'reports', path: '/app/reports' },
+  ...(LIVE.insufficientEvidenceSessionId ? [{ name: 'report-insufficient-evidence', path: `/app/reports/${LIVE.insufficientEvidenceSessionId}`, after: p => p.getByRole('button', { name: 'UX Findings' }).click() }] : []),
   { name: 'report-dead-end-persona', path: `/app/reports/${LIVE.deadEndSessionId}`, after: async p => { await p.getByRole('button', { name: 'UX Findings' }).click(); await p.waitForTimeout(1500); await p.getByRole('button', { name: /Power Administrator/ }).click(); } },
 ] : null;
 
