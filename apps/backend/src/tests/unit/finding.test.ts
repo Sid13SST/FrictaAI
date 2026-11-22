@@ -6,7 +6,7 @@ vi.mock('@fricta/db', () => ({ prisma: mockPrisma }));
 
 import { Hono } from 'hono';
 import { uxRoutes } from '../../routes/ux';
-import { mockWorkflow, mockFinding } from '../mocks/fixtures';
+import { mockWorkflow, mockFinding, mockProject } from '../mocks/fixtures';
 
 function createTestApp(userId: string = 'user_123') {
   const app = new Hono();
@@ -24,6 +24,25 @@ describe('UX Findings and Intelligence Unit Tests', () => {
   beforeEach(() => {
     app = createTestApp('user_123');
     vi.clearAllMocks();
+    // Session-scoped UX routes are ownership-guarded: workflow → project → user.
+    mockPrisma.workflowSession.findUnique.mockResolvedValue(mockWorkflow);
+    mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+  });
+
+  describe('ownership', () => {
+    it.each([
+      ['GET', '/findings/workflow_123'],
+      ['GET', '/cognitive/workflow_123'],
+      ['GET', '/recommendations/workflow_123'],
+      ['POST', '/analyze/workflow_123'],
+    ])('%s %s returns 403 for a user who does not own the session', async (method, url) => {
+      const intruder = createTestApp('user_intruder');
+      const res = await intruder.request(url, { method });
+      expect(res.status).toBe(403);
+      expect(mockPrisma.uXFinding.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.cognitiveSignal.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.workflowSession.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /findings/:sessionId', () => {
@@ -186,15 +205,14 @@ describe('UX Findings and Intelligence Unit Tests', () => {
       expect(mockPrisma.workflowSession.update).toHaveBeenCalled();
     });
 
-    it('should throw 500 error if session is not found', async () => {
+    it('should return 404 (and not touch the session) if the session is not found', async () => {
       mockPrisma.workflowSession.findUnique.mockResolvedValue(null);
 
       const res = await app.request('/analyze/non_existent_session', {
         method: 'POST',
       });
-      expect(res.status).toBe(500);
-      const json = await res.json();
-      expect(json.error).toContain('not found');
+      expect(res.status).toBe(404);
+      expect(mockPrisma.workflowSession.update).not.toHaveBeenCalled();
     });
   });
 });

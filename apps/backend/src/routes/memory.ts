@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 import { PrismaClient } from '@fricta/db';
 import {
   SharedMemoryStorage,
@@ -16,9 +17,13 @@ const prisma = new PrismaClient();
 // `:sessionId` here is an orchestrationSessionId (or workflowSessionId — the
 // storage classes accept either). Resolve to the owning workflow session and
 // verify the requester owns it before any shared-memory data is returned.
-memoryRoutes.use('*', async (c, next) => {
+//
+// The guard is bound to the parameterised paths: a `use('*')` middleware has
+// no `:sessionId` param in Hono, so the previous registration silently skipped
+// the check and served any user's shared memory to any signed-in user.
+const requireMemoryOwner: MiddlewareHandler = async (c, next) => {
   const sessionId = c.req.param('sessionId');
-  if (!sessionId) return next();
+  if (!sessionId) return ApiErrors.notFound(c);
 
   const user = getCurrentUser(c);
   if (!user) return ApiErrors.unauthorized(c);
@@ -40,7 +45,9 @@ memoryRoutes.use('*', async (c, next) => {
   if (ownership === 'NOT_OWNED') return ApiErrors.forbidden(c);
 
   await next();
-});
+};
+memoryRoutes.use('/:sessionId', requireMemoryOwner);
+memoryRoutes.use('/:sessionId/*', requireMemoryOwner);
 
 // GET /api/memory/:sessionId
 memoryRoutes.get('/:sessionId', async (c) => {
