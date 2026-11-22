@@ -7,6 +7,7 @@ import {
   Clock, Shuffle, HelpCircle, TrendingUp, HelpCircle as HelpIcon, ArrowRight,
   XCircle, Eye, RotateCcw, Loader2
 } from 'lucide-react';
+import { projectPersonaScores, type OfficialScores } from '../../lib/personaProjection';
 
 type FindingStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
@@ -48,7 +49,12 @@ interface Recommendation {
   remedySteps: string[];
 }
 
-export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount }: { sessionId: string; stepCount?: number | null }) {
+export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, officialScores }: {
+  sessionId: string;
+  stepCount?: number | null;
+  /** The report's scores (single source of truth for the audit score). */
+  officialScores: OfficialScores;
+}) {
   const [activePersona, setActivePersona] = useState<'STANDARD' | 'BEGINNER' | 'POWER_USER' | 'FIRST_TIME_USER'>('STANDARD');
   const [findings, setFindings] = useState<UXFinding[]>([]);
   const [cognitiveSignals, setCognitiveSignals] = useState<CognitiveSignal[]>([]);
@@ -139,53 +145,9 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount }: { 
     return f.personaType === activePersona;
   });
 
-  // Calculate persona-specific simulated scores
-  const getSimulatedScores = () => {
-    let clarity = 92;
-    let onboarding = 90;
-    let ia = 88;
-    let efficiency = 85;
-
-    // Beginner Teacher struggles with clarity/onboarding
-    if (activePersona === 'BEGINNER') {
-      clarity = 72;
-      onboarding = 68;
-      ia = 80;
-      efficiency = 88;
-    }
-    // Power User struggles with efficiency
-    else if (activePersona === 'POWER_USER') {
-      clarity = 90;
-      onboarding = 92;
-      ia = 86;
-      efficiency = 58;
-    }
-    // First-Time User struggles with IA / Onboarding
-    else if (activePersona === 'FIRST_TIME_USER') {
-      clarity = 82;
-      onboarding = 62;
-      ia = 54;
-      efficiency = 80;
-    }
-    // Standard gets average from database compiled scores if available
-    else {
-      // Look for signals in state
-      const overload = cognitiveSignals.find(s => s.signalType === 'COGNITIVE_OVERLOAD')?.intensity || 0.2;
-      const IA = cognitiveSignals.find(s => s.signalType === 'BRANCHING_DEPTH')?.intensity || 0.3;
-      const density = cognitiveSignals.find(s => s.signalType === 'WORKFLOW_DENSITY')?.intensity || 0.4;
-
-      clarity = Math.round(100 - overload * 40);
-      onboarding = Math.round(100 - (overload + IA) * 20);
-      ia = Math.round(100 - IA * 60);
-      efficiency = Math.round(100 - density * 40);
-    }
-
-    const overall = Math.round((clarity + onboarding + ia + efficiency) / 4);
-
-    return { clarity, onboarding, ia, efficiency, overall };
-  };
-
-  const scores = getSimulatedScores();
+  // Projection of the official audit score onto the selected persona (see
+  // lib/personaProjection). STANDARD is the audit score itself.
+  const scores = projectPersonaScores(officialScores, findings, activePersona);
 
   // Create Step Heatmap based on cognitive load
   // One cell per step the agent actually took. This used to be
@@ -302,7 +264,7 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount }: { 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
           <div>
             <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center">
-              <Gauge className="w-4 h-4 mr-2 text-[#9b72fa]" /> Simulated UX Scores
+              <Gauge className="w-4 h-4 mr-2 text-[#9b72fa]" /> {scores.isOfficial ? 'Audit Score' : 'Persona Projection'}
             </h4>
             <div className="flex items-center space-x-6 mb-6">
               <div className="relative flex items-center justify-center w-24 h-24 shrink-0">
@@ -317,8 +279,14 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount }: { 
                 <span className="absolute text-xl font-bold text-white">{scores.overall}</span>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">Overall Score</div>
-                <p className="text-xs text-slate-400">Calculated usability score weighted on the active persona profile.</p>
+                <div className="text-2xl font-bold text-white">{scores.isOfficial ? 'Audit score' : 'Projected for persona'}</div>
+                <p className="text-xs text-slate-400">
+                  {scores.isOfficial
+                    ? 'Same score as the report grade.'
+                    : scores.personaPenalty > 0
+                      ? `Audit score ${officialScores.overallScore} minus ${scores.personaPenalty} for findings affecting this persona. Not a separate grade.`
+                      : `No findings affect this persona, so it matches the audit score (${officialScores.overallScore}).`}
+                </p>
               </div>
             </div>
 
