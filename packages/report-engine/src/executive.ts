@@ -1,4 +1,5 @@
 import { UnifiedUXReportPayload, ExecutiveSummaryPayload } from './types';
+import { splitVisualFindings, visualTypeLabel } from './classify';
 
 export class ExecutiveSummaryEngine {
   /**
@@ -116,6 +117,28 @@ export class ExecutiveSummaryEngine {
       synthesizedInsights.push(
         `Workflow branching complexity exceeds standard thresholds, introducing interaction fatigue and sub-optimal task completion times.`
       );
+    }
+
+    // Visual issues: summarise the high-priority ones that drive the risk
+    // levels above (e.g. weak_cta → discoverability risk), grouped by type so
+    // nothing is double-counted. Only what was recorded: titles come from the
+    // findings themselves; no causes are inferred.
+    {
+      const { issues } = splitVisualFindings(report.visualFindings);
+      const high = issues.filter((f) => ['HIGH', 'CRITICAL'].includes(String(f.severity).toUpperCase()));
+      const byType = new Map<string, typeof high>();
+      for (const f of high) byType.set(f.findingType, [...(byType.get(f.findingType) ?? []), f]);
+      for (const [type, list] of byType) {
+        const titles = [...new Set(list.map((f) => f.title.trim()).filter(Boolean))].slice(0, 3);
+        synthesizedInsights.push(
+          `Visual review flagged ${list.length} high-severity ${visualTypeLabel(type)} issue${list.length === 1 ? '' : 's'} on recorded screenshots` +
+          (titles.length ? `: ${titles.map((t) => `"${t}"`).join('; ')}.` : '.')
+        );
+      }
+      const rest = issues.length - high.length;
+      if (rest > 0) {
+        synthesizedInsights.push(`${rest} further visual issue${rest === 1 ? '' : 's'} of medium or lower severity ${rest === 1 ? 'is' : 'are'} listed under Visual Findings.`);
+      }
     }
 
     if (pending) {
