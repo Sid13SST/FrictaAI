@@ -1,4 +1,5 @@
 import { UnifiedUXReportPayload, ExecutiveSummaryPayload, NO_EVIDENCE_LABEL } from './types';
+import { splitVisualFindings, visualProvenance, visualTypeLabel, testedPersona, PERSONA_PROFILES_PROVENANCE, noBehaviouralFindingsText } from './classify';
 
 /** "72/100", or "n/a" when the audit could not be scored. */
 const outOf100 = (n: number | null | undefined) => (n === null || n === undefined ? 'n/a' : `${n}/100`);
@@ -14,7 +15,7 @@ export class ExportEngine {
     let md = `# Fricta AI UX Intelligence Report\n\n`;
     md += `## Workflow Session: \`${session.id}\`\n`;
     md += `- **Goal**: ${session.goal || 'Not specified'}\n`;
-    md += `- **Target Persona**: ${session.persona || 'Standard'}\n`;
+    md += `- **Tested Persona**: ${testedPersona(session)} (the persona the agent ran as)\n`;
     md += `- **Total Steps**: ${session.stepCount}\n`;
     md += `- **Session Duration**: ${
       session.startedAt && session.endedAt 
@@ -54,11 +55,11 @@ export class ExportEngine {
       md += `> **Friction Accumulation Zones**: Usability breakdown and cognitive hesitation spikes were detected at steps: **${executive.majorFrictionStepIndices.join(', ')}**.\n\n`;
     }
 
-    md += `## Human-Centric UX Findings\n`;
+    md += `## Behavioural Findings\n`;
     if (report.uxFindings.length === 0) {
       md += insufficient
         ? `*${NO_EVIDENCE_LABEL} (the audit recorded no agent actions).*\n\n`
-        : `*No major behavioral UX issues detected.*\n\n`;
+        : `*${noBehaviouralFindingsText(session)}*\n\n`;
     } else {
       const sortedFindings = [...report.uxFindings].sort((a, b) => {
         const priority: Record<string, number> = { 'CRITICAL': 1, 'HIGH': 2, 'MEDIUM': 3, 'LOW': 4 };
@@ -76,15 +77,17 @@ export class ExportEngine {
     }
 
     md += `## Visual & Discoverability Findings\n`;
-    if (insufficient && report.visualFindings.length > 0) {
+    const visual = splitVisualFindings(report.visualFindings);
+    if (insufficient && visual.issues.length > 0) {
       md += `*Layout observations from the screenshots that were recorded before the audit failed. Not a UX assessment.*\n\n`;
     }
-    if (report.visualFindings.length === 0) {
-      md += `*No major visual anomalies detected.*\n\n`;
+    if (visual.issues.length === 0) {
+      md += `*No visual issues were recorded for the screenshots that were analysed (see coverage below).*\n\n`;
     } else {
-      report.visualFindings.forEach((vf, idx) => {
-        md += `### VF-${idx + 1}. [${vf.severity.toUpperCase()}] ${vf.title}\n`;
-        md += `- **Type**: \`${vf.findingType}\`\n`;
+      visual.issues.forEach((vf, idx) => {
+        md += `### V${idx + 1}. [${vf.severity.toUpperCase()}] ${vf.title}\n`;
+        md += `- **Type**: ${visualTypeLabel(vf.findingType)} (\`${vf.findingType}\`)\n`;
+        md += `- **Source**: ${visualProvenance(vf)}\n`;
         md += `- **Observation**: ${vf.description}\n`;
         if (vf.boundingBoxes && Array.isArray(vf.boundingBoxes) && vf.boundingBoxes.length > 0) {
           md += `- **Impacted Regions**:\n`;
@@ -95,13 +98,25 @@ export class ExportEngine {
         md += `\n`;
       });
     }
+    md += `### Visual Review Coverage (not issues)\n`;
+    if (report.visualCoverage) {
+      md += `- **Status**: ${report.visualCoverage.status}${report.visualCoverage.complete ? '' : ' (incomplete)'}. ${report.visualCoverage.note}\n`;
+    }
+    visual.summaries.forEach((f) => { md += `- **AI vision commentary**: ${f.description}\n`; });
+    if (visual.unavailable.length > 0) {
+      md += `- **AI vision unavailable** for ${visual.unavailable.length} screenshot(s), reviewed by layout heuristics only: ${visual.unavailable.map((f) => String(f.metadata?.reason ?? f.description)).join('; ')}\n`;
+    }
+    md += `\n`;
 
-    md += `## Simulated Persona Performance Projections\n`;
+    md += `## Personas\n`;
+    md += `- **Tested in this run**: ${testedPersona(session)}\n\n`;
+    md += `### Configured Persona Profiles (not tested in this run)\n`;
     if (insufficient) {
       md += `*${NO_EVIDENCE_LABEL}.*\n`;
     } else if (report.personaProfiles.length === 0) {
-      md += `*No persona profiles simulated.*\n`;
+      md += `*No persona profiles configured.*\n`;
     } else {
+      md += `*${PERSONA_PROFILES_PROVENANCE}*\n\n`;
       md += `| Persona Name | Guidance Dependency | Patience | Comfort with IA | Idle Hesitation Limit | Action Cycles Limit | Max Steps Limit |\n`;
       md += `| :--- | :---: | :---: | :---: | :---: | :---: | :---: |\n`;
       report.personaProfiles.forEach(p => {
@@ -121,6 +136,7 @@ export class ExportEngine {
     text += `FRICTA UX REPORT SUMMARY SHEET\n`;
     text += `==================================================\n`;
     text += `Session ID: ${report.session.id}\n`;
+    text += `Tested Persona: ${testedPersona(report.session)}\n`;
     text += executive.analysisState === 'pending'
       ? `Overall Score: PENDING - analysis still running (Grade: N/A)\n`
       : executive.evidenceStatus === 'insufficient'
@@ -140,13 +156,20 @@ export class ExportEngine {
     text += `--------------------------------------------------\n`;
     text += `TOP RECOMMENDATIONS:\n`;
     const highFindings = report.uxFindings.filter(f => f.severity === 'HIGH' || f.severity === 'CRITICAL');
+    const highVisual = splitVisualFindings(report.visualFindings).issues
+      .filter((f) => ['HIGH', 'CRITICAL'].includes(f.severity.toUpperCase()));
     if (executive.evidenceStatus === 'insufficient') {
       text += `- Re-run the audit; it ended before the agent recorded any action.\n`;
-    } else if (highFindings.length === 0) {
-      text += `- Maintain existing workflow routes.\n`;
+    } else if (highFindings.length === 0 && highVisual.length === 0) {
+      text += `- No high-severity issues recorded on the observed path.\n`;
     } else {
       highFindings.forEach(f => {
         text += `- [${f.severity}] ${f.title}: ${f.recommendation}\n`;
+      });
+    }
+    if (executive.evidenceStatus !== 'insufficient') {
+      highVisual.forEach((f) => {
+        text += `- [${f.severity.toUpperCase()}] Visual (${visualTypeLabel(f.findingType)}): ${f.title}\n`;
       });
     }
     text += `==================================================\n`;
@@ -167,6 +190,14 @@ export class ExportEngine {
       availability: executive.evidenceStatus === 'insufficient'
         ? { behaviouralAnalysis: NO_EVIDENCE_LABEL, cognitiveSignals: NO_EVIDENCE_LABEL, personaProjections: NO_EVIDENCE_LABEL, uxFindings: NO_EVIDENCE_LABEL }
         : { behaviouralAnalysis: 'available', cognitiveSignals: 'available', personaProjections: 'available', uxFindings: 'available' },
+      provenance: {
+        testedPersona: testedPersona(report.session),
+        personaProfiles: PERSONA_PROFILES_PROVENANCE,
+        visualFindings: (() => {
+          const v = splitVisualFindings(report.visualFindings);
+          return { issues: v.issues.length, coverageRecords: v.summaries.length + v.unavailable.length, note: 'vision_summary and vision_unavailable records describe coverage, not issues' };
+        })(),
+      },
       data: report
     }, null, 2);
   }
