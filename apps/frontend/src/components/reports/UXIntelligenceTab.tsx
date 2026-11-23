@@ -50,7 +50,7 @@ interface Recommendation {
   remedySteps: string[];
 }
 
-export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, officialScores, noEvidence = false }: {
+export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, officialScores, noEvidence = false, testedPersona }: {
   sessionId: string;
   stepCount?: number | null;
   /**
@@ -61,6 +61,8 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
   noEvidence?: boolean;
   /** The report's scores (single source of truth for the audit score). */
   officialScores: OfficialScores;
+  /** The persona the agent actually ran as. */
+  testedPersona?: string | null;
 }) {
   const [activePersona, setActivePersona] = useState<'STANDARD' | 'BEGINNER' | 'POWER_USER' | 'FIRST_TIME_USER'>('STANDARD');
   const [findings, setFindings] = useState<UXFinding[]>([]);
@@ -191,6 +193,9 @@ export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, offi
           <Brain className="w-5 h-5 text-[#9b72fa]" />
           <h3 className="text-lg font-medium text-white">Persona Usability Projections</h3>
         </div>
+        <p className="text-xs text-amber-300/90 -mt-3 mb-5" data-persona-provenance>
+          Tested in this run: <strong>{testedPersona?.trim() || 'Default agent persona'}</strong>. The other profiles are configured assumptions; their scores are projections, not measurements.
+        </p>
         {noEvidence ? (
           <NoEvidenceNote compact detail="Persona projections need recorded agent behaviour; this audit has none." />
         ) : (

@@ -23,6 +23,8 @@ interface PersonaComparisonPanelProps {
   cognitiveSignals?: any[];
   recommendations?: any[];
   scores?: any;
+  /** The persona the agent actually ran as (the only one tested in this audit). */
+  testedPersona?: string | null;
 }
 
 export const PersonaComparisonPanel: React.FC<PersonaComparisonPanelProps> = ({
@@ -31,6 +33,7 @@ export const PersonaComparisonPanel: React.FC<PersonaComparisonPanelProps> = ({
   cognitiveSignals = [],
   recommendations = [],
   scores,
+  testedPersona,
 }) => {
   const [activePersona, setActivePersona] = useState<string>('Standard Explorer');
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
@@ -156,6 +159,9 @@ export const PersonaComparisonPanel: React.FC<PersonaComparisonPanelProps> = ({
           </h3>
           <p className="text-xs text-[#a1a1aa] mt-0.5">
             Select a cohort card to project dynamic scores and view friction overlays.
+          </p>
+          <p className="text-xs text-amber-300/90 mt-1" data-persona-provenance>
+            Tested in this run: <strong>{testedPersona?.trim() || 'Default agent persona'}</strong>. The profiles below are configured assumptions used for projections, not tested in this run.
           </p>
         </div>
 

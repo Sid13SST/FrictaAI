@@ -485,7 +485,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           <Panel><div className="p-6"><NoEvidenceNote title="Analysis in progress" detail="Findings, persona projections and insights appear when the post-run analysis finishes. This page refreshes automatically." /></div></Panel>
         )}
         {!analysisPending && activeTab === 'findings' && (
-          <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} officialScores={scores} noEvidence={notScored} />
+          <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} officialScores={scores} noEvidence={notScored} testedPersona={reportData.session?.persona} />
         )}
 
         {activeTab === 'timeline' && timeline.length === 0 && (
@@ -525,6 +525,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             cognitiveSignals={reportData.cognitiveSignals}
             recommendations={recommendationsData?.recommendations || []}
             scores={scores}
+            testedPersona={reportData.session?.persona}
           />
         )}
 
