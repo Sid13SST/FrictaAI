@@ -280,6 +280,48 @@ OpenRouter key. Docs: `docs/LOCAL_RUN.md`; preflight: `scripts/local-preflight.s
 | Authenticated SSE stream and real Clerk sign-in through nginx | **Not verified** (no real Clerk session possible here; §4) |
 | Notes | Builder uses Node 20, the Playwright runtime image ships Node 24.15.0 (fine for the compiled CommonJS). Same-origin via nginx, so no CORS setup; a Clerk development instance accepts `localhost` origins. The frontend's Clerk key is baked in at build time (rebuild after changing it). |
 
+## 8. Report PDF / exports from a saved-data fixture (offline, round 6)
+
+**Reviewer's real audit on `aa2a2cc` (reported, not reproduced here):**
+analysis awaited to `ready`, 27/27 flow checks, 2 steps (click Pricing,
+`goal_complete`), score 91, coverage partial (1/2 real vision answers; 1 empty
+after retries), provider usage 0. Inspecting that PDF found three defects:
+1. **Visual findings missing from the PDF.** It rendered only `uxFindings`
+   (empty) and said "No major behavioral UX issues detected", omitting 8
+   visual records including 2 HIGH `weak_cta`.
+2. **Insights explained only coverage.** The executive summary rated
+   discoverability risk HIGH because of `weak_cta`, but no insight explained
+   it; only the coverage warning appeared.
+3. **Configured persona rows read as tested results.** They were presented
+   as "Simulated Persona Performance" although only `Tech-Savvy User` ran.
+
+Fixes:
+- **PDF and Markdown** have separate "Behavioural Findings" (empty text
+  scoped to the recorded steps) and "Visual & Discoverability Findings"
+  sections. Visual issues show severity, type, description, regions and
+  provenance (layout heuristic vs AI vision). `vision_summary` and
+  `vision_unavailable` go in a separate "Visual review coverage" block and
+  are never counted as issues.
+- **Executive summary** adds one grouped, evidence-grounded insight per
+  high-severity visual issue type, plus a count of lower-severity ones.
+- **Persona provenance:** the tested persona is stated in PDF, Markdown, PM
+  summary, JSON (`provenance`) and the UI. Configured profiles are labelled
+  "assumptions used for projections, NOT tested in this run".
+- **Unchanged:** pending and zero-evidence handling.
+
+Fixture artifact: `pdf-fixture/report-partial-coverage.payload.json`.
+- It **reproduces the structure** the reviewer reported: 2 steps, score 91,
+  partial coverage, empty `uxFindings`, 2 high `weak_cta`, 4 medium
+  `vision_finding`, 1 `vision_summary`, 1 `vision_unavailable`, 3 configured
+  persona rows. Titles and descriptions are illustrative.
+- It is **not** the reviewer's exact payload, and no provider was called.
+- Rendered offline with `apps/backend/scripts/render-report-fixture.mjs`
+  (same report-engine code and `page.pdf` settings as the export route) to
+  `pdf-fixture/report-partial-coverage.pdf` (+ `.html`, `page-1.png`,
+  `page-2.png`).
+- Inspected both A4 pages: no clipping, no finding card split across pages.
+- Unit tests: `apps/backend/src/tests/unit/reportFixture.test.ts`.
+
 ## Remaining gaps (honest list)
 - **No live LLM call has been made from inside this sandbox.** Real-provider evidence comes only from the reviewer (§0). On `150bc79` gemma `:free` failed on 429s. On `6cde80e` the round-3 retry + fallback worked and a real audit completed, but vision failed four times (429, empty, 2× truncated JSON). The **round-4** vision fixes (token cap, bounded output, length detection, repair, single retry) and the cooldown-compliance change are verified only with fake responses and the stub. They are **unproven against the real provider** until re-run. Still unknown: real vision quality and truncation rate after the fix; whether honouring long cooldowns makes real audits fail more often (by design they now stop instead of retrying early); and latency against the 180 s step timeout.
 - **Local Docker route:** runtime images and nginx verified here; full image builds not (see §7).
