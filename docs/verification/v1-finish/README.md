@@ -322,6 +322,25 @@ Fixture artifact: `pdf-fixture/report-partial-coverage.payload.json`.
 - Inspected both A4 pages: no clipping, no finding card split across pages.
 - Unit tests: `apps/backend/src/tests/unit/reportFixture.test.ts`.
 
+UI persona provenance (round 6, final visual evidence): real current UI
+against the stub-driven backend (Clerk mocked), report for a `Tech-Savvy User`
+audit:
+- `screenshots/1440/report-persona-provenance-ux-findings.png` and
+  `screenshots/390/report-persona-provenance-ux-findings.png` (UX Findings
+  tab, "Persona Usability Projections"): "Tested in this run: Tech-Savvy User.
+  The other profiles are configured assumptions; their scores are
+  projections, not measurements."
+- `screenshots/1440/report-persona-provenance-simulations.png` and
+  `screenshots/390/report-persona-provenance-simulations.png` (Persona
+  Simulations tab): "Tested in this run: Tech-Savvy User. The profiles below
+  are configured assumptions used for projections, not tested in this run."
+
+Inspected: the text is present and fully visible in both panels, wrapping
+cleanly at 390. Image width equals the viewport, there is no document or
+content overflow, the provenance element is not clipped and there are no
+page errors. Final regression on `f874400`: backend unit 147, frontend unit 8,
+integration 31, stub E2E 87, all pass.
+
 ## Remaining gaps (honest list)
 - **No live LLM call has been made from inside this sandbox.** Real-provider evidence comes only from the reviewer (§0). On `150bc79` gemma `:free` failed on 429s. On `6cde80e` the round-3 retry + fallback worked and a real audit completed, but vision failed four times (429, empty, 2× truncated JSON). The **round-4** vision fixes (token cap, bounded output, length detection, repair, single retry) and the cooldown-compliance change are verified only with fake responses and the stub. They are **unproven against the real provider** until re-run. Still unknown: real vision quality and truncation rate after the fix; whether honouring long cooldowns makes real audits fail more often (by design they now stop instead of retrying early); and latency against the 180 s step timeout.
 - **Local Docker route:** runtime images and nginx verified here; full image builds not (see §7).
