@@ -591,7 +591,7 @@ async function main() {
       ieUx.status === 200 && ieUx.json?.evidence === 'insufficient' && (ieUx.json?.cognitiveSignals || []).length === 0 && (ieUx.json?.findings || []).length === 0
         && (ieRep2.json?.cognitiveSignals || []).length === 0 && (ieRep2.json?.uxFindings || []).length === 0
         && ieJson.availability?.cognitiveSignals === 'Unavailable: no evidence'
-        && /Simulated Persona Performance Projections\n\*Unavailable: no evidence\.\*/.test(ieExp.json?.markdown || '')
+        && /Configured Persona Profiles \(not tested in this run\)\n\*Unavailable: no evidence\.\*/.test(ieExp.json?.markdown || '')
         && (ieExec.json?.discoverabilityRiskLevel === 'UNKNOWN'),
       `ux.evidence=${ieUx.json?.evidence} signals=${(ieUx.json?.cognitiveSignals || []).length} reportSignals=${(ieRep2.json?.cognitiveSignals || []).length} risk=${ieExec.json?.discoverabilityRiskLevel} json=${ieJson.availability?.cognitiveSignals}`);
     record('0-action FAILED audit: exports say "not scored", PDF still renders',

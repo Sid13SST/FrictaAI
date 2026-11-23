@@ -145,7 +145,7 @@ describe('zero-evidence report: no diagnostic values anywhere in the exports', (
   it('Markdown: findings and persona projections say unavailable, no persona table, no "LOW" risk', () => {
     const md = ExportEngine.toMarkdown(payload, exec);
     expect(md).toContain(`*${NO_EVIDENCE_LABEL} (the audit recorded no agent actions).*`);
-    expect(md).toMatch(/Simulated Persona Performance Projections\n\*Unavailable: no evidence\.\*/);
+    expect(md).toMatch(/Configured Persona Profiles \(not tested in this run\)\n\*Unavailable: no evidence\.\*/);
     expect(md).not.toContain('| **Beginner User** |');
     expect(md).not.toMatch(/Discoverability Risk: LOW/);
     expect(md).not.toMatch(/No major behavioral UX issues detected/);
