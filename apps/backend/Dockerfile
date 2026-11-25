@@ -5,6 +5,11 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
+# Prisma detects the OpenSSL version to pick its engines; node:20-slim ships
+# without it, which made Prisma fall back to OpenSSL 1.1 engines that do not
+# run on the jammy runtime image below.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json turbo.json ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY apps/frontend/package.json apps/frontend/package.json

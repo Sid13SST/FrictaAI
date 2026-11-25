@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiFetch, API_BASE } from '../../lib/api';
+import { AuthedImg } from '../../components/common/AuthedImg';
 
 interface BoundingBox {
   x: number;
@@ -97,7 +98,7 @@ export const AnnotatedScreenshotViewer: React.FC<AnnotatedScreenshotViewerProps>
 
       <div className="relative w-full aspect-video select-none">
         {/* The screenshot */}
-        <img
+        <AuthedImg
           src={imageUrl}
           alt={`Step screenshot`}
           className="w-full h-full object-contain pointer-events-none"

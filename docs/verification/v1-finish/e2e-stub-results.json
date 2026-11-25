@@ -1,0 +1,450 @@
+{
+  "llm": "local-stub (not a live LLM)",
+  "at": "2026-11-22T15:47:22.305Z",
+  "projectId": "9444c8a2-bfc5-443a-8a05-0344beeeb26a",
+  "sessionId": "5151a26b-3625-4d27-8249-1fa1be033604",
+  "deadEndSessionId": "e2b767d1-14b9-4956-ae13-8fee198a5a6c",
+  "noExitSessionId": "abd3700f-ae84-42c3-85c8-369a1221023a",
+  "insufficientEvidenceSessionId": "6d17a83e-6420-4aa8-bfff-a34042667a39",
+  "concurrent": {
+    "alpha": "879eb3c6-6b35-4d97-929d-198c729d245a",
+    "beta": "eed7b6d9-c703-4854-abee-17594a06df12"
+  },
+  "results": [
+    {
+      "step": "stub LLM server up",
+      "ok": true,
+      "detail": "/tmp/fricta-e2e-oagmJT/stub-llm.log"
+    },
+    {
+      "step": "backend boots (env validation, DB, Redis, migrations)",
+      "ok": true,
+      "detail": "/tmp/fricta-e2e-oagmJT/backend.log"
+    },
+    {
+      "step": "unauthenticated request rejected",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "token with bad signature rejected",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "create project",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "launch audit (POST /api/agent/workflow/run)",
+      "ok": true,
+      "detail": "HTTP 200 model=google/gemma-4-31b-it:free"
+    },
+    {
+      "step": "other user cannot read the audit",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "worker runs audit to a terminal status",
+      "ok": true,
+      "detail": "seen=RUNNING\u2192COMPLETED final=COMPLETED steps=3"
+    },
+    {
+      "step": "audit completes (goal reached)",
+      "ok": true,
+      "detail": "final=COMPLETED"
+    },
+    {
+      "step": "thoughts persisted",
+      "ok": true,
+      "detail": "3 thoughts"
+    },
+    {
+      "step": "actions persisted",
+      "ok": true,
+      "detail": "scroll:down:success, click:Pricing:success, wait:goal_complete:success"
+    },
+    {
+      "step": "agent clicked through to pricing",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "audit listed under project",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "SSE /api/realtime/replay connects + hydrates",
+      "ok": true,
+      "detail": "HTTP 200 events=system.connected,system.hydrated"
+    },
+    {
+      "step": "SSE /api/realtime/timeline connects + hydrates",
+      "ok": true,
+      "detail": "HTTP 200 events=system.connected,system.hydrated"
+    },
+    {
+      "step": "SSE /api/realtime/orchestration connects + hydrates",
+      "ok": true,
+      "detail": "HTTP 200 events=system.connected,system.hydrated"
+    },
+    {
+      "step": "SSE rejects other user",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "report generated + readable",
+      "ok": true,
+      "detail": "keys=session,scores,evidence,visualCoverage,analysis,uxFindings,cognitiveSignals,visualFindings"
+    },
+    {
+      "step": "report in /api/reports list",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "executive summary",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "report timeline",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "JSON export",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "PDF export",
+      "ok": true,
+      "detail": "HTTP 200 type=application/pdf bytes=86960 head=\"%PDF-\""
+    },
+    {
+      "step": "visual replay timeline",
+      "ok": true,
+      "detail": "HTTP 200 keys=screenshots,events,actions,thoughts,signals items=3"
+    },
+    {
+      "step": "replay screenshot served only with auth",
+      "ok": true,
+      "detail": "anon=401 owner=200 type=image/webp bytes=81802"
+    },
+    {
+      "step": "screenshot timeline events",
+      "ok": true,
+      "detail": "3 events"
+    },
+    {
+      "step": "visual analysis (vision via stub)",
+      "ok": true,
+      "detail": "HTTP 200 aiUsed=true findings=9"
+    },
+    {
+      "step": "visual findings persisted",
+      "ok": true,
+      "detail": "9 findings"
+    },
+    {
+      "step": "visual score persisted",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "UX analysis",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "UX findings readable",
+      "ok": true,
+      "detail": "HTTP 200 count=0"
+    },
+    {
+      "step": "UX recommendations readable",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "orchestrator run",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "agent findings readable",
+      "ok": true,
+      "detail": "HTTP 200 count=undefined"
+    },
+    {
+      "step": "shared memory readable",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "historical analysis (project-scoped POST)",
+      "ok": true,
+      "detail": "HTTP 200 "
+    },
+    {
+      "step": "historical analysis rejects other user",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "other user blocked on all session-scoped routes",
+      "ok": true,
+      "detail": "13 routes checked"
+    },
+    {
+      "step": "dead-end audit ends unsuccessfully",
+      "ok": true,
+      "detail": "final=FAILED steps=6"
+    },
+    {
+      "step": "dead-end audit still gets a diagnostic report",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "step": "report read during post-run analysis is marked pending, with no final-looking score",
+      "ok": true,
+      "detail": "analysis=pending score=null grade=N/A list=null/true coverage=not_analyzed"
+    },
+    {
+      "step": "post-run analysis finishes within the bounded wait and the report becomes ready",
+      "ok": true,
+      "detail": "ready after 3057 ms"
+    },
+    {
+      "step": "dead-end audit produces UX friction findings",
+      "ok": true,
+      "detail": "count=1 Friction Loops Interrupting Expert Speed"
+    },
+    {
+      "step": "reports list is refreshed by analysis (not only when the report is opened)",
+      "ok": true,
+      "detail": "list-before-open=90 report=90"
+    },
+    {
+      "step": "score: report, executive grade and reports list agree (happy path)",
+      "ok": true,
+      "detail": "report=90 exec=90 list=90 grade=A basis={\"goalReached\":true,\"behaviouralOverall\":100,\"uxFindingsPenalty\":0,\"visualFindingsPenalty\":24,\"outcomeCap\":null}"
+    },
+    {
+      "step": "score: findings lower the happy-path score below 100",
+      "ok": true,
+      "detail": "visualFindings=9 uxFindings=0 score=90"
+    },
+    {
+      "step": "Markdown export carries the same score + grade",
+      "ok": true,
+      "detail": "3459 chars"
+    },
+    {
+      "step": "PM summary export carries the same score + grade",
+      "ok": true,
+      "detail": "670 chars"
+    },
+    {
+      "step": "score: dead-end audit (goal not reached) is graded F, not A 100/100",
+      "ok": true,
+      "detail": "report=55 exec=55 list=55 grade=F visualFindings=24 basis={\"goalReached\":false,\"behaviouralOverall\":100,\"uxFindingsPenalty\":5,\"visualFindingsPenalty\":25,\"outcomeCap\":55}"
+    },
+    {
+      "step": "dead-end audit has visual findings at report time (auto-analysis on completion)",
+      "ok": true,
+      "detail": "visualFindings=24"
+    },
+    {
+      "step": "create executive report",
+      "ok": true,
+      "detail": "HTTP 200 "
+    },
+    {
+      "step": "POST /api/reports/exports (PDF) queues an export",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "GET /api/reports/exports lists it and it completes",
+      "ok": true,
+      "detail": "list HTTP 200 status=COMPLETED"
+    },
+    {
+      "step": "GET /api/reports/exports/:id/download returns the PDF",
+      "ok": true,
+      "detail": "HTTP 200 bytes=62753"
+    },
+    {
+      "step": "exports deny other users (list, create, download)",
+      "ok": true,
+      "detail": "download=403 list=403 create=403"
+    },
+    {
+      "step": "unimplemented export formats fail honestly (no fake success)",
+      "ok": true,
+      "detail": "status=FAILED reason=SNAPSHOT export is not yet implemented"
+    },
+    {
+      "step": "create share link",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "GET /api/reports/sharing lists it",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "anonymous visitor opens the share link",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "public share response exposes no creator/recipient data",
+      "ok": true,
+      "detail": "keys=id,title,summary,stabilityScore,completionRate,riskLevel,sections,createdAt,updatedAt,project"
+    },
+    {
+      "step": "unknown share token rejected",
+      "ok": true,
+      "detail": "HTTP 403"
+    },
+    {
+      "step": "sharing denies other users (create, list, revoke)",
+      "ok": true,
+      "detail": "create=403 list=403 revoke=403"
+    },
+    {
+      "step": "foreign revoke attempt did not revoke",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "revoked token stops working",
+      "ok": true,
+      "detail": "revoke=200 open=403"
+    },
+    {
+      "step": "expired token rejected",
+      "ok": true,
+      "detail": "create=200 open=403"
+    },
+    {
+      "step": "max-uses limit enforced",
+      "ok": true,
+      "detail": "first=200 second=403"
+    },
+    {
+      "step": "dead_end terminal signal ends the run as LOOP_DETECTED",
+      "ok": true,
+      "detail": "final=LOOP_DETECTED actions=scroll:down,wait:dead_end"
+    },
+    {
+      "step": "LOOP_DETECTED audit gets a report graded F",
+      "ok": true,
+      "detail": "score=55 grade=F"
+    },
+    {
+      "step": "second backend/worker process boots on the same DB + Redis",
+      "ok": true,
+      "detail": "/tmp/fricta-e2e-oagmJT/backend-2.log"
+    },
+    {
+      "step": "two audits launched concurrently",
+      "ok": true,
+      "detail": "alpha=879eb3c6-6b35-4d97-929d-198c729d245a beta=eed7b6d9-c703-4854-abee-17594a06df12"
+    },
+    {
+      "step": "both concurrent audits complete (no stuck jobs)",
+      "ok": true,
+      "detail": "COMPLETED/3 COMPLETED/3"
+    },
+    {
+      "step": "no cross-session mixing (alpha)",
+      "ok": true,
+      "detail": "screenshots=/alpha,/alpha/pricing,/alpha/pricing actions=1:scroll,2:click,3:wait"
+    },
+    {
+      "step": "no cross-session mixing (beta)",
+      "ok": true,
+      "detail": "screenshots=/beta,/beta/pricing,/beta/pricing actions=1:scroll,2:click,3:wait"
+    },
+    {
+      "step": "exactly one report per concurrent audit (no duplicates)",
+      "ok": true,
+      "detail": "{\"879eb3c6-6b35-4d97-929d-198c729d245a\":1,\"eed7b6d9-c703-4854-abee-17594a06df12\":1}"
+    },
+    {
+      "step": "each concurrent job processed by exactly one worker",
+      "ok": true,
+      "detail": "{\"alpha\":[\"backend-1\"],\"beta\":[\"backend-2\"]}"
+    },
+    {
+      "step": "queue drained (no waiting/active/delayed jobs left)",
+      "ok": true,
+      "detail": "{\"wait\":0,\"active\":0,\"delayed\":0}"
+    },
+    {
+      "step": "planner 429s are retried 5\u00d7 per call, then the run fails with 0 actions",
+      "ok": true,
+      "detail": "final=FAILED actions=0 stub429=15"
+    },
+    {
+      "step": "0-action FAILED audit: no numeric score anywhere (report, grade, list)",
+      "ok": true,
+      "detail": "report=null evidence=insufficient grade=N/A list=null"
+    },
+    {
+      "step": "0-action audit: no behavioural diagnostics invented (UX analysis, report, JSON, Markdown)",
+      "ok": true,
+      "detail": "ux.evidence=insufficient signals=0 reportSignals=0 risk=UNKNOWN json=Unavailable: no evidence"
+    },
+    {
+      "step": "0-action FAILED audit: exports say \"not scored\", PDF still renders",
+      "ok": true,
+      "detail": "pdf=200 \"%PDF-\""
+    },
+    {
+      "step": "vision 429s are retried 5\u00d7 per screenshot, then marked unavailable",
+      "ok": true,
+      "detail": "analyze=200 aiUsed=false stub429=15 unavailable=3 reason=rate_limited: HTTP 429"
+    },
+    {
+      "step": "vision 429: report says visual coverage incomplete (field, executive, exports)",
+      "ok": true,
+      "detail": "coverage={\"screenshots\":3,\"visionSucceeded\":0,\"visionUnavailable\":3,\"visionTruncated\":0,\"status\":\"failed\",\"complete\":false,\"note\":\"AI vision failed or was skipped for all 3 screenshot(s) it was asked to review (e.g. rate limits or empty responses). Visual findings come from layout heuristics only.\"}"
+    },
+    {
+      "step": "a coverage note does not change the grade into a clean result",
+      "ok": true,
+      "detail": "types=weak_cta,vision_unavailable"
+    },
+    {
+      "step": "vision empty responses are retried, then coverage incomplete",
+      "ok": true,
+      "detail": "stubEmpty=15 coverage=failed"
+    },
+    {
+      "step": "truncated vision JSON: complete findings kept, cut-off ones dropped, coverage partial",
+      "ok": true,
+      "detail": "kept=[STUB] complete box|[STUB] complete box|[STUB] complete box partialSummaries=3 coverage=partial truncated=3"
+    },
+    {
+      "step": "vision recovers: coverage complete again once the model answers",
+      "ok": true,
+      "detail": "coverage=full succeeded=3"
+    },
+    {
+      "step": "stub actually served planner + vision calls",
+      "ok": true,
+      "detail": "{\"stub\":true,\"mode\":{\"planner\":\"ok\",\"vision\":\"ok\"},\"chat\":97,\"planner\":20,\"vision\":26,\"models\":0,\"malformed\":0,\"planner429\":15,\"plannerEmpty\":0,\"vision429\":15,\"visionEmpty\":15,\"visionTruncated\":6,\"visionSlow\":6}"
+    }
+  ]
+}

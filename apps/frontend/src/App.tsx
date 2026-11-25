@@ -1,8 +1,13 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+import { ClerkProvider, ClerkLoading, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_bGlrZWQtbW91c2UtOTUuY2xlcmsuYWNjb3VudHMuZGV2JA';
+// Read from env only (repo-root .env / build arg VITE_CLERK_PUBLISHABLE_KEY).
+// There is deliberately no hardcoded fallback: the old one pointed at an
+// orphaned Clerk instance, so a missing env var silently sent users to the
+// wrong auth tenant instead of failing visibly.
+const PUBLISHABLE_KEY = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? '').trim();
+const HAS_VALID_CLERK_KEY = /^pk_(test|live)_[A-Za-z0-9+/=_-]+$/.test(PUBLISHABLE_KEY);
 
 // Landing/Login/Register are the first thing anonymous visitors see — keep eager
 // so there's no extra network round-trip before anything renders.
@@ -11,6 +16,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { Toaster } from './components/common/Toaster';
 
 // Everything under /app is already gated behind Clerk's SignedIn check, so a
 // lazy-load boundary there doesn't add a perceptible extra wait — but it keeps
@@ -30,11 +36,27 @@ const HelpCenter = lazy(() => import('./pages/HelpCenter').then(m => ({ default:
 const LearningCenter = lazy(() => import('./pages/LearningCenter').then(m => ({ default: m.LearningCenter })));
 
 const RouteFallback = () => (
-  <div className="min-h-[60vh] w-full flex items-center justify-center">
+  <div role="status" aria-label="Loading page" className="min-h-[60vh] w-full flex items-center justify-center">
     <div
       className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
       style={{ borderColor: 'rgba(115,66,226,0.35)', borderTopColor: '#7342E2' }}
     />
+  </div>
+);
+
+// Shown on /app while Clerk is still resolving the session, so a signed-in
+// user sees a loader (not a blank page) before the dashboard appears, and a
+// signed-out one sees it before being sent to /login.
+const SessionCheck = () => (
+  <div
+    role="status"
+    className="min-h-screen w-full flex flex-col items-center justify-center gap-4 bg-[#070b0a] text-center px-6"
+  >
+    <div
+      className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+      style={{ borderColor: 'rgba(115,66,226,0.35)', borderTopColor: '#7342E2' }}
+    />
+    <p className="text-sm text-white/60">Checking your session…</p>
   </div>
 );
 
@@ -56,7 +78,30 @@ const NotFound = () => (
   </div>
 );
 
+// Rendered instead of the app when the Clerk publishable key is missing or
+// malformed, so a misconfigured build fails loudly and legibly.
+const AuthNotConfigured = () => (
+  <div
+    role="alert"
+    className="min-h-screen w-full flex flex-col items-center justify-center gap-3 bg-[#070b0a] text-center px-6"
+  >
+    <h1 className="text-xl font-bold text-white">Sign-in is not configured</h1>
+    <p className="text-sm text-white/60 max-w-md">
+      This build has no valid <code className="text-white/80">VITE_CLERK_PUBLISHABLE_KEY</code>.
+      Set it to your Clerk application's publishable key (pk_test_… or pk_live_…) in the
+      repo-root <code className="text-white/80">.env</code> or as a build argument, then rebuild.
+    </p>
+  </div>
+);
+
 function App() {
+  if (!HAS_VALID_CLERK_KEY) {
+    if (import.meta.env.DEV) {
+      console.error('[Fricta] VITE_CLERK_PUBLISHABLE_KEY is missing or malformed; auth is disabled.');
+    }
+    return <AuthNotConfigured />;
+  }
+
   return (
     <ClerkProvider
       publishableKey={PUBLISHABLE_KEY}
@@ -70,6 +115,9 @@ function App() {
           <Route path="/register/*" element={<Register />} />
           <Route path="/app" element={
             <>
+              <ClerkLoading>
+                <SessionCheck />
+              </ClerkLoading>
               <SignedIn>
                 <DashboardLayout />
               </SignedIn>
@@ -98,6 +146,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ErrorBoundary>
+      <Toaster />
     </ClerkProvider>
   );
 }

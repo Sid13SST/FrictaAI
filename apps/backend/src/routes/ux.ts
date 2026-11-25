@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { PrismaClient } from '@fricta/db';
 import { UXIntelligenceCoordinator, RecommendationEngine } from '@fricta/ux-intelligence';
-import { requireFindingOwner } from '../guards/ownership';
+import { requireFindingOwner, requireWorkflowOwner } from '../guards/ownership';
 import { getCurrentUser } from '../middleware/authContext';
+import { refreshReportScore } from './reports';
 
 export const uxRoutes = new Hono();
 const prisma = new PrismaClient();
@@ -12,7 +13,7 @@ const FINDING_STATUSES = ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED'] as co
 type FindingStatus = (typeof FINDING_STATUSES)[number];
 
 // Retrieve all UX findings for a session
-uxRoutes.get('/findings/:sessionId', async (c) => {
+uxRoutes.get('/findings/:sessionId', requireWorkflowOwner('sessionId'), async (c) => {
   const sessionId = c.req.param('sessionId');
   try {
     const findings = await prisma.uXFinding.findMany({
@@ -62,7 +63,7 @@ uxRoutes.patch('/findings/:id', requireFindingOwner('id'), async (c) => {
 });
 
 // Retrieve cognitive signals for a session
-uxRoutes.get('/cognitive/:sessionId', async (c) => {
+uxRoutes.get('/cognitive/:sessionId', requireWorkflowOwner('sessionId'), async (c) => {
   const sessionId = c.req.param('sessionId');
   try {
     const signals = await prisma.cognitiveSignal.findMany({
@@ -77,7 +78,7 @@ uxRoutes.get('/cognitive/:sessionId', async (c) => {
 });
 
 // Retrieve detailed UX recommendations for a session
-uxRoutes.get('/recommendations/:sessionId', async (c) => {
+uxRoutes.get('/recommendations/:sessionId', requireWorkflowOwner('sessionId'), async (c) => {
   const sessionId = c.req.param('sessionId');
   try {
     const findings = await prisma.uXFinding.findMany({
@@ -97,10 +98,11 @@ uxRoutes.get('/recommendations/:sessionId', async (c) => {
 });
 
 // Trigger UX intelligence analysis for a session
-uxRoutes.post('/analyze/:sessionId', async (c) => {
+uxRoutes.post('/analyze/:sessionId', requireWorkflowOwner('sessionId'), async (c) => {
   const sessionId = c.req.param('sessionId');
   try {
     const result = await coordinator.analyzeSession(sessionId);
+    await refreshReportScore(sessionId);
     return c.json(result);
   } catch (error: any) {
     console.error(`[Backend] UX analysis failed for session ${sessionId}:`, error.message);

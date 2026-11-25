@@ -12,7 +12,11 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, ensureOk } from '../../lib/api';
+import { toApiError } from '../../lib/errors';
+import { ErrorState } from '../../components/common/ErrorState';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Skeleton, SkeletonGroup } from '../../components/common/Skeleton';
 
 interface RuntimeObservabilityPanelProps {
   /** Optional — when omitted, shows system-wide telemetry only (no per-session recovery/checkpoint data). */
@@ -23,7 +27,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
   const [telemetry, setTelemetry] = useState<any>(null);
   const [sessionRuntime, setSessionRuntime] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const fetchRuntimeTelemetry = async () => {
     const controller = new AbortController();
@@ -36,23 +40,8 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
       ]);
       clearTimeout(timeoutId);
 
-      if (!telemetryRes.ok) {
-        let errMsg = `Telemetry request failed (${telemetryRes.status})`;
-        try {
-          const json = await telemetryRes.clone().json();
-          if (json.error) errMsg += `: ${json.error}`;
-        } catch {}
-        throw new Error(errMsg);
-      }
-
-      if (sessionRes && !sessionRes.ok) {
-        let errMsg = `Session metrics request failed (${sessionRes.status})`;
-        try {
-          const json = await sessionRes.clone().json();
-          if (json.error) errMsg += `: ${json.error}`;
-        } catch {}
-        throw new Error(errMsg);
-      }
+      await ensureOk(telemetryRes);
+      if (sessionRes) await ensureOk(sessionRes);
 
       const telemetryData = await telemetryRes.json();
       const sessionData = sessionRes ? await sessionRes.json() : null;
@@ -64,13 +53,9 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
         setSessionRuntime(sessionData);
       }
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
-        setError('Telemetry request timed out after 5 seconds');
-      } else {
-        setError(err.message || 'Failed to sync runtime metrics');
-      }
+      setError(toApiError(err));
     } finally {
       setLoading(false);
     }
@@ -84,22 +69,26 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-zinc-500 font-mono gap-3">
-        <div className="w-6 h-6 border-2 border-t-transparent border-emerald-400 rounded-full animate-spin" />
-        <span className="text-[10px] tracking-widest uppercase">Connecting to runtime infrastructure...</span>
-      </div>
+      <SkeletonGroup label="Connecting to runtime infrastructure" className="flex flex-col gap-6 w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[76px] rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-52 rounded-xl" />)}
+        </div>
+      </SkeletonGroup>
     );
   }
 
-  if (error || !telemetry) {
+  // Nothing to show at all: the first request(s) failed.
+  if (!telemetry) {
     return (
-      <div className="bg-[#121214] border border-red-500/20 p-6 rounded-xl flex items-center gap-4 text-red-400">
-        <AlertCircle className="w-6 h-6 shrink-0" />
-        <div>
-          <h4 className="text-sm font-bold font-mono">Infrastructure Synchronization Error</h4>
-          <p className="text-xs text-zinc-400 mt-1">{error || 'Unable to connect to Redis/BullMQ supervisor.'}</p>
-        </div>
-      </div>
+      <ErrorState
+        error={error ?? new Error('no telemetry')}
+        action="load runtime telemetry"
+        onRetry={fetchRuntimeTelemetry}
+        hint="Retrying automatically every 3 seconds."
+      />
     );
   }
 
@@ -110,20 +99,32 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
 
   return (
     <div className="flex flex-col gap-6 w-full font-mono text-[11px] text-zinc-300">
-      
+
+      {/* A poll failed but we still have the last good snapshot — keep it on
+          screen and say it may be stale instead of blanking the page. */}
+      {!!error && (
+        <ErrorState
+          variant="banner"
+          className="font-sans"
+          error={error}
+          action="refresh runtime telemetry"
+          hint="Showing the last snapshot — retrying every 3 seconds."
+        />
+      )}
+
       {/* ── Executive Telemetry Overview ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Active Sessions', value: activeSessions, desc: 'Parallel runs in flight', icon: Clock, color: 'text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
           { label: 'Registered Workers', value: workers.length, desc: 'Horizontal cluster size', icon: Server, color: 'text-blue-400 bg-blue-500/5 border-blue-500/10' },
           { label: 'Browser Contexts', value: `${safeBrowserPool.activeContexts || 0} / ${(safeBrowserPool.idleContexts || 0) + (safeBrowserPool.activeContexts || 0)}`, desc: 'Active / Total capacity', icon: Chrome, color: 'text-purple-400 bg-purple-500/5 border-purple-500/10' },
-          { label: 'Recovery Events', value: recoveryCount, desc: 'Auto-heals in this session', icon: RefreshCw, color: 'text-yellow-400 bg-yellow-500/5 border-yellow-500/10' }
+          { label: 'Recovery Events', value: recoveryCount, desc: sessionId ? 'Auto-heals in this session' : 'Open a session to see its count', icon: RefreshCw, color: 'text-yellow-400 bg-yellow-500/5 border-yellow-500/10' }
         ].map((stat, i) => (
-          <div key={i} className="bg-[#121214] border border-[#222226] rounded-xl p-4 flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${stat.color}`}>
+          <div key={i} className="bg-[#121214] border border-[#222226] rounded-xl p-3 sm:p-4 flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-lg hidden min-[420px]:flex items-center justify-center shrink-0 border ${stat.color}`}>
               <stat.icon className="w-4 h-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <span className="text-[9px] text-zinc-500 uppercase tracking-wider block font-bold">{stat.label}</span>
               <span className="text-base font-bold text-white block mt-0.5">{stat.value}</span>
               <span className="text-[9.5px] text-zinc-600 block leading-none mt-0.5">{stat.desc}</span>
@@ -137,7 +138,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
         
         {/* Queue Activity Dashboard */}
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-[#222226] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-[#222226] pb-3">
             <h4 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-2">
               <Layers className="w-3.5 h-3.5 text-emerald-400" />
               Queue Activity Dashboard
@@ -145,12 +146,22 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
             <span className="text-[9.5px] text-zinc-500">REALTIME THROUGHPUT</span>
           </div>
 
+          {queues.length === 0 && (
+            <EmptyState
+              variant="compact"
+              className="font-sans"
+              icon={<Layers className="w-5 h-5" />}
+              title="No queues reporting yet"
+              description="Queues appear here once the audit workers start. Launch an audit to see jobs flow through."
+              action={{ label: 'Run an audit', to: '/app/workflow' }}
+            />
+          )}
           <div className="flex flex-col gap-2">
             {queues.map((q: any) => (
               <div key={q.name} className="bg-[#0d0d0f] border border-[#222226] p-3 rounded-lg flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-white uppercase text-[10px]">{q.name.replace('-queue', '').replace(/-/g, ' ')}</span>
-                  <div className="flex gap-2">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <span className="font-bold text-white uppercase text-[10px] break-all">{q.name.replace('-queue', '').replace(/-/g, ' ')}</span>
+                  <div className="flex gap-2 flex-shrink-0">
                     <span className="px-1.5 py-0.5 rounded text-[8px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold">
                       ACTIVE: {q.active}
                     </span>
@@ -171,7 +182,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
 
         {/* Worker Health Monitor */}
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-[#222226] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-[#222226] pb-3">
             <h4 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-2">
               <Server className="w-3.5 h-3.5 text-emerald-400" />
               Worker Cluster Health
@@ -180,17 +191,23 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
           </div>
 
           {workers.length === 0 ? (
-            <div className="text-center py-8 text-zinc-600 italic">No workers currently registered. Booting cluster...</div>
+            <EmptyState
+              variant="compact"
+              className="font-sans"
+              icon={<Server className="w-5 h-5" />}
+              title="No workers registered"
+              description="Workers register when the audit runtime boots. If this persists while audits are queued, the worker service may be down."
+            />
           ) : (
             <div className="flex flex-col gap-3">
               {workers.map((w: any) => (
                 <div key={w.workerId} className="bg-[#0d0d0f] border border-[#222226] p-3 rounded-lg flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="font-bold text-white">{w.workerId}</span>
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
+                      <span className="font-bold text-white truncate">{w.workerId}</span>
                     </div>
-                    <span className="text-[8px] bg-[#16161a] border border-[#222226] text-zinc-500 px-1.5 py-0.5 rounded">
+                    <span className="text-[8px] bg-[#16161a] border border-[#222226] text-zinc-500 px-1.5 py-0.5 rounded flex-shrink-0">
                       PID: {w.pid || 'N/A'}
                     </span>
                   </div>
@@ -218,7 +235,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
         
         {/* Browser Pool status */}
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-[#222226] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-[#222226] pb-3">
             <h4 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-2">
               <Chrome className="w-3.5 h-3.5 text-emerald-400" />
               Parallel Browser Pool status
@@ -252,7 +269,7 @@ export const RuntimeObservabilityPanel: React.FC<RuntimeObservabilityPanelProps>
 
         {/* Session Locks Viewer & Checkpoint */}
         <div className="bg-[#121214] border border-[#222226] rounded-xl p-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-[#222226] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-[#222226] pb-3">
             <h4 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-2">
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
               Execution Checkpoint & Locks

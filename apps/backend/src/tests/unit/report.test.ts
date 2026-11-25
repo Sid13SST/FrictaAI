@@ -3,6 +3,12 @@ import { mockPrisma } from '../mocks/prismaMock';
 
 // Mock DB
 vi.mock('@fricta/db', () => ({ prisma: mockPrisma }));
+// Readiness marker lives in Redis; control it per test instead.
+const pendingSessions = new Set<string>();
+vi.mock('@fricta/agent', () => ({
+  pendingAnalysisSet: vi.fn(async (ids: string[]) => new Set(ids.filter((id) => pendingSessions.has(id)))),
+  clearAnalysisPending: vi.fn(async (id: string) => { pendingSessions.delete(id); }),
+}));
 
 import { Hono } from 'hono';
 import { reportRoutes } from '../../routes/reports';
@@ -105,6 +111,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
               uxFindings: [mockFinding],
               cognitiveSignals: [],
               visualFindings: [],
+              _count: { actions: 3, workflowScreenshots: 3 },
             };
           }
           return { projectId: 'project_123' };
@@ -120,8 +127,13 @@ describe('Report Generation and Compilation Unit Tests', () => {
 
       const json = await res.json();
       expect(json.scores).toBeDefined();
-      expect(json.scores.overallScore).toBe(85);
+      // Behavioural 85/90/80 (overall 85) minus one HIGH UX finding (-10
+      // smoothness) → scoreAudit gives 82. The raw stored 85 must not leak.
+      expect(json.scores.overallScore).toBe(82);
+      expect(json.scores.basis).toMatchObject({ goalReached: true, behaviouralOverall: 85, uxFindingsPenalty: 10, outcomeCap: null });
       expect(json.uxFindings).toHaveLength(1);
+      // The stored list score is brought in line with the report.
+      expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_123' }, data: { score: 82 } });
     });
   });
 
@@ -137,6 +149,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
               uxFindings: [mockFinding],
               cognitiveSignals: [],
               visualFindings: [],
+              _count: { actions: 3, workflowScreenshots: 3 },
             };
           }
           return { projectId: 'project_123' };
@@ -150,9 +163,173 @@ describe('Report Generation and Compilation Unit Tests', () => {
       expect(res.status).toBe(200);
 
       const json = await res.json();
-      expect(json.overallScore).toBe(85);
+      expect(json.overallScore).toBe(82);
       expect(json.overallUXGrade).toBe('B');
       expect(json.synthesizedInsights).toBeDefined();
+    });
+  });
+
+  describe('grade reflects outcome and findings', () => {
+    it('a dead-end (FAILED) audit with no findings is graded F, not A 100/100', async () => {
+      mockPrisma.workflowSession.findUnique.mockImplementation(async (args: any) => {
+        if (args.where.id !== 'workflow_123') return null;
+        if (!args.include) return { projectId: 'project_123' };
+        return {
+          ...mockWorkflow,
+          status: 'FAILED',
+          scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
+          visualScores: [], uxFindings: [], cognitiveSignals: [], visualFindings: [],
+          _count: { actions: 3, workflowScreenshots: 3 },
+        };
+      });
+      mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+      mockPrisma.uXReport.findFirst.mockResolvedValue({ id: 'report_dead', score: 100 });
+      mockPrisma.personaProfile.findMany.mockResolvedValue([]);
+
+      const exec = await (await app.request('/workflow_123/executive')).json();
+      expect(exec.overallScore).toBe(55);
+      expect(exec.overallUXGrade).toBe('F');
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.scores.overallScore).toBe(exec.overallScore);
+      expect(rep.scores.basis.goalReached).toBe(false);
+      // The stale stored 100 is corrected so the reports list agrees.
+      expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_dead' }, data: { score: 55 } });
+    });
+
+    it('visual defect findings lower the grade of a completed run', async () => {
+      mockPrisma.workflowSession.findUnique.mockImplementation(async (args: any) => {
+        if (args.where.id !== 'workflow_123') return null;
+        if (!args.include) return { projectId: 'project_123' };
+        return {
+          ...mockWorkflow,
+          status: 'COMPLETED',
+          scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
+          visualScores: [], uxFindings: [], cognitiveSignals: [],
+          visualFindings: [
+            { id: 'v1', workflowSessionId: 'workflow_123', screenshotId: null, findingType: 'weak_cta', severity: 'high', title: 't', description: 'd', boundingBoxes: [], metadata: {}, timestamp: new Date() },
+            { id: 'v2', workflowSessionId: 'workflow_123', screenshotId: null, findingType: 'vision_summary', severity: 'low', title: 't', description: 'd', boundingBoxes: [], metadata: {}, timestamp: new Date() },
+          ],
+          _count: { actions: 3, workflowScreenshots: 3 },
+        };
+      });
+      mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+      mockPrisma.uXReport.findFirst.mockResolvedValue({ id: 'report_vis', score: 100 });
+      mockPrisma.personaProfile.findMany.mockResolvedValue([]);
+
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.scores.overallScore).toBeLessThan(100);
+      expect(rep.scores.basis.visualFindingsPenalty).toBe(5);
+    });
+  });
+
+  describe('insufficient evidence and visual coverage', () => {
+    function mockSession(overrides: any) {
+      mockPrisma.workflowSession.findUnique.mockImplementation(async (args: any) => {
+        if (args.where.id !== 'workflow_123') return null;
+        if (!args.include) return { projectId: 'project_123' };
+        return {
+          ...mockWorkflow, status: 'FAILED',
+          scores: [{ clarityScore: 100, efficiencyScore: 100, smoothnessScore: 100, overallScore: 100 }],
+          visualScores: [], uxFindings: [], cognitiveSignals: [], visualFindings: [],
+          _count: { actions: 0, workflowScreenshots: 0 },
+          ...overrides,
+        };
+      });
+      mockPrisma.project.findUnique.mockResolvedValue(mockProject);
+      mockPrisma.uXReport.findFirst.mockResolvedValue({ id: 'report_ie', score: 55 });
+      mockPrisma.personaProfile.findMany.mockResolvedValue([]);
+    }
+
+    it('a FAILED audit with 0 actions has null scores, no grade, and the list score is cleared', async () => {
+      mockSession({});
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.scores.overallScore).toBeNull();
+      expect(rep.evidence.status).toBe('insufficient');
+      const exec = await (await app.request('/workflow_123/executive')).json();
+      expect(exec.overallUXGrade).toBe('N/A');
+      expect(exec.overallScore).toBeNull();
+      expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_ie' }, data: { score: null } });
+      const exp = await (await app.request('/workflow_123/export')).json();
+      expect(exp.markdown).toContain('Not scored: insufficient evidence');
+      expect(exp.textSheet).toContain('NOT SCORED');
+    });
+
+    it('while post-run analysis is pending: no score anywhere, analysis.state pending, nothing persisted as final', async () => {
+      mockSession({ status: 'COMPLETED', _count: { actions: 2, workflowScreenshots: 2 } });
+      pendingSessions.add('workflow_123');
+      try {
+        const rep = await (await app.request('/workflow_123')).json();
+        expect(rep.analysis).toMatchObject({ state: 'pending' });
+        expect(rep.scores.overallScore).toBeNull();
+        expect([rep.scores.clarityScore, rep.scores.onboardingScore, rep.scores.efficiencyScore, rep.scores.iaScore]).toEqual([null, null, null, null]);
+        expect(rep.evidence.status).toBe('sufficient'); // pending is not "insufficient evidence"
+        expect(rep.visualCoverage.note).toMatch(/still running/);
+        const exec = await (await app.request('/workflow_123/executive')).json();
+        expect(exec).toMatchObject({ analysisState: 'pending', overallUXGrade: 'N/A', overallScore: null });
+        const exp = await (await app.request('/workflow_123/export')).json();
+        expect(exp.markdown).toContain('Pending: analysis still running');
+        expect(exp.textSheet).toContain('PENDING - analysis still running');
+        expect(mockPrisma.uXReport.update).toHaveBeenCalledWith({ where: { id: 'report_ie' }, data: { score: null } });
+      } finally {
+        pendingSessions.delete('workflow_123');
+      }
+      // Once analysis has finished, the same session is scored normally.
+      const ready = await (await app.request('/workflow_123')).json();
+      expect(ready.analysis).toEqual({ state: 'ready' });
+      expect(ready.scores.overallScore).toBe(100);
+    });
+
+    it('a session that is still RUNNING is pending even without the marker', async () => {
+      mockSession({ status: 'RUNNING', _count: { actions: 1, workflowScreenshots: 1 } });
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.analysis.state).toBe('pending');
+      expect(rep.scores.overallScore).toBeNull();
+    });
+
+    it('reports list hides the score of reports still being analysed', async () => {
+      mockPrisma.uXReport.findMany.mockResolvedValue([
+        { id: 'r1', sessionId: 's-pending', summary: 's', score: 100, createdAt: new Date() },
+        { id: 'r2', sessionId: 's-ready', summary: 's', score: 90, createdAt: new Date() },
+      ]);
+      pendingSessions.add('s-pending');
+      try {
+        const list = await (await app.request('/')).json();
+        expect(list.reports.find((r: any) => r.id === 'r1')).toMatchObject({ score: null, analysisPending: true });
+        expect(list.reports.find((r: any) => r.id === 'r2')).toMatchObject({ score: 90, analysisPending: false });
+      } finally {
+        pendingSessions.delete('s-pending');
+      }
+    });
+
+    it('stale behavioural findings/signals are not reported on a zero-evidence audit', async () => {
+      mockSession({
+        uxFindings: [{ id: 'f1', workflowSessionId: 'workflow_123', findingType: 'COMPLEXITY', severity: 'LOW', personaType: 'STANDARD', title: 'stale', description: 'd', evidence: 'e', recommendation: 'r', timestamp: new Date() }],
+        cognitiveSignals: [{ id: 'c1', workflowSessionId: 'workflow_123', signalType: 'COGNITIVE_OVERLOAD', intensity: 0.1, metadata: {}, timestamp: new Date() }],
+      });
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.uxFindings).toEqual([]);
+      expect(rep.cognitiveSignals).toEqual([]);
+      const exp = await (await app.request('/workflow_123/export')).json();
+      expect(JSON.parse(exp.developerJson).availability.cognitiveSignals).toBe('Unavailable: no evidence');
+    });
+
+    it('failed vision is reported as incomplete visual coverage', async () => {
+      mockSession({
+        status: 'COMPLETED',
+        _count: { actions: 3, workflowScreenshots: 3 },
+        visualScores: [{ overallScore: 90 }],
+        visualFindings: [
+          { id: 'u1', workflowSessionId: 'workflow_123', screenshotId: 's1', findingType: 'vision_unavailable', severity: 'info', title: 't', description: 'd', boundingBoxes: [], metadata: { status: 'failed', reason: 'rate_limited: HTTP 429' }, timestamp: new Date() },
+        ],
+      });
+      const rep = await (await app.request('/workflow_123')).json();
+      expect(rep.visualCoverage).toMatchObject({ status: 'failed', complete: false, visionUnavailable: 1 });
+      expect(rep.scores.overallScore).toBe(100); // a coverage note is not a defect
+      const exec = await (await app.request('/workflow_123/executive')).json();
+      expect(exec.visualCoverageNote).toMatch(/heuristics only/);
+      const exp = await (await app.request('/workflow_123/export')).json();
+      expect(exp.markdown).toContain('Visual coverage incomplete (failed)');
+      expect(exp.textSheet).toContain('Visual Coverage: INCOMPLETE (failed)');
     });
   });
 
@@ -168,6 +345,7 @@ describe('Report Generation and Compilation Unit Tests', () => {
               uxFindings: [mockFinding],
               cognitiveSignals: [],
               visualFindings: [],
+              _count: { actions: 3, workflowScreenshots: 3 },
             };
           }
           return { projectId: 'project_123' };

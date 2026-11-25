@@ -23,7 +23,7 @@ import { clerkMiddleware, requireAuth, customLogger } from './middleware';
 // ─── Route Imports ────────────────────────────────────────────────────────────
 import { projectRoutes } from './routes/projects';
 import { workflowRoutes } from './routes/workflows';
-import { reportRoutes, generateReportForSession } from './routes/reports';
+import { reportRoutes, finalizeAuditReport, sharedReportRoutes } from './routes/reports';
 import { personaRoutes } from './routes/personas';
 import { agentRoutes } from './routes/agent';
 import { healthRoutes } from './routes/health';
@@ -136,7 +136,7 @@ app.use('*', secureHeaders({
 
 // CORS is scoped to known frontend origins. FRONTEND_URL supports a
 // comma-separated list for previews/staging; falls back to local dev.
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
@@ -172,6 +172,10 @@ app.get('/health', (c) => c.json({ status: 'ok', service: 'fricta-api' }));
 // Public API — uses its own API key authentication via ApiKeyManager
 app.route('/api/public', publicRoutes);
 app.route('/public', publicRoutes);
+
+// Report share links — anyone holding a valid, unexpired, unrevoked token may
+// read that one shared report (see sharedReportRoutes for what is exposed).
+app.route('/api/shared', sharedReportRoutes);
 
 // Realtime/SSE — temporary exemption for Phase 1 Part 1
 // SSE connections cannot easily send Authorization headers.
@@ -288,7 +292,7 @@ worker.on('completed', async (job: any) => {
   if (sessionId) {
     console.log(`[Worker Listener] Job completed. Auto-generating report for session ${sessionId}...`);
     try {
-      await generateReportForSession(sessionId);
+      await finalizeAuditReport(sessionId);
       console.log(`[Worker Listener] Report auto-generated successfully for session ${sessionId}`);
     } catch (err: any) {
       console.error(`[Worker Listener] Failed to auto-generate report for session ${sessionId}:`, err.message);
@@ -301,7 +305,7 @@ worker.on('failed', async (job: any, err: any) => {
   if (sessionId) {
     console.log(`[Worker Listener] Job failed. Auto-generating diagnostic report for session ${sessionId}...`);
     try {
-      await generateReportForSession(sessionId);
+      await finalizeAuditReport(sessionId);
       console.log(`[Worker Listener] Diagnostic report auto-generated successfully for session ${sessionId}`);
     } catch (dbErr: any) {
       console.error(`[Worker Listener] Failed to auto-generate diagnostic report for session ${sessionId}:`, dbErr.message);

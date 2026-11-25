@@ -14,7 +14,11 @@ export const historicalRoutes = new Hono()
     const user = getCurrentUser(c);
     if (!user) return ApiErrors.unauthorized(c);
 
-    const projectId = c.req.query('projectId') || c.req.param('projectId');
+    // A '*' middleware cannot see route params in Hono, so read the
+    // /analyze/:projectId segment from the path (previously this always
+    // returned 400 for the analyze POST).
+    const analyzeMatch = c.req.path.match(/\/analyze\/([^/]+)\/?$/);
+    const projectId = c.req.query('projectId') || (analyzeMatch ? decodeURIComponent(analyzeMatch[1]) : undefined);
     if (!projectId) {
       return c.json({ error: 'Missing projectId query parameter' }, 400);
     }

@@ -65,9 +65,9 @@ function GettingStarted() {
         <Step n={4} title="Watch it work" desc="The live Workflow Monitor streams the agent's status, current step, actions, and reasoning in real time as it explores your product." />
         <Step n={5} title="Review the report" desc="When the run completes, open the generated report for a UX score, severity-ranked findings, and screenshot evidence for each issue." />
       </div>
-      <div className="rounded-2xl p-5 flex items-center justify-between" style={accentCard}>
+      <div className="rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3" style={accentCard}>
         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Ready to try it yourself?</p>
-        <Link to="/app/workflow" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white" style={{ background: 'rgba(115,66,226,0.2)', border: '1px solid rgba(115,66,226,0.35)' }}>
+        <Link to="/app/workflow" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white whitespace-nowrap" style={{ background: 'rgba(115,66,226,0.2)', border: '1px solid rgba(115,66,226,0.35)' }}>
           Run New Audit <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>

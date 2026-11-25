@@ -1,6 +1,9 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/client"
+  // native for local dev; debian-openssl-3.0.x for the Docker runtime
+  // (Playwright jammy image), whatever platform the image was built on.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -306,7 +309,8 @@ model UXReport {
   id        String   @id @default(uuid())
   sessionId String
   summary   String
-  score     Int
+  /// NULL = not scored (insufficient evidence: the audit recorded no actions)
+  score     Int?
   createdAt DateTime @default(now())
 
   session WorkflowSession @relation(fields: [sessionId], references: [id])

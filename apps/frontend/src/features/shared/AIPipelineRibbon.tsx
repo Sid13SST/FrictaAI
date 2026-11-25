@@ -44,7 +44,9 @@ export const AIPipelineRibbon = ({ active = [], persona, className = '' }: AIPip
           How Fricta's AI is working
         </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+      {/* Phones get a wrapping row of compact chips; a 2-column grid of full
+          tiles pushed the page's real content a full screen down. */}
+      <div className="flex flex-wrap sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-1.5 sm:gap-2">
         {STAGES.map((stage) => {
           const isActive = active.includes(stage.id);
           const Icon = stage.icon;
@@ -52,20 +54,20 @@ export const AIPipelineRibbon = ({ active = [], persona, className = '' }: AIPip
           return (
             <div
               key={stage.id}
-              className="group relative flex flex-col items-center text-center gap-1.5 px-2 py-3 rounded-xl transition-all duration-300"
+              className="group relative flex flex-row sm:flex-col items-center sm:text-center gap-1.5 pl-1.5 pr-2.5 py-1.5 sm:px-2 sm:py-3 rounded-xl transition-all duration-300"
               style={{
                 background: isActive ? 'rgba(115,66,226,0.1)' : 'rgba(255,255,255,0.015)',
                 border: `1px solid ${isActive ? 'rgba(115,66,226,0.35)' : 'rgba(255,255,255,0.04)'}`,
               }}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}
+                className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform duration-300 ${isActive ? 'sm:scale-110' : ''}`}
                 style={{
                   background: isActive ? 'rgba(115,66,226,0.18)' : 'rgba(255,255,255,0.03)',
                   color: isActive ? '#9B72FA' : 'rgba(255,255,255,0.4)',
                 }}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse' : ''}`} />
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'animate-pulse' : ''}`} />
               </div>
               <span className={`text-[10px] font-semibold leading-tight ${isActive ? 'text-white' : 'text-zinc-500'}`}>
                 {stage.label}

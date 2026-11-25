@@ -1,0 +1,255 @@
+{
+  "_fixture": "Saved-data fixture reproducing the STRUCTURE of the reviewer's real report on aa2a2cc (2 steps, score 91, partial coverage, empty uxFindings, 8 visual records: 2 high weak_cta, 4 medium vision_finding, 1 vision_summary, 1 vision_unavailable; configured persona rows). Titles/descriptions are illustrative; it is NOT the reviewer's exact payload and NOT a provider call.",
+  "session": {
+    "id": "fixture-0000-real-shape-partial-coverage",
+    "goal": "Find the pricing page",
+    "persona": "Tech-Savvy User",
+    "startedAt": "2026-11-23T09:59:30.000Z",
+    "endedAt": "2026-11-23T09:59:52.000Z",
+    "stepCount": 2,
+    "status": "COMPLETED"
+  },
+  "scores": {
+    "clarityScore": 78,
+    "onboardingScore": 100,
+    "iaScore": 100,
+    "efficiencyScore": 100,
+    "overallScore": 91,
+    "basis": {
+      "goalReached": true,
+      "behaviouralOverall": 100,
+      "uxFindingsPenalty": 0,
+      "visualFindingsPenalty": 22,
+      "outcomeCap": null
+    }
+  },
+  "evidence": {
+    "status": "sufficient"
+  },
+  "analysis": {
+    "state": "ready"
+  },
+  "visualCoverage": {
+    "status": "partial",
+    "complete": false,
+    "screenshots": 2,
+    "visionSucceeded": 1,
+    "visionUnavailable": 1,
+    "visionTruncated": 0,
+    "note": "AI vision answered for 1 screenshot(s) but failed or was skipped for 1. Those steps were reviewed by layout heuristics only."
+  },
+  "uxFindings": [],
+  "cognitiveSignals": [],
+  "visualFindings": [
+    {
+      "id": "vf-1",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-1",
+      "findingType": "weak_cta",
+      "severity": "high",
+      "title": "Primary call-to-action lacks visual prominence",
+      "description": "The main CTA button blends into surrounding content and has low contrast relative to nearby elements.",
+      "boundingBoxes": [
+        {
+          "x": 540,
+          "y": 320,
+          "w": 180,
+          "h": 44,
+          "label": "Get started button"
+        }
+      ],
+      "metadata": {
+        "source": "heuristic"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-2",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-2",
+      "findingType": "weak_cta",
+      "severity": "high",
+      "title": "Primary call-to-action lacks visual prominence",
+      "description": "On the pricing page the primary CTA is visually weaker than the surrounding pricing cards.",
+      "boundingBoxes": [
+        {
+          "x": 560,
+          "y": 610,
+          "w": 160,
+          "h": 40,
+          "label": "Start free button"
+        }
+      ],
+      "metadata": {
+        "source": "heuristic"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-3",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-1",
+      "findingType": "vision_finding",
+      "severity": "medium",
+      "title": "Pricing link is small and low in the header",
+      "description": "Detected via visual intelligence model.",
+      "boundingBoxes": [
+        {
+          "x": 880,
+          "y": 18,
+          "w": 60,
+          "h": 20,
+          "label": "Pricing nav link"
+        }
+      ],
+      "metadata": {
+        "source": "openrouter-vision"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-4",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-1",
+      "findingType": "vision_finding",
+      "severity": "medium",
+      "title": "Dense paragraph pushes CTA below the fold",
+      "description": "Detected via visual intelligence model.",
+      "boundingBoxes": [
+        {
+          "x": 80,
+          "y": 180,
+          "w": 1100,
+          "h": 260,
+          "label": "Hero copy block"
+        }
+      ],
+      "metadata": {
+        "source": "openrouter-vision"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-5",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-1",
+      "findingType": "vision_finding",
+      "severity": "medium",
+      "title": "Overlapping label and button",
+      "description": "Detected via visual intelligence model.",
+      "boundingBoxes": [
+        {
+          "x": 80,
+          "y": 470,
+          "w": 200,
+          "h": 40,
+          "label": "Overlapping label"
+        }
+      ],
+      "metadata": {
+        "source": "openrouter-vision"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-6",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-1",
+      "findingType": "vision_finding",
+      "severity": "medium",
+      "title": "Email field has no visible label",
+      "description": "Detected via visual intelligence model.",
+      "boundingBoxes": [
+        {
+          "x": 80,
+          "y": 540,
+          "w": 240,
+          "h": 32,
+          "label": "Email address input"
+        }
+      ],
+      "metadata": {
+        "source": "openrouter-vision"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-7",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-1",
+      "findingType": "vision_summary",
+      "severity": "low",
+      "title": "AI Visual Feedback",
+      "description": "Layout is readable but the primary action and pricing entry point compete with dense copy.",
+      "boundingBoxes": [],
+      "metadata": {
+        "explanation": "...",
+        "truncated": false,
+        "model": "particle-ai/particle-1:free"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    },
+    {
+      "id": "vf-8",
+      "workflowSessionId": "fixture-0000-real-shape-partial-coverage",
+      "screenshotId": "shot-2",
+      "findingType": "vision_unavailable",
+      "severity": "info",
+      "title": "AI vision unavailable for this screenshot",
+      "description": "Visual review of this step used layout heuristics only (failed: empty: empty response).",
+      "boundingBoxes": [],
+      "metadata": {
+        "status": "failed",
+        "reason": "empty: empty response"
+      },
+      "timestamp": "2026-11-23T10:00:00.000Z"
+    }
+  ],
+  "personaProfiles": [
+    {
+      "id": "p1",
+      "name": "Beginner Teacher",
+      "description": "Low tech familiarity.",
+      "traits": {
+        "guidanceDependency": "high",
+        "patience": "high",
+        "comfortWithIA": "low"
+      },
+      "behaviorModifiers": {
+        "idleHesitationThresholdMs": 8000,
+        "maxActionCyclesAllowed": 2,
+        "excessiveStepsThreshold": 8
+      }
+    },
+    {
+      "id": "p2",
+      "name": "Power User",
+      "description": "Speed-focused.",
+      "traits": {
+        "guidanceDependency": "low",
+        "patience": "low",
+        "comfortWithIA": "high"
+      },
+      "behaviorModifiers": {
+        "idleHesitationThresholdMs": 25000,
+        "maxActionCyclesAllowed": 5,
+        "excessiveStepsThreshold": 20
+      }
+    },
+    {
+      "id": "p3",
+      "name": "First-Time User",
+      "description": "New visitor.",
+      "traits": {
+        "guidanceDependency": "medium",
+        "patience": "medium",
+        "comfortWithIA": "medium"
+      },
+      "behaviorModifiers": {
+        "idleHesitationThresholdMs": 15000,
+        "maxActionCyclesAllowed": 3,
+        "excessiveStepsThreshold": 12
+      }
+    }
+  ]
+}

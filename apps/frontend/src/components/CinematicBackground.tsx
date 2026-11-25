@@ -1,46 +1,27 @@
-import { useEffect, useRef } from 'react';
-import Hls from 'hls.js';
+import { useState } from 'react';
+import heroVideoSrc from './BG_Videos/Video_Fricta.mp4';
 
-const HLS_SRC =
-  'https://stream.mux.com/tLkHO1qZoaaQOUeVWo8hEBeGQfySP02EPS02BmnNFyXys.m3u8';
-
+/**
+ * Background video for the auth shell. Served from the bundle: the previous
+ * Mux HLS stream (stream.mux.com/tLkHO…m3u8) started returning 403, which left
+ * login/register with a dead <video>. A bundled MP4 has no third-party
+ * dependency and needs no HLS runtime. If the file ever fails to load, the
+ * element is removed and the solid background shows through.
+ */
 export function HeroVideo() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    let hls: Hls | null = null;
-
-    if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: false });
-      hls.loadSource(HLS_SRC);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = HLS_SRC;
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(() => {});
-      });
-    }
-
-    return () => {
-      if (hls) {
-        hls.destroy();
-      }
-    };
-  }, []);
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
 
   return (
     <video
-      ref={videoRef}
+      src={heroVideoSrc}
+      autoPlay
       muted
       loop
       playsInline
       preload="auto"
+      aria-hidden="true"
+      onError={() => setFailed(true)}
       className="absolute inset-0 w-full h-full object-cover opacity-60"
     />
   );

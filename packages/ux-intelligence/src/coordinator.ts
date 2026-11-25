@@ -94,10 +94,15 @@ export class UXIntelligenceCoordinator {
     // 3. Seed persona profiles in the database if they do not exist
     await this.ensurePersonasSeeded();
 
-    // 4. Run Analysis Layers
-    const behavioralSignals = BehavioralAnalyzer.analyze(activityData);
-    const cognitiveSignals = CognitiveEngine.calculate(activityData, behavioralSignals);
-    const personaFindings = PersonaEngine.run(activityData, behavioralSignals);
+    // 4. Run Analysis Layers — only when there is behavioural evidence.
+    // With zero recorded actions the engines still emitted default
+    // "measurements" (e.g. cognitive overload 10%, decision fatigue 27%),
+    // which read as real diagnostics on a failed audit. No actions → no
+    // behavioural signals or findings (stale ones are cleared below).
+    const hasEvidence = actions.length > 0;
+    const behavioralSignals = hasEvidence ? BehavioralAnalyzer.analyze(activityData) : [];
+    const cognitiveSignals = hasEvidence ? CognitiveEngine.calculate(activityData, behavioralSignals) : [];
+    const personaFindings = hasEvidence ? PersonaEngine.run(activityData, behavioralSignals) : [];
 
     // If there are no findings, add a default informative finding if steps were high
     if (personaFindings.length === 0 && actions.length > 5) {
@@ -121,43 +126,49 @@ export class UXIntelligenceCoordinator {
       SEED_PERSONAS
     );
 
-    // 6. Persist results in the database
-    // Clear stale findings/signals first
-    await this.prisma.uXFinding.deleteMany({
-      where: { workflowSessionId: sessionId }
-    });
-    await this.prisma.cognitiveSignal.deleteMany({
-      where: { workflowSessionId: sessionId }
-    });
-
-    // Create many records
-    if (compiledReport.findings.length > 0) {
-      await this.prisma.uXFinding.createMany({
-        data: compiledReport.findings.map(f => ({
-          workflowSessionId: f.workflowSessionId,
-          findingType: f.findingType,
-          severity: f.severity,
-          personaType: f.personaType,
-          title: f.title,
-          description: f.description,
-          evidence: f.evidence,
-          recommendation: f.recommendation,
-          timestamp: f.timestamp || new Date()
-        }))
+    // 6. Persist results in the database: replace this session's findings and
+    // signals atomically. The report tab triggers analysis on mount, so two
+    // runs can overlap (React StrictMode double-mounts in dev, two open tabs);
+    // with separate delete/create calls both runs inserted and every signal
+    // appeared twice. A per-session advisory lock serialises the replace.
+    await this.prisma.$transaction(async (tx: any) => {
+      await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${sessionId}))`;
+      await tx.uXFinding.deleteMany({
+        where: { workflowSessionId: sessionId }
       });
-    }
-
-    if (compiledReport.cognitiveSignals.length > 0) {
-      await this.prisma.cognitiveSignal.createMany({
-        data: compiledReport.cognitiveSignals.map(s => ({
-          workflowSessionId: s.workflowSessionId,
-          signalType: s.signalType,
-          intensity: s.intensity,
-          metadata: s.metadata,
-          timestamp: s.timestamp || new Date()
-        }))
+      await tx.cognitiveSignal.deleteMany({
+        where: { workflowSessionId: sessionId }
       });
-    }
+
+      // Create many records
+      if (compiledReport.findings.length > 0) {
+        await tx.uXFinding.createMany({
+          data: compiledReport.findings.map(f => ({
+            workflowSessionId: f.workflowSessionId,
+            findingType: f.findingType,
+            severity: f.severity,
+            personaType: f.personaType,
+            title: f.title,
+            description: f.description,
+            evidence: f.evidence,
+            recommendation: f.recommendation,
+            timestamp: f.timestamp || new Date()
+          }))
+        });
+      }
+
+      if (compiledReport.cognitiveSignals.length > 0) {
+        await tx.cognitiveSignal.createMany({
+          data: compiledReport.cognitiveSignals.map(s => ({
+            workflowSessionId: s.workflowSessionId,
+            signalType: s.signalType,
+            intensity: s.intensity,
+            metadata: s.metadata,
+            timestamp: s.timestamp || new Date()
+          }))
+        });
+      }
+    });
 
     // Update the WorkflowSession status/stepCount if needed (optional)
     await this.prisma.workflowSession.update({
@@ -181,7 +192,8 @@ export class UXIntelligenceCoordinator {
     return {
       ...compiledReport,
       findings: persistedFindings as any,
-      cognitiveSignals: persistedSignals as any
+      cognitiveSignals: persistedSignals as any,
+      evidence: hasEvidence ? 'sufficient' : 'insufficient',
     };
   }
 

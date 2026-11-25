@@ -38,6 +38,7 @@ export class BrowserPoolManager {
       logger.info('Launching new Chromium browser instance for pool');
       this.browser = await chromium.launch({
         headless: true,
+        executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim() || undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

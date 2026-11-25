@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, apiJson, ensureOk } from '../../lib/api';
+import { toApiError } from '../../lib/errors';
+import { toast } from '../../lib/toast';
+import { ErrorState } from '../../components/common/ErrorState';
+import { EmptyState } from '../../components/common/EmptyState';
+import { Skeleton, SkeletonGroup } from '../../components/common/Skeleton';
 import {
   Download, Clipboard, Brain, ShieldAlert, Sparkles,
   Code, FileText, Check, RefreshCw, ChevronRight,
@@ -15,6 +20,8 @@ import { AgentOrchestrationConsole } from '../orchestrator/AgentOrchestrationCon
 import { AIPipelineRibbon } from '../shared/AIPipelineRibbon';
 import { UXIntelligenceTab } from '../../components/reports/UXIntelligenceTab';
 import { DesktopOnlyNotice } from '../../components/common/DesktopOnlyNotice';
+import { gradeForScore } from '../../lib/grade';
+import { NoEvidenceNote } from '../../components/common/NoEvidenceNote';
 
 interface UnifiedReportViewerProps {
   sessionId: string;
@@ -24,7 +31,18 @@ interface UnifiedReportViewerProps {
 
 // ─── Score Gauge ───────────────────────────────────────────────────────────────
 
-const ScoreGauge = ({ label, value }: { label: string; value: number }) => {
+const ScoreGauge = ({ label, value }: { label: string; value: number | null }) => {
+  if (value === null) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</span>
+          <span className="text-[10px] font-black font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>n/a</span>
+        </div>
+        <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }} />
+      </div>
+    );
+  }
   const color =
     value >= 80 ? '#7342E2' :
     value >= 60 ? '#eab308' :
@@ -83,11 +101,14 @@ const Panel = ({ children, className = '' }: { children: React.ReactNode; classN
 
 export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessionId }) => {
   type TabKey = 'replay' | 'timeline' | 'personas' | 'insights' | 'orchestrator' | 'findings';
-  const [activeTab, setActiveTab] = useState<TabKey>('replay');
+  // Replay is desktop-only; below `lg` open on the findings tab so a phone
+  // lands on real content instead of the "optimized for desktop" notice.
+  const [activeTab, setActiveTab] = useState<TabKey>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches ? 'replay' : 'findings');
   const [activeStep, setActiveStep] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
   const [reportData, setReportData] = useState<any>(null);
@@ -102,7 +123,6 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     if (showLoading) setLoading(true);
     setError(null);
     try {
-      const backendBase = API_BASE.replace('/api', '');
       const [repRes, execRes, expRes, timeRes, recRes] = await Promise.all([
         apiFetch(`/reports/${sessionId}`),
         apiFetch(`/reports/${sessionId}/executive`),
@@ -110,7 +130,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         apiFetch(`/reports/${sessionId}/timeline`),
         apiFetch(`/ux/recommendations/${sessionId}`),
       ]);
-      if (!repRes.ok) throw new Error('Report dataset not found');
+      await ensureOk(repRes);
       const [rep, exec, exp, time, rec] = await Promise.all([
         repRes.json(), execRes.json(), expRes.json(), timeRes.json(), recRes.json(),
       ]);
@@ -119,8 +139,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       setExportData(exp);
       setTimelineData(time);
       setRecommendationsData(rec);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch workflow report analytics.');
+    } catch (err) {
+      // A background refresh failing shouldn't blank a report that's already on screen.
+      if (showLoading) setError(toApiError(err));
+      else toast.error(err, 'refresh this report');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -128,27 +150,37 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
 
   useEffect(() => { fetchReportData(true); }, [sessionId]);
 
+  // Poll quietly while the report is provisional.
+  const isPending = reportData?.analysis?.state === 'pending';
+  useEffect(() => {
+    if (!isPending) return;
+    const id = window.setTimeout(() => { void fetchReportData(false); }, 3000);
+    return () => window.clearTimeout(id);
+  }, [isPending, reportData]);
+
   const handleRunDiagnostics = async () => {
     setAnalyzing(true);
     try {
-      const res = await apiFetch(`/orchestrator/start/${sessionId}`, {
+      await apiJson(`/orchestrator/start/${sessionId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to start orchestration');
-      }
       setActiveTab('orchestrator');
+      toast.info('UX diagnostics started', 'Specialist agents are analyzing this session. Results stream into the Agent Orchestration tab.');
       await fetchReportData(false);
-    } catch (err: any) {
-      console.error(err);
-      alert('Failed to trigger UX diagnostics: ' + err.message);
+    } catch (err) {
+      toast.error(err, 'start UX diagnostics');
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const downloadFile = (content: string, filename: string, contentType: string) => {
+  const downloadFile = (content: string | undefined, filename: string, contentType: string) => {
+    // The export bundle is fetched alongside the report; if that one request
+    // failed there is nothing to download yet.
+    if (typeof content !== 'string' || content.length === 0) {
+      toast.error(new Error('export unavailable'), 'prepare that export');
+      return;
+    }
     const blob = new Blob([content], { type: contentType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -160,8 +192,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
     setDownloadingPdf(true);
     setPdfError(null);
     try {
-      const res = await apiFetch(`/reports/${sessionId}/export/pdf`);
-      if (!res.ok) throw new Error(`PDF generation failed (${res.status})`);
+      const res = await ensureOk(await apiFetch(`/reports/${sessionId}/export/pdf`));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -169,8 +200,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       a.download = `fricta-ux-report-${sessionId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setPdfError(err.message || 'Failed to download PDF');
+      toast.success('PDF downloaded');
+    } catch (err) {
+      setPdfError("The PDF couldn't be generated. Try again in a moment.");
+      toast.error(err, 'generate the PDF');
     } finally {
       setDownloadingPdf(false);
     }
@@ -188,42 +221,50 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-[450px] flex flex-col items-center justify-center gap-4">
-        <div
-          className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: 'rgba(115, 66, 226,0.4)', borderTopColor: '#7342E2' }}
-        />
-        <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
-          Aggregating UX session intelligence telemetry...
-        </span>
-      </div>
+      <SkeletonGroup label="Loading report" className="flex flex-col gap-6">
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="xl:col-span-1 flex flex-col gap-5">
+            <Skeleton className="h-56 rounded-xl" />
+            <Skeleton className="h-44 rounded-xl" />
+            <Skeleton className="h-52 rounded-xl" />
+          </div>
+          <div className="xl:col-span-3 flex flex-col gap-6">
+            <div className="flex flex-wrap gap-2">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-28 rounded-lg" />)}
+            </div>
+            <Skeleton className="h-[420px] rounded-xl" />
+          </div>
+        </div>
+      </SkeletonGroup>
     );
   }
 
   // ── Error ────────────────────────────────────────────────────────────────────
   if (error || !reportData) {
     return (
-      <div className="min-h-[450px] flex flex-col items-center justify-center gap-4 text-center">
-        <ShieldAlert className="w-12 h-12 text-rose-400 animate-bounce" />
-        <h3 className="text-base font-bold text-white">Analysis Generation Failed</h3>
-        <p className="text-xs max-w-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-          {error || 'Session report details are missing.'}
-        </p>
-        <button
-          onClick={() => fetchReportData(true)}
-          className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl font-mono mt-2"
-          style={{ background: 'rgba(115, 66, 226,0.1)', border: '1px solid rgba(115, 66, 226,0.25)', color: '#7342E2' }}
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Retry
-        </button>
-      </div>
+      <ErrorState
+        className="min-h-[450px]"
+        error={error ?? new Error('missing report')}
+        action="load this report"
+        onRetry={() => fetchReportData(true)}
+      />
     );
   }
 
   const scores = reportData.scores;
   const screenshots = timelineData?.screenshots || [];
   const timeline = timelineData?.timeline || [];
-  const grade = executiveSummary?.overallUXGrade || 'C';
+  // Grade comes from the backend (same bands as exports/PDF); 'N/A' when the
+  // audit produced no evidence. Never default to a letter.
+  // Provisional report: the run or its post-run analysis has not finished.
+  // Nothing on the page may look final until it has.
+  const analysisPending = reportData.analysis?.state === 'pending';
+  const notScored = !analysisPending && (reportData.evidence?.status === 'insufficient' || scores.overallScore === null);
+  const grade: string = analysisPending ? '…' : notScored ? 'N/A' : (executiveSummary?.overallUXGrade ?? gradeForScore(scores.overallScore));
+  const coverage = reportData.visualCoverage as
+    | { status: string; complete: boolean; note: string }
+    | undefined;
 
   const tabs: { key: TabKey; label: string; icon?: React.ReactNode }[] = [
     { key: 'replay',       label: 'Timeline Replay',       icon: <Activity className="w-3 h-3" /> },
@@ -240,6 +281,28 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
         active={['intelligence', 'correlation', 'severity', 'recommendations']}
         persona={reportData.session?.persona}
       />
+
+      {analysisPending && (
+        <div role="status" data-analysis-pending className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style={{ background: 'rgba(115,66,226,0.08)', border: '1px solid rgba(115,66,226,0.35)', color: 'rgba(221,214,254,0.95)' }}>
+          <strong className="font-semibold">Analysis in progress.</strong>{' '}
+          The audit has finished but its visual review, UX analysis and scoring are still running. This page refreshes automatically; scores and findings appear when it is done.
+        </div>
+      )}
+      {notScored && (
+        <div role="alert" className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)', color: 'rgba(253,230,138,0.95)' }}>
+          <strong className="font-semibold">Not scored: insufficient evidence.</strong>{' '}
+          {reportData.evidence?.reason ? `${reportData.evidence.reason.charAt(0).toUpperCase()}${reportData.evidence.reason.slice(1)}.` : 'The audit recorded no agent actions.'}{' '}
+          This is a failure record, not a UX assessment. Re-run the audit.
+        </div>
+      )}
+      {coverage && !coverage.complete && !analysisPending && (
+        <div role="status" className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.3)', color: 'rgba(186,230,253,0.95)' }}>
+          <strong className="font-semibold">Visual coverage incomplete.</strong> {coverage.note}
+        </div>
+      )}
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
       {/* ── Left Sidebar ──────────────────────────────────────────────────────── */}
@@ -252,7 +315,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#7342E2]/5 to-[#7342E2]/20 border-2 border-[#7342E2]/30 flex items-center justify-center text-3xl font-black text-[#7342E2] mt-4 shadow-[0_0_24px_rgba(115,66,226,0.15)] transition-transform hover:scale-105 duration-300">
             {grade}
           </div>
-          <div className="text-xl font-bold text-white mt-4 font-mono">{scores.overallScore}/100</div>
+          <div className="text-xl font-bold text-white mt-4 font-mono">{analysisPending ? 'Analysis in progress' : notScored ? 'Not scored' : `${scores.overallScore}/100`}</div>
+          {notScored && (
+            <p className="text-[11px] text-amber-300/90 mt-1 px-2 leading-relaxed">Insufficient evidence: the audit recorded no agent actions.</p>
+          )}
           <p className="text-xs text-[#a1a1aa] mt-1 italic px-4 font-mono leading-relaxed">
             Workflow goal: "{reportData.session?.goal || 'Not specified'}"
           </p>
@@ -266,10 +332,10 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             </h4>
             <div className="flex flex-col gap-3">
               {[
-                { label: 'Onboarding',  val: scores.onboardingScore  ?? 0 },
-                { label: 'Clarity',     val: scores.clarityScore     ?? 0 },
-                { label: 'Architecture',val: scores.iaScore           ?? 0 },
-                { label: 'Efficiency',  val: scores.efficiencyScore  ?? 0 },
+                { label: 'Onboarding',  val: scores.onboardingScore  ?? null },
+                { label: 'Clarity',     val: scores.clarityScore     ?? null },
+                { label: 'Architecture',val: scores.iaScore           ?? null },
+                { label: 'Efficiency',  val: scores.efficiencyScore  ?? null },
               ].map(s => <ScoreGauge key={s.label} label={s.label} value={s.val} />)}
             </div>
           </div>
@@ -295,7 +361,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 key: 'markdown',
                 label: 'Markdown Document',
                 icon: <FileText className="w-4 h-4" style={{ color: '#7342E2' }} />,
-                onClick: () => downloadFile(exportData.markdown, `fricta-ux-report-${sessionId}.md`, 'text/markdown'),
+                onClick: () => downloadFile(exportData?.markdown, `fricta-ux-report-${sessionId}.md`, 'text/markdown'),
               },
               {
                 key: 'summary',
@@ -308,7 +374,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
                 key: 'json',
                 label: 'Developer JSON',
                 icon: <Code className="w-4 h-4" style={{ color: '#60a5fa' }} />,
-                onClick: () => downloadFile(exportData.developerJson, `fricta-ux-dump-${sessionId}.json`, 'application/json'),
+                onClick: () => downloadFile(exportData?.developerJson, `fricta-ux-dump-${sessionId}.json`, 'application/json'),
               },
             ].map(item => (
               <button
@@ -341,7 +407,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
       <div className="xl:col-span-3 flex flex-col gap-6">
 
         {/* Navigation Tabs Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#222226] pb-1">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[#222226] pb-1">
           <div className="flex flex-wrap gap-1">
             {tabs.map((t) => (
               <button
@@ -359,7 +425,7 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
             ))}
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap mb-2 sm:mb-0">
+          <div className="flex items-center gap-2.5 flex-wrap mb-2 lg:mb-0 whitespace-nowrap">
             <Link
               to={`/app/console/${sessionId}`}
               className="flex items-center gap-2 px-4 py-2 bg-[#7342e2]/10 hover:bg-[#7342e2]/20 border border-[#7342e2]/30 text-[#7342e2] text-xs font-bold rounded-lg transition-all"
@@ -415,8 +481,21 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           </>
         )}
 
-        {activeTab === 'findings' && (
-          <UXIntelligenceTab sessionId={sessionId} />
+        {analysisPending && (activeTab === 'findings' || activeTab === 'personas' || activeTab === 'insights') && (
+          <Panel><div className="p-6"><NoEvidenceNote title="Analysis in progress" detail="Findings, persona projections and insights appear when the post-run analysis finishes. This page refreshes automatically." /></div></Panel>
+        )}
+        {!analysisPending && activeTab === 'findings' && (
+          <UXIntelligenceTab sessionId={sessionId} stepCount={reportData.session?.stepCount} officialScores={scores} noEvidence={notScored} testedPersona={reportData.session?.persona} />
+        )}
+
+        {activeTab === 'timeline' && timeline.length === 0 && (
+          <EmptyState
+            variant="inline"
+            icon={<TrendingUp className="w-6 h-6" />}
+            title="No events recorded for this audit"
+            description="The event stream fills in as the agent navigates. This audit ended before any steps were captured."
+            action={{ label: 'Run another audit', to: '/app/workflow' }}
+          />
         )}
 
         {activeTab === 'timeline' && timeline.length > 0 && (
@@ -436,17 +515,24 @@ export const UnifiedReportViewer: React.FC<UnifiedReportViewerProps> = ({ sessio
           </>
         )}
 
-        {activeTab === 'personas' && (
+        {!analysisPending && activeTab === 'personas' && notScored && (
+          <Panel><div className="p-6"><NoEvidenceNote detail="Persona simulations compare recorded behaviour across personas; this audit recorded no agent actions." /></div></Panel>
+        )}
+        {!analysisPending && activeTab === 'personas' && !notScored && (
           <PersonaComparisonPanel
             personaProfiles={reportData.personaProfiles}
             uxFindings={reportData.uxFindings}
             cognitiveSignals={reportData.cognitiveSignals}
             recommendations={recommendationsData?.recommendations || []}
             scores={scores}
+            testedPersona={reportData.session?.persona}
           />
         )}
 
-        {activeTab === 'insights' && (
+        {!analysisPending && activeTab === 'insights' && notScored && (
+          <Panel><div className="p-6"><NoEvidenceNote detail="UX insights are synthesised from findings and scores; this audit has neither." /></div></Panel>
+        )}
+        {!analysisPending && activeTab === 'insights' && !notScored && (
           <div className="flex flex-col gap-6">
             <GlobalInsightEngine executiveSummary={executiveSummary} />
 

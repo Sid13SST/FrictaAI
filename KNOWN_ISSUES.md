@@ -46,7 +46,7 @@ Tracked items that are known, deliberately deferred, and not blocking V1 launch.
 
 ## 6. Mobile / responsive support
 
-**Status:** ✅ Fixed. Landing, Login/Register, Dashboard, Projects, Reports list, Findings, Help Center, and Navigation are fully responsive; Workflow Monitor and Runtime Observability are tablet-friendly; Session Replay, Evidence Explorer, Live Timeline, and the large Report Viewer (replay/orchestration tabs) show an explicit "optimized for desktop" message below the `lg` breakpoint via `DesktopOnlyNotice`. Verified with `tsc --noEmit` and a production build; not visually verified in a logged-in browser session (these routes sit behind Clerk auth with real project/session data).
+**Status:** ✅ Fixed. Landing, Login/Register, Dashboard, Projects, Reports list, Findings, Help Center, and Navigation are fully responsive; Workflow Monitor and Runtime Observability are tablet-friendly; Session Replay, Evidence Explorer, Live Timeline, and the large Report Viewer (replay/orchestration tabs) show an explicit "optimized for desktop" message below the `lg` breakpoint via `DesktopOnlyNotice`. Verified with `tsc --noEmit` and a production build; not visually verified in a logged-in browser session (these routes sit behind Clerk auth with real project/session data). **Update:** the key pages have since been screenshotted at 390/768/1440px through a dev-only fixture harness (mock auth, canned API data) and the layout defects found were fixed — see `docs/verification/v1-frontend/README.md`. That is fixture verification, not end-to-end: a walkthrough with a real Clerk sign-up and a real audit run is still outstanding.
 
 ## 7. `WorkspaceIntegration` has no owning-user column
 

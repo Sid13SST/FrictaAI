@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, ensureOk as ensureResponseOk, API_BASE } from '../../lib/api';
+import { errorMessage } from '../../lib/errors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, 
@@ -278,7 +279,7 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
           setLoading(false);
           return;
         }
-        throw new Error('Failed to fetch orchestration session');
+        await ensureResponseOk(sessionRes);
       }
       
       const { session } = await sessionRes.json();
@@ -349,9 +350,8 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       }
       
       setError(null);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Error loading orchestration telemetry');
+    } catch (err) {
+      setError(errorMessage(err, 'load the agent orchestration data'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -367,14 +367,11 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
         headers: { 'Content-Type': 'application/json' }
       });
       
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || 'Failed to trigger orchestrator');
-      }
+      await ensureResponseOk(res);
 
       await fetchSessionData(false);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'start the agent orchestration'));
     } finally {
       setStarting(false);
     }
@@ -765,8 +762,8 @@ export const AgentOrchestrationConsole: React.FC<AgentOrchestrationConsoleProps>
       `}} />
 
       {/* Background decoration */}
-      <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-[#7342E2]/3 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[5%] w-[350px] h-[350px] rounded-full bg-emerald-500/3 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[-5%] left-[15%] w-[450px] h-[450px] rounded-full bg-[#7342E2]/[0.03] blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[5%] w-[350px] h-[350px] rounded-full bg-emerald-500/[0.03] blur-[100px] pointer-events-none" />
       
       {/* Header and Quick Stats */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-[#0d0d11]/80 border border-zinc-900/80 rounded-2xl p-6 relative overflow-hidden shadow-2xl backdrop-blur-md">

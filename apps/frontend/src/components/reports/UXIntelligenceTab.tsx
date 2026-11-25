@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { apiFetch, API_BASE } from '../../lib/api';
+import { apiFetch, apiJson, ensureOk, API_BASE } from '../../lib/api';
+import { errorMessage } from '../../lib/errors';
+import { toast } from '../../lib/toast';
 import {
   Brain, User, AlertCircle, CheckCircle2, Gauge,
   Clock, Shuffle, HelpCircle, TrendingUp, HelpCircle as HelpIcon, ArrowRight,
   XCircle, Eye, RotateCcw, Loader2
 } from 'lucide-react';
+import { projectPersonaScores, type OfficialScores } from '../../lib/personaProjection';
+import { NoEvidenceNote } from '../common/NoEvidenceNote';
 
 type FindingStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
@@ -46,7 +50,20 @@ interface Recommendation {
   remedySteps: string[];
 }
 
-export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
+export function UXIntelligenceTab({ sessionId, stepCount: sessionStepCount, officialScores, noEvidence = false, testedPersona }: {
+  sessionId: string;
+  stepCount?: number | null;
+  /**
+   * Zero-evidence report (no recorded agent actions): every diagnostic panel
+   * shows "Unavailable: no evidence" instead of numbers, "Good" or a positive
+   * empty state.
+   */
+  noEvidence?: boolean;
+  /** The report's scores (single source of truth for the audit score). */
+  officialScores: OfficialScores;
+  /** The persona the agent actually ran as. */
+  testedPersona?: string | null;
+}) {
   const [activePersona, setActivePersona] = useState<'STANDARD' | 'BEGINNER' | 'POWER_USER' | 'FIRST_TIME_USER'>('STANDARD');
   const [findings, setFindings] = useState<UXFinding[]>([]);
   const [cognitiveSignals, setCognitiveSignals] = useState<CognitiveSignal[]>([]);
@@ -61,16 +78,15 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
   const updateFinding = async (id: string, patch: { status?: FindingStatus; resolutionNotes?: string }) => {
     setSavingFindingId(id);
     try {
-      const res = await apiFetch(`/ux/findings/${id}`, {
+      const data = await apiJson<{ finding: Record<string, unknown> }>(`/ux/findings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       });
-      if (!res.ok) throw new Error('Failed to update finding');
-      const data = await res.json();
       setFindings(prev => prev.map(f => (f.id === id ? { ...f, ...data.finding } : f)));
+      toast.success('Finding updated');
     } catch (err) {
-      console.error('Failed to update finding status:', err);
+      toast.error(err, 'update this finding');
     } finally {
       setSavingFindingId(null);
     }
@@ -83,26 +99,22 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
       setError(null);
 
       // Trigger analysis first to make sure findings are compiled
-      const analyzeRes = await apiFetch(`/ux/analyze/${sessionId}`, {
+      const analyzeRes = await ensureOk(await apiFetch(`/ux/analyze/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
-      });
+      }));
       const analyzeData = await analyzeRes.json();
-
-      if (analyzeData.error) {
-        throw new Error(analyzeData.error);
-      }
 
       setFindings(analyzeData.findings || []);
       setCognitiveSignals(analyzeData.cognitiveSignals || []);
 
-      // Fetch recommendations
+      // Recommendations are a nice-to-have on this tab; don't fail the whole
+      // view if only they are unavailable.
       const recRes = await apiFetch(`/ux/recommendations/${sessionId}`);
-      const recData = await recRes.json();
+      const recData = recRes.ok ? await recRes.json() : {};
       setRecommendations(recData.recommendations || []);
-    } catch (err: any) {
-      console.error('Failed to load UX data:', err);
-      setError(err.message || 'Failed to retrieve UX heuristics data.');
+    } catch (err) {
+      setError(errorMessage(err, 'load the UX findings'));
     } finally {
       setLoading(false);
     }
@@ -142,59 +154,20 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
     return f.personaType === activePersona;
   });
 
-  // Calculate persona-specific simulated scores
-  const getSimulatedScores = () => {
-    let clarity = 92;
-    let onboarding = 90;
-    let ia = 88;
-    let efficiency = 85;
-
-    // Beginner Teacher struggles with clarity/onboarding
-    if (activePersona === 'BEGINNER') {
-      clarity = 72;
-      onboarding = 68;
-      ia = 80;
-      efficiency = 88;
-    }
-    // Power User struggles with efficiency
-    else if (activePersona === 'POWER_USER') {
-      clarity = 90;
-      onboarding = 92;
-      ia = 86;
-      efficiency = 58;
-    }
-    // First-Time User struggles with IA / Onboarding
-    else if (activePersona === 'FIRST_TIME_USER') {
-      clarity = 82;
-      onboarding = 62;
-      ia = 54;
-      efficiency = 80;
-    }
-    // Standard gets average from database compiled scores if available
-    else {
-      // Look for signals in state
-      const overload = cognitiveSignals.find(s => s.signalType === 'COGNITIVE_OVERLOAD')?.intensity || 0.2;
-      const IA = cognitiveSignals.find(s => s.signalType === 'BRANCHING_DEPTH')?.intensity || 0.3;
-      const density = cognitiveSignals.find(s => s.signalType === 'WORKFLOW_DENSITY')?.intensity || 0.4;
-
-      clarity = Math.round(100 - overload * 40);
-      onboarding = Math.round(100 - (overload + IA) * 20);
-      ia = Math.round(100 - IA * 60);
-      efficiency = Math.round(100 - density * 40);
-    }
-
-    const overall = Math.round((clarity + onboarding + ia + efficiency) / 4);
-
-    return { clarity, onboarding, ia, efficiency, overall };
-  };
-
-  const scores = getSimulatedScores();
+  // Projection of the official audit score onto the selected persona (see
+  // lib/personaProjection). STANDARD is the audit score itself.
+  const scores = projectPersonaScores(officialScores, findings, activePersona);
 
   // Create Step Heatmap based on cognitive load
-  const stepCount = Math.max(5, Math.max(...findings.map(f => {
+  // One cell per step the agent actually took. This used to be
+  // max(5, …, cognitiveSignals.length), which counted signals as steps and
+  // padded short audits (a 3-step run rendered 10 cells). Findings that cite a
+  // later step still extend the strip.
+  const referencedStep = Math.max(0, ...findings.map(f => {
     const match = f.evidence.match(/step (\d+)/i);
-    return match ? parseInt(match[1]) : 1;
-  }), cognitiveSignals.length));
+    return match ? parseInt(match[1]) : 0;
+  }));
+  const stepCount = Math.max(1, sessionStepCount ?? 0, referencedStep);
 
   const getStepFriction = (step: number) => {
     // Generate a simulated step friction value between 0.0 and 1.0 based on finding step references
@@ -220,6 +193,12 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
           <Brain className="w-5 h-5 text-[#9b72fa]" />
           <h3 className="text-lg font-medium text-white">Persona Usability Projections</h3>
         </div>
+        <p className="text-xs text-amber-300/90 -mt-3 mb-5" data-persona-provenance>
+          Tested in this run: <strong>{testedPersona?.trim() || 'Default agent persona'}</strong>. The other profiles are configured assumptions; their scores are projections, not measurements.
+        </p>
+        {noEvidence ? (
+          <NoEvidenceNote compact detail="Persona projections need recorded agent behaviour; this audit has none." />
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* Persona Card: Standard */}
@@ -291,6 +270,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
           </button>
 
         </div>
+        )}
       </section>
 
       {/* 2. Cognitive Metrics Dashboard */}
@@ -300,61 +280,71 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
           <div>
             <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center">
-              <Gauge className="w-4 h-4 mr-2 text-[#9b72fa]" /> Simulated UX Scores
+              <Gauge className="w-4 h-4 mr-2 text-[#9b72fa]" /> {scores.isOfficial ? 'Audit Score' : 'Persona Projection'}
             </h4>
-            <div className="flex items-center space-x-6 mb-6">
+            <div className="flex items-center gap-5 mb-3">
               <div className="relative flex items-center justify-center w-24 h-24 shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-slate-800" strokeWidth="6" fill="transparent" />
                   <circle cx="48" cy="48" r="40" stroke="currentColor" className="text-[#7342e2]" strokeWidth="6" fill="transparent"
                     strokeDasharray={251.2}
-                    strokeDashoffset={251.2 - (251.2 * scores.overall) / 100}
+                    strokeDashoffset={251.2 - (251.2 * (scores.overall ?? 0)) / 100}
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="absolute text-xl font-bold text-white">{scores.overall}</span>
+                <span className="absolute text-xl font-bold text-white">{scores.overall ?? '—'}</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-white">Overall Score</div>
-                <p className="text-xs text-slate-400">Calculated usability score weighted on the active persona profile.</p>
+              <div className="min-w-0 text-lg font-bold text-white leading-tight">
+                {scores.overall === null ? 'Not scored' : scores.isOfficial ? 'Audit score' : 'Projected for persona'}
               </div>
             </div>
+            {/* Full-width caption: in the narrow column beside the gauge it
+                became a tall sliver of wrapped text. */}
+            <p className="text-xs text-slate-400 mb-6">
+              {scores.overall === null
+                ? 'Insufficient evidence: the audit recorded no agent actions, so there is no score to project.'
+                : scores.isOfficial
+                ? 'Same score as the report grade.'
+                : scores.personaPenalty > 0
+                  ? `Audit score ${officialScores.overallScore} minus ${scores.personaPenalty} for findings affecting this persona. Not a separate grade.`
+                  : `No findings affect this persona, so it matches the audit score (${officialScores.overallScore}).`}
+            </p>
 
             <div className="space-y-3">
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Visual Clarity</span>
-                  <span>{scores.clarity}%</span>
+                  <span>{scores.clarity === null ? 'n/a' : `${scores.clarity}%`}</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-[#7342e2] h-full rounded-full" style={{ width: `${scores.clarity}%` }} />
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#7342e2] h-full rounded-full" style={{ width: `${scores.clarity ?? 0}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Guided Onboarding</span>
-                  <span>{scores.onboarding}%</span>
+                  <span>{scores.onboarding === null ? 'n/a' : `${scores.onboarding}%`}</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${scores.onboarding}%` }} />
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${scores.onboarding ?? 0}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Mental-Model IA Alignment</span>
-                  <span>{scores.ia}%</span>
+                  <span>{scores.ia === null ? 'n/a' : `${scores.ia}%`}</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.ia}%` }} />
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.ia ?? 0}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-400 mb-1">
                   <span>Workflow Efficiency</span>
-                  <span>{scores.efficiency}%</span>
+                  <span>{scores.efficiency === null ? 'n/a' : `${scores.efficiency}%`}</span>
                 </div>
-                <div className="w-full bg-slate-850 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scores.efficiency}%` }} />
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scores.efficiency ?? 0}%` }} />
                 </div>
               </div>
             </div>
@@ -366,6 +356,9 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
           <h4 className="text-sm font-semibold text-slate-300 mb-6 flex items-center">
             <Brain className="w-4 h-4 mr-2 text-[#9b72fa]" /> Cognitive Load Profile
           </h4>
+          {noEvidence ? (
+            <NoEvidenceNote compact detail="Cognitive load is derived from recorded actions and thoughts; this audit recorded none." />
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {cognitiveSignals.map(signal => {
@@ -383,12 +376,12 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
               }
 
               return (
-                <div key={signal.id || signal.signalType} className="p-3 bg-slate-950/30 border border-slate-850 rounded-lg">
+                <div key={signal.id || signal.signalType} className="p-3 bg-slate-950/30 border border-slate-800 rounded-lg">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-semibold text-slate-300 font-mono">{label}</span>
                     <span className="text-xs font-bold text-slate-400">{(intensity * 100).toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-slate-850 h-2 rounded-full overflow-hidden mb-2">
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden mb-2">
                     <div className={`${barColor} h-full rounded-full`} style={{ width: `${intensity * 100}%` }} />
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-500">
@@ -405,24 +398,29 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
             })}
 
           </div>
+          )}
         </div>
 
       </div>
 
       {/* 3. Horizontal Step Heatmap Timeline */}
       <section className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h4 className="text-sm font-semibold text-slate-300 flex items-center">
+        <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mb-6">
+          <h4 className="text-sm font-semibold text-slate-300 flex items-center whitespace-nowrap">
             <Clock className="w-4 h-4 mr-2 text-[#9b72fa]" /> Friction Heatmap Timeline
           </h4>
-          <div className="flex items-center space-x-4 text-[10px] text-slate-500">
+          {!noEvidence && <div className="flex items-center space-x-4 text-[10px] text-slate-500">
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1" /> Low</span>
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1" /> Moderate</span>
             <span className="flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-1" /> Critical</span>
-          </div>
+          </div>}
         </div>
 
-        <div className="flex flex-wrap md:flex-nowrap gap-2 items-center">
+        {noEvidence ? (
+          <NoEvidenceNote compact detail="No steps were executed, so there is no per-step friction to show." />
+        ) : (<>
+        {/* Wraps at every width: forcing one row from md up overflowed the panel at 768px. */}
+        <div className="flex flex-wrap gap-2 items-center">
           {Array.from({ length: stepCount }).map((_, i) => {
             const step = i + 1;
             const friction = getStepFriction(step);
@@ -456,7 +454,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
         </div>
 
         {selectedStep && (
-          <div className="mt-4 p-4 bg-slate-950/40 rounded-lg border border-slate-850 animate-in slide-in-from-top-2 duration-200">
+          <div className="mt-4 p-4 bg-slate-950/40 rounded-lg border border-slate-800 animate-in slide-in-from-top-2 duration-200">
             <h5 className="text-xs font-semibold text-slate-200 mb-2">Step {selectedStep} Heuristic Insights</h5>
             {filteredFindings.filter(f => f.evidence.toLowerCase().includes(`step ${selectedStep}`)).length === 0 ? (
               <p className="text-xs text-slate-500">No active findings targeting step {selectedStep} for the selected persona profile.</p>
@@ -477,6 +475,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
             )}
           </div>
         )}
+        </>)}
       </section>
 
       {/* 4. Actionable UX Findings & Pattern Checklist */}
@@ -488,7 +487,9 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
             <AlertCircle className="w-4 h-4 mr-2 text-[#9b72fa]" /> Active Heuristic Findings
           </h4>
 
-          {filteredFindings.length === 0 ? (
+          {noEvidence ? (
+            <NoEvidenceNote detail="Findings come from recorded agent behaviour; this audit has none. This is not a clean result." />
+          ) : filteredFindings.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-sm">
               <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
               No friction findings detected under this persona filter.
@@ -506,7 +507,7 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
                 const isSaving = savingFindingId === finding.id;
 
                 return (
-                  <div key={finding.id} className="p-4 bg-slate-950/20 border border-slate-850 rounded-xl space-y-3">
+                  <div key={finding.id} className="p-4 bg-slate-950/20 border border-slate-800 rounded-xl space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <h5 className="font-semibold text-slate-200 text-sm">{finding.title}</h5>
@@ -598,7 +599,9 @@ export function UXIntelligenceTab({ sessionId }: { sessionId: string }) {
             <CheckCircle2 className="w-4 h-4 mr-2 text-[#9b72fa]" /> UX Recommendations Timeline
           </h4>
 
-          {recommendations.length === 0 ? (
+          {noEvidence ? (
+            <NoEvidenceNote detail="Recommendations need findings; none can be derived without evidence." />
+          ) : recommendations.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-sm">
               No recommendations generated. Scan session to run.
             </div>

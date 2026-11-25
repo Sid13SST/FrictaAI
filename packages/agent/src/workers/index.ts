@@ -1,6 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { connection } from '../queue/connection';
 import { WORKFLOW_QUEUE_NAME } from '../queue';
+import { markAnalysisPending } from '../queue/analysisState';
 import { WorkflowJobData } from '../scheduler';
 import { logger } from '@fricta/shared';
 import { PrismaClient } from '@fricta/db';
@@ -15,6 +16,11 @@ export const startWorker = () => {
     WORKFLOW_QUEUE_NAME,
     async (job: Job<WorkflowJobData>) => {
       logger.info({ jobId: job.id, sessionId: job.data.sessionId }, 'Processing workflow job');
+
+      // The report is provisional from now until the backend finishes its
+      // post-run analysis (see finalizeAuditReport), even after the session
+      // reaches a terminal status.
+      await markAnalysisPending(job.data.sessionId);
       
       await prisma.workflowSession.update({
         where: { id: job.data.sessionId },

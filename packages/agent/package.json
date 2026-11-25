@@ -5,8 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "postinstall": "npx playwright install"
+    "build": "tsc"
   },
   "devDependencies": {
     "@fricta/config": "*",
@@ -14,6 +13,7 @@
   },
   "dependencies": {
     "@fricta/mcp": "*",
+    "@fricta/shared": "*",
     "@fricta/types": "*",
     "@fricta/visual-engine": "*",
     "bullmq": "^5.76.10",

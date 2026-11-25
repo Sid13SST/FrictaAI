@@ -1,14 +1,17 @@
 import { Hono } from 'hono';
+// Package root, not /src/*: compiled Node (Docker CMD) cannot load .ts source.
+import {
+  ExperimentManager,
+  HypothesisEngine,
+  ExperimentEvaluator,
+  OutcomeRecorder,
+  RecommendationTracker,
+  OptimizationLearner,
+  BaselineManager,
+  UXMetricsCollector,
+  ExperimentTimeline,
+} from '@fricta/optimization-intelligence';
 import { prisma } from '@fricta/db';
-import { ExperimentManager } from '@fricta/optimization-intelligence/src/experiments';
-import { HypothesisEngine } from '@fricta/optimization-intelligence/src/hypotheses';
-import { ExperimentEvaluator } from '@fricta/optimization-intelligence/src/evaluation';
-import { OutcomeRecorder } from '@fricta/optimization-intelligence/src/outcomes';
-import { RecommendationTracker } from '@fricta/optimization-intelligence/src/recommendations';
-import { OptimizationLearner } from '@fricta/optimization-intelligence/src/learning';
-import { BaselineManager } from '@fricta/optimization-intelligence/src/baselines';
-import { UXMetricsCollector } from '@fricta/optimization-intelligence/src/metrics';
-import { ExperimentTimeline } from '@fricta/optimization-intelligence/src/timelines';
 import { getCurrentUser } from '../middleware/authContext';
 import { verifyProjectOwnership } from '../guards/ownership';
 

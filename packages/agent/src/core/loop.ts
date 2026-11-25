@@ -40,6 +40,32 @@ export class AgentLoop {
   private readonly visualEngine: VisualCaptureEngine;
   private readonly agentMemory: AgentMemory;
   private readonly config: LoopConfig;
+  /**
+   * Screenshot captures run in the background so they never eat into a step's
+   * timeout, but they must finish before run() returns: the runner closes the
+   * browser context and the worker generates the report right after. Without
+   * draining, the last step's screenshot (and late timeline links) were lost.
+   */
+  private readonly pendingCaptures = new Set<Promise<unknown>>();
+  private static readonly CAPTURE_DRAIN_TIMEOUT_MS = 15_000;
+
+  private trackCapture(p: Promise<unknown>): void {
+    const tracked = p.catch(() => {}).finally(() => this.pendingCaptures.delete(tracked));
+    this.pendingCaptures.add(tracked);
+  }
+
+  private async drainCaptures(): Promise<void> {
+    if (this.pendingCaptures.size === 0) return;
+    let timer: NodeJS.Timeout | undefined;
+    await Promise.race([
+      Promise.allSettled([...this.pendingCaptures]),
+      new Promise((resolve) => { timer = setTimeout(resolve, AgentLoop.CAPTURE_DRAIN_TIMEOUT_MS); }),
+    ]);
+    if (timer) clearTimeout(timer);
+    if (this.pendingCaptures.size > 0) {
+      console.warn(`[AgentLoop] ${this.pendingCaptures.size} screenshot capture(s) still pending after drain timeout`);
+    }
+  }
 
   constructor(
     private readonly provider: AIProvider,
@@ -198,7 +224,7 @@ export class AgentLoop {
         if (!page.isClosed()) {
           const stepIndex = state.currentStep;
           const pageUrl = page.url();
-          this.visualEngine.capture(page, sessionId, {
+          this.trackCapture(this.visualEngine.capture(page, sessionId, {
             screenshotType: 'error',
             stepIndex,
             pageUrl,
@@ -214,7 +240,7 @@ export class AgentLoop {
                 eventType: 'error',
               });
             }
-          }).catch(() => {});
+          }));
         }
 
         if (state.consecutiveFailures >= this.config.maxRetries) {
@@ -226,6 +252,9 @@ export class AgentLoop {
         }
       }
     }
+
+    // Let in-flight screenshots and timeline links land while the page is open.
+    await this.drainCaptures();
 
     // ── Final Status ─────────────────────────────────────────────────────────
     if (state.status === 'running') {
@@ -309,7 +338,7 @@ export class AgentLoop {
         thought: decision.thought
       });
 
-      this.visualEngine.capture(page, sessionId, {
+      this.trackCapture(this.visualEngine.capture(page, sessionId, {
         screenshotType: 'step',
         stepIndex,
         pageUrl,
@@ -342,7 +371,7 @@ export class AgentLoop {
         if (!screenshotErr.message?.includes('closed')) {
           console.warn('[AgentLoop] Screenshot failed (non-critical):', screenshotErr.message);
         }
-      });
+      }));
     }
 
     // 4. EVALUATE: Build executed action record

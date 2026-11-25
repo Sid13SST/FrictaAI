@@ -3,3 +3,5 @@ export * from './executive';
 export * from './timeline';
 export * from './export';
 export * from './pdf';
+export * from './coverage';
+export * from './classify';

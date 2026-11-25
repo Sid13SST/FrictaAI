@@ -106,8 +106,10 @@ export const DEFAULT_LOOP_CONFIG: LoopConfig = {
   maxSteps: 30,
   maxRetries: 3,
   loopDetectionWindow: 5,
-  stepTimeoutMs: 60_000,   // 60s: MCP extraction + AI call + action can take ~20-40s
-  totalTimeoutMs: 600_000, // 10 min total
+  // 180s: MCP extraction + AI call + action (~20-40s) plus the provider's
+  // rate-limit retry budget (≤120s of waits, see @fricta/shared retry policy).
+  stepTimeoutMs: 180_000,
+  totalTimeoutMs: 900_000, // 15 min total (free-tier rate limits slow runs down)
 };
 
 // ─── Loop State ───────────────────────────────────────────────────────────────

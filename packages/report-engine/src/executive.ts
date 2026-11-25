@@ -1,4 +1,5 @@
 import { UnifiedUXReportPayload, ExecutiveSummaryPayload } from './types';
+import { splitVisualFindings, visualTypeLabel } from './classify';
 
 export class ExecutiveSummaryEngine {
   /**
@@ -6,19 +7,24 @@ export class ExecutiveSummaryEngine {
    */
   static synthesize(report: UnifiedUXReportPayload): ExecutiveSummaryPayload {
     const score = report.scores.overallScore;
-    
-    // 1. Calculate Overall UX Grade
-    let overallUXGrade: 'A' | 'B' | 'C' | 'D' | 'F' = 'C';
-    if (score >= 90) overallUXGrade = 'A';
-    else if (score >= 80) overallUXGrade = 'B';
-    else if (score >= 70) overallUXGrade = 'C';
-    else if (score >= 60) overallUXGrade = 'D';
-    else overallUXGrade = 'F';
+    const pending = report.analysis?.state === 'pending';
+    const insufficient = !pending && (report.evidence?.status === 'insufficient' || score === null);
+
+    // 1. Calculate Overall UX Grade (none without evidence)
+    let overallUXGrade: ExecutiveSummaryPayload['overallUXGrade'] = 'N/A';
+    if (!pending && !insufficient && score !== null) {
+      if (score >= 90) overallUXGrade = 'A';
+      else if (score >= 80) overallUXGrade = 'B';
+      else if (score >= 70) overallUXGrade = 'C';
+      else if (score >= 60) overallUXGrade = 'D';
+      else overallUXGrade = 'F';
+    }
 
     // 2. Compute Onboarding Friction and Discoverability Risks
     const onboardingScore = report.scores.onboardingScore;
-    let onboardingFrictionLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
-    if (onboardingScore < 50) onboardingFrictionLevel = 'CRITICAL';
+    let onboardingFrictionLevel: ExecutiveSummaryPayload['onboardingFrictionLevel'] = 'LOW';
+    if (onboardingScore === null) onboardingFrictionLevel = 'UNKNOWN';
+    else if (onboardingScore < 50) onboardingFrictionLevel = 'CRITICAL';
     else if (onboardingScore < 70) onboardingFrictionLevel = 'HIGH';
     else if (onboardingScore < 85) onboardingFrictionLevel = 'MEDIUM';
 
@@ -26,7 +32,7 @@ export class ExecutiveSummaryEngine {
                        report.uxFindings.some(f => f.findingType === 'CTA_AMBIGUITY');
     const discoverabilityIntensity = report.cognitiveSignals.find(s => s.signalType === 'DISCOVERABILITY_FRICTION')?.intensity || 0;
     
-    let discoverabilityRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
+    let discoverabilityRiskLevel: ExecutiveSummaryPayload['discoverabilityRiskLevel'] = 'LOW';
     if (discoverabilityIntensity > 0.7 || (hasWeakCTA && discoverabilityIntensity > 0.5)) {
       discoverabilityRiskLevel = 'CRITICAL';
     } else if (discoverabilityIntensity > 0.4 || hasWeakCTA) {
@@ -63,6 +69,14 @@ export class ExecutiveSummaryEngine {
 
     // Sort step indices chronologically
     majorFrictionStepIndices.sort((a, b) => a - b);
+
+    // Without evidence (or before analysis finishes) these are not
+    // measurements: say so instead of "LOW".
+    if (insufficient || pending) {
+      discoverabilityRiskLevel = 'UNKNOWN';
+      onboardingFrictionLevel = 'UNKNOWN';
+      majorFrictionStepIndices.length = 0;
+    }
 
     // 4. Synthesize Cross-Analysis Global Insights
     const synthesizedInsights: string[] = [];
@@ -105,6 +119,45 @@ export class ExecutiveSummaryEngine {
       );
     }
 
+    // Visual issues: summarise the high-priority ones that drive the risk
+    // levels above (e.g. weak_cta → discoverability risk), grouped by type so
+    // nothing is double-counted. Only what was recorded: titles come from the
+    // findings themselves; no causes are inferred.
+    {
+      const { issues } = splitVisualFindings(report.visualFindings);
+      const high = issues.filter((f) => ['HIGH', 'CRITICAL'].includes(String(f.severity).toUpperCase()));
+      const byType = new Map<string, typeof high>();
+      for (const f of high) byType.set(f.findingType, [...(byType.get(f.findingType) ?? []), f]);
+      for (const [type, list] of byType) {
+        const titles = [...new Set(list.map((f) => f.title.trim()).filter(Boolean))].slice(0, 3);
+        synthesizedInsights.push(
+          `Visual review flagged ${list.length} high-severity ${visualTypeLabel(type)} issue${list.length === 1 ? '' : 's'} on recorded screenshots` +
+          (titles.length ? `: ${titles.map((t) => `"${t}"`).join('; ')}.` : '.')
+        );
+      }
+      const rest = issues.length - high.length;
+      if (rest > 0) {
+        synthesizedInsights.push(`${rest} further visual issue${rest === 1 ? '' : 's'} of medium or lower severity ${rest === 1 ? 'is' : 'are'} listed under Visual Findings.`);
+      }
+    }
+
+    if (pending) {
+      synthesizedInsights.length = 0;
+      synthesizedInsights.push(
+        `Analysis in progress: ${report.analysis?.note ?? 'post-run analysis has not finished yet'}. Scores and findings are not final.`
+      );
+    } else if (insufficient) {
+      // No behavioural evidence: do not claim the flow was smooth.
+      synthesizedInsights.length = 0;
+      synthesizedInsights.push(
+        `Not scored: ${report.evidence?.reason ?? 'the audit produced no recorded agent actions'}. Re-run the audit; nothing here reflects the product's UX.`
+      );
+    }
+    const coverage = report.visualCoverage;
+    if (coverage && !coverage.complete) {
+      synthesizedInsights.push(`Visual coverage incomplete: ${coverage.note}`);
+    }
+
     // Add fallback if empty
     if (synthesizedInsights.length === 0) {
       synthesizedInsights.push(
@@ -114,7 +167,10 @@ export class ExecutiveSummaryEngine {
 
     return {
       overallUXGrade,
-      overallScore: score,
+      overallScore: insufficient || pending ? null : score,
+      evidenceStatus: insufficient ? 'insufficient' : 'sufficient',
+      analysisState: pending ? 'pending' : 'ready',
+      visualCoverageNote: coverage && !coverage.complete ? coverage.note : undefined,
       onboardingFrictionLevel,
       discoverabilityRiskLevel,
       majorFrictionStepIndices,

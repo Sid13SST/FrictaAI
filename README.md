@@ -148,7 +148,7 @@ Start frontend, backend, and all runner tasks in concurrent watch-mode via Turbo
 ```bash
 npm run dev
 ```
-* **Frontend**: `http://localhost:5173`
+* **Frontend**: `http://localhost:3000` (Vite dev server, `apps/frontend/vite.config.ts`; proxies `/api` to the backend)
 * **Backend REST API**: `http://localhost:3001`
 
 ### Running Tests
